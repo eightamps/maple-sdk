@@ -95,6 +95,7 @@ namespace MaplePhone
         private Report txReport;
         private HidDeviceInputReceiver inputReceiver;
         private DeviceItemInputParser inputParser;
+        private bool loopState = false;
 
         public void Dispose()
         {
@@ -141,7 +142,8 @@ namespace MaplePhone
                                 Console.WriteLine("RingEnable " + dataValue.DataIndex);
                                 break;
                             case HidUsage.Telephony.HostControl:
-                                LoopPresence(this, Convert.ToBoolean(dataValue.GetLogicalValue()));
+                                loopState = Convert.ToBoolean(dataValue.GetLogicalValue());
+                                LoopPresence(this, loopState);
                                 break;
                             default:
                                 break;
@@ -158,7 +160,11 @@ namespace MaplePhone
 
         public void SetOffHook(bool offhook)
         {
-            SendControl(true, offhook);
+            // never take the phone OFF_HOOK unless LOOP detect indicates a valid line is attached
+            if (loopState || !offhook)
+            {
+                SendControl(true, offhook);
+            }
         }
 
         private void SendControl(bool hostready, bool offhook = false)
