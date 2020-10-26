@@ -47,6 +47,7 @@ namespace HidUsage
     {
         Switchy = 0xFF8A0001,
         Reddy = 0xFF8A0002,
+        Envy = 0xFF8A0003,
         SwitchySelector = 0xFF8A0020,
         SwitchyAction = 0xFF8A0030,
         TagId = 0xFF8A0050,
@@ -60,5 +61,15 @@ namespace HidUsage
         ReddyEncodeCmdReport = 0xFF8A0072,
         ReddyStatusRspReport = 0xFF8A0073,
         ReddyDecodeRspReport = 0xFF8A0074,
+
+        HaGetCapabilitiesReport = 0xFF8A0080,
+        HaGetTerminalCapabilitiesReport = 0xFF8A0081,
+        HaGetTerminalStateReport = 0xFF8A0082,
+        HaSetTerminalStateReport = 0xFF8A0083,
+        HaInTerminalsCount = 0xFF8A0090,
+        HaOutTerminalsCount = 0xFF8A0091,
+        HaTerminalContactsCount = 0xFF8A0092,
+        HaTerminalId = 0xFF8A0093,
+        HaTerminalContactValue = 0xFF8A0094,
     }
 }
