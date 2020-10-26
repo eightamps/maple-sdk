@@ -55,8 +55,6 @@ namespace HidUsage
         ReddyProtocolData = 0xFF8A0062,
         ReddyStatus = 0xFF8A0063,
         ReddyDecodeTimeout = 0xFF8A0064,
-        ReddyEncodeRepeats = 0xFF8A0065,
-        ReddyEncodeInterval = 0xFF8A0066,
         ReddyResetCmdReport = 0xFF8A0070,
         ReddyDecodeCmdReport = 0xFF8A0071,
         ReddyEncodeCmdReport = 0xFF8A0072,
