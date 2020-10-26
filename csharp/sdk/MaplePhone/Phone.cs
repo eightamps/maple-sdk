@@ -14,6 +14,20 @@ namespace MaplePhone
 
         private AudioRouter router;
 
+        private HidDevice hiddev { get { return stream.Device; } }
+        private HidStream stream;
+
+        private Report verReport;
+        private Report txReport;
+        private HidDeviceInputReceiver inputReceiver;
+        private DeviceItemInputParser inputParser;
+        private bool loopState = false;
+
+        public event Action<Phone, bool> RingingSignal = delegate { };
+        public event Action<Phone, bool> LoopPresence = delegate { };
+        public event Action<Phone, bool> RemoteOffHook = delegate { };
+        public event Action<Phone, bool> Polarity = delegate { };
+
         protected Phone(HidStream hidStream)
         {
             this.stream = hidStream;
@@ -90,14 +104,6 @@ namespace MaplePhone
             return r;
         }
 
-        private HidDevice hiddev { get { return stream.Device; } }
-        private HidStream stream;
-        private Report verReport;
-        private Report txReport;
-        private HidDeviceInputReceiver inputReceiver;
-        private DeviceItemInputParser inputParser;
-        private bool loopState = false;
-
         public void Dispose()
         {
             this.inputReceiver.Received -= InputReceiver_Received;
@@ -105,11 +111,6 @@ namespace MaplePhone
             router.Dispose();
             stream.Dispose();
         }
-
-        public event Action<Phone, bool> RingingSignal = delegate { };
-        public event Action<Phone, bool> LoopPresence = delegate { };
-        public event Action<Phone, bool> RemoteOffHook = delegate { };
-        public event Action<Phone, bool> Polarity = delegate { };
 
         private void InputReceiver_Received(object sender, EventArgs e)
         {
@@ -162,8 +163,8 @@ namespace MaplePhone
 
         public void SetOffHook(bool offhook)
         {
-            // never take the phone OFF_HOOK unless LOOP detect indicates a valid line is attached
-            if (loopState || !offhook)
+            // Never take the phone OFF_HOOK unless LOOP detect indicates a valid line is attached
+            if (!offhook || loopState)
             {
                 SendControl(true, offhook);
             }
@@ -172,7 +173,7 @@ namespace MaplePhone
 
         public void Dial(String phoneNumbers)
         {
-            if (loopState || false) {
+            if (loopState || false) 
             {
                 // If we're not already off-hook, go off-hook and then dial
                 SetOffHook(true);
@@ -184,7 +185,7 @@ namespace MaplePhone
             router.GenerateTones(phoneNumbers);
         }
 
-        private void SendControl(bool hostready, bool offhook = false)
+        public void SendControl(bool hostready, bool offhook = false)
         {
             var report = txReport;
             var buffer = report.CreateBuffer();
