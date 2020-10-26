@@ -19,21 +19,5 @@ namespace MaplePhone
                 return false;
             return true;
         }
-
-        public static uint GetApplicationUsage(this HidDevice hiddev)
-        {
-            if (hiddev == null)
-                return 0;
-            var reportDescriptor = hiddev.GetReportDescriptor();
-            var ditem = reportDescriptor.DeviceItems.FirstOrDefault();
-            return ditem.Usages.GetAllValues().FirstOrDefault();
-        }
-
-        public static byte[] CreateBuffer(this Report report)
-        {
-            byte[] buffer = new byte[report.Length];
-            buffer[0] = report.ReportID;
-            return buffer;
-        }
     }
 }

@@ -64,7 +64,7 @@ namespace MaplePhone
             MaplePhoneControl = null;
             if (!hiddev.IsMapleControlDevice())
                 return false;
-            if (hiddev.GetApplicationUsage() != (uint)HidUsage.Telephony.DualModePhone)
+            if (hiddev.GetTopLevelUsage() != (uint)HidUsage.Telephony.DualModePhone)
                 return false;
 
             try
