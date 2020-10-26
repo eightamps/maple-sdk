@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading;
-using MaplePhone;
+using Maple;
 
 namespace MaplePhoneTest
 {

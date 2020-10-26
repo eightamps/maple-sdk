@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 using System.Threading;
 
-namespace MaplePhone
+namespace Maple
 {
     public class Phone : IDisposable
     {
