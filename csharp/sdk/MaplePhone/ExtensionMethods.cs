@@ -13,9 +13,9 @@ namespace MaplePhone
         {
             if (hiddev == null)
                 return false;
-            if (hiddev.VendorID != 0x0483)
+            if (hiddev.VendorID != 0x335e)
                 return false;
-            if (hiddev.ProductID != 0xa368)
+            if (hiddev.ProductID != 0x8a01)
                 return false;
             return true;
         }
