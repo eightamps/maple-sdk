@@ -2,21 +2,22 @@
 using HidSharp.Reports;
 using HidSharp.Reports.Input;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace MaplePhone
 {
-    public class MaplePhoneControl : IDisposable
+    public class Phone : IDisposable
     {
         public Version SoftwareVersion { get; private set; }
         public Version HardwareVersion { get { return hiddev.ReleaseNumber; } }
 
-        protected MaplePhoneControl(HidStream hidStream)
+        private AudioRouter router;
+
+        protected Phone(HidStream hidStream)
         {
             this.stream = hidStream;
+            this.router = new AudioRouter();
 
             var reportDescriptor = hiddev.GetReportDescriptor();
             var deviceItem = reportDescriptor.DeviceItems.First();
@@ -59,7 +60,7 @@ namespace MaplePhone
             SendControl(true);
         }
 
-        public static bool TryOpen(HidDevice hiddev, out MaplePhoneControl MaplePhoneControl)
+        public static bool TryOpen(HidDevice hiddev, out Phone MaplePhoneControl)
         {
             MaplePhoneControl = null;
             if (!hiddev.IsMapleControlDevice())
@@ -73,7 +74,7 @@ namespace MaplePhone
                 if (!hiddev.TryOpen(out hidStream))
                     return false;
                 hidStream.ReadTimeout = Timeout.Infinite;
-                MaplePhoneControl = new MaplePhoneControl(hidStream);
+                MaplePhoneControl = new Phone(hidStream);
             }
             catch (Exception)
             {
@@ -82,10 +83,10 @@ namespace MaplePhone
             return true;
         }
 
-        public static MaplePhoneControl First()
+        public static Phone First()
         {
-            MaplePhoneControl r = null;
-            var device = DeviceList.Local.GetHidDevices().First(d => MaplePhoneControl.TryOpen(d, out r));
+            Phone r = null;
+            var device = DeviceList.Local.GetHidDevices().First(d => Phone.TryOpen(d, out r));
             return r;
         }
 
@@ -101,13 +102,14 @@ namespace MaplePhone
         {
             this.inputReceiver.Received -= InputReceiver_Received;
             SendControl(false);
+            router.Dispose();
             stream.Dispose();
         }
 
-        public event Action<MaplePhoneControl, bool> RingingSignal = delegate { };
-        public event Action<MaplePhoneControl, bool> LoopPresence = delegate { };
-        public event Action<MaplePhoneControl, bool> RemoteOffHook = delegate { };
-        public event Action<MaplePhoneControl, bool> Polarity = delegate { };
+        public event Action<Phone, bool> RingingSignal = delegate { };
+        public event Action<Phone, bool> LoopPresence = delegate { };
+        public event Action<Phone, bool> RemoteOffHook = delegate { };
+        public event Action<Phone, bool> Polarity = delegate { };
 
         private void InputReceiver_Received(object sender, EventArgs e)
         {
@@ -165,6 +167,21 @@ namespace MaplePhone
             {
                 SendControl(true, offhook);
             }
+            SendControl(true, offhook);
+        }
+
+        public void Dial(String phoneNumbers)
+        {
+            if (loopState || false) {
+            {
+                // If we're not already off-hook, go off-hook and then dial
+                SetOffHook(true);
+                router.Start();
+                Thread.Sleep(TimeSpan.FromSeconds(2));
+            }
+
+            // Send the DTMF codes through the open line.
+            router.GenerateTones(phoneNumbers);
         }
 
         private void SendControl(bool hostready, bool offhook = false)

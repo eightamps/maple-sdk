@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HidSharp\HidSharp\HidSharp.csproj" />
+    <PackageReference Include="NAudio" Version="1.10.0" />
   </ItemGroup>
 
 </Project>
