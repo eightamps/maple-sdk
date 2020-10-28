@@ -9,8 +9,12 @@ namespace Maple
 {
     class AudioRouter : IDisposable
     {
-        const String RX_NAME = "4- USB Audio Device";
-        const String TX_NAME = "4- USB Audio Device";
+        const String RX_NAME = "Telephone Audio"; // First string, stuck in dev cache.
+        const String TX_NAME = "Telephone Audio"; // First string, stuck in dev cache.
+        // const String RX_NAME = "ASI Telephone"; // Actual configuration strings
+        // const String TX_NAME = "ASI Telephone"; // Actual configuration strings
+        // const String RX_NAME = "4- USB Audio Device"; // Unconfigured HS100B for dev
+        // const String TX_NAME = "4- USB Audio Device"; // Unconfigured HS100B for dev
 
         public String RxName { get; set; }
         public String TxName { get; set; }
@@ -32,7 +36,7 @@ namespace Maple
             IsStarted = false;
         }
 
-        private void onRenderDataAvailable(object sender, WaveInEventArgs e)
+        private void onMicDataAvailable(object sender, WaveInEventArgs e)
         {
             // Console.WriteLine("BYTES RECEIVED WITH: " + e.BytesRecorded);
             byte[] buffer = new byte[e.BytesRecorded];
@@ -50,6 +54,7 @@ namespace Maple
 
         private void GenerateDtmf(TimeSpan duration, int top, int bottom, int deviceNumber=-1)
         {
+            Console.WriteLine("GENERATE DTMF WITH: " + deviceNumber);
             var one = new SignalGenerator()
             {
                 Gain = 0.2,
@@ -132,8 +137,11 @@ namespace Maple
             return tones;
         }
 
-        public void GenerateTones(String values, int deviceNumber=-1)
+        public void GenerateTones(String values)
         {
+            // Get the device index from the PhoneOutput signal.
+            var deviceNumber = PhoneOutput.DeviceNumber;
+            Console.WriteLine("GENERATE TONES WITH:" + deviceNumber);
             var duration = TimeSpan.FromMilliseconds(100);
             var tones = StringToDtmf(values);
             foreach (var tone in tones)
@@ -158,7 +166,6 @@ namespace Maple
                     }
                     commDeviceIndex++;
                 }
-
 
                 return Tuple.Create(commDevice, commDeviceIndex);
             }
@@ -208,14 +215,19 @@ namespace Maple
             var renderTuple = GetCommunicationDeviceFor(DataFlow.Render);
             var captureTuple = GetCommunicationDeviceFor(DataFlow.Capture);
 
+            Console.WriteLine("User Communication Input: " + captureTuple.Item1.DeviceFriendlyName);
+            Console.WriteLine("User Communication Output: " + renderTuple.Item1.DeviceFriendlyName);
+            Console.WriteLine("Phone RX: " + rxDeviceTuple.Item1.DeviceFriendlyName);
+            Console.WriteLine("Phone TX: " + txDeviceTuple.Item1.DeviceFriendlyName);
+
             var waveFormat = new WaveFormat(22050, 1); // SampleRate & Channels
 
             // Connect the local Mic input to the Phone Output
-            MicSignal = new WaveInEvent() { DeviceNumber = renderTuple.Item2 };
+            MicSignal = new WaveInEvent() { DeviceNumber = captureTuple.Item2 };
             MicSignal.WaveFormat = waveFormat;
-            MicSignal.DataAvailable += onRenderDataAvailable;
+            MicSignal.DataAvailable += onMicDataAvailable;
 
-            PhoneOutput = new WaveOutEvent() { DeviceNumber = txDeviceTuple.Item2 };
+            PhoneOutput = new WaveOutEvent() { DeviceNumber = rxDeviceTuple.Item2 };
             PhoneOutputBuffer = new BufferedWaveProvider(waveFormat);
             PhoneOutput.Init(PhoneOutputBuffer);
             PhoneOutput.Play();

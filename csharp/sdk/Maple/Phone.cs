@@ -164,7 +164,7 @@ namespace Maple
         public void SetOffHook(bool offhook)
         {
             // Never take the phone OFF_HOOK unless LOOP detect indicates a valid line is attached
-            if (!offhook || loopState)
+            if (offhook || loopState)
             {
                 SendControl(true, offhook);
             }
@@ -173,14 +173,12 @@ namespace Maple
 
         public void Dial(String phoneNumbers)
         {
-            if (loopState || false) 
-            {
-                // If we're not already off-hook, go off-hook and then dial
-                SetOffHook(true);
-                router.Start();
-                Thread.Sleep(TimeSpan.FromSeconds(2));
-            }
+            Console.WriteLine("INSIDE ------------------");
+            // If we're not already off-hook, go off-hook and then dial
+            SetOffHook(true);
+            router.Start();
 
+            Thread.Sleep(TimeSpan.FromSeconds(5));
             // Send the DTMF codes through the open line.
             router.GenerateTones(phoneNumbers);
         }
