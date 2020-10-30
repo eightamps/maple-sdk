@@ -15,22 +15,28 @@ namespace MaplePhoneTest
                 return;
             }
 
-            while (true)
+            try
             {
-                Console.WriteLine("------------------------------");
-                Console.WriteLine("Dial a number? (default: 510 459-9053)");
-                string input = Console.ReadLine();
-
-                if (input == "")
+                while (true)
                 {
-                    input = "(510) 459-9053";
-                }
+                    Console.WriteLine("------------------------------");
+                    Console.WriteLine("Dial a number? (default: 510 459-9053)");
+                    string input = Console.ReadLine();
 
-                Console.WriteLine("Dialing:" + input);
-                maple.Dial(input);
+                    if (input == "")
+                    {
+                        input = "(510) 459-9053";
+                    }
+
+                    Console.WriteLine("Dialing:" + input);
+                    maple.Dial(input);
+                }
+            }
+            finally
+            {
+                maple.Dispose();
             }
 
-            // maple.Dispose();
 
             /*
             Action<Phone, bool> loop = delegate (Phone m, bool set) 
