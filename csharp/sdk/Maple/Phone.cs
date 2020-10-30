@@ -195,6 +195,7 @@ namespace Maple
                     if (_offHookChanged)
                     {
                         Console.WriteLine("OffHook changed: " + OffHook);
+                        SyncRouterToHookState();
                         OffHookChanged(this, OffHook);
                     }
                     if (_polarityChanged)
@@ -206,6 +207,18 @@ namespace Maple
             }
             IsRequestPending = false;
             Console.WriteLine("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        }
+
+        private void SyncRouterToHookState()
+        {
+            if (OffHook && !router.IsActive)
+            {
+                router.Start();
+            }
+            else if (!OffHook && router.IsActive)
+            {
+                router.Stop();
+            }
         }
 
         /**
@@ -224,7 +237,7 @@ namespace Maple
                 WaitForOffHook();
 
                 // Now that we're off hook, wire up for sound.
-                router.Start();
+                // router.Start();
                 Console.WriteLine("OffHook Notification Received, and sound connected");
             }
             else
@@ -241,7 +254,7 @@ namespace Maple
         public void HangUp()
         {
             SendControl(true, false);
-            router.Stop();
+            // router.Stop();
             WaitForResponse();
         }
 
@@ -295,10 +308,12 @@ namespace Maple
             Thread.Sleep(TimeSpan.FromSeconds(3));
 
 
+            /*
             if (!router.IsActive)
             {
                 router.Start();
             }
+            */
 
             // Send the DTMF codes through the open line.
             dtmf.GenerateTones(input);

@@ -102,6 +102,8 @@ namespace Maple
                 return;
             }
 
+            Console.WriteLine("AudioRouter.Start()");
+
             IsActive = true;
 
             var rxDeviceTuple = GetDeviceWithProductName(RxName, DataFlow.Capture);
@@ -153,6 +155,7 @@ namespace Maple
 
         public void Stop()
         {
+            Console.WriteLine("AudioRouter.Stop()");
             MicSignal?.StopRecording();
             PhoneSignal?.StopRecording();
             PhoneOutput?.Stop();
