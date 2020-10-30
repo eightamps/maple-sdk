@@ -22,17 +22,21 @@ namespace Maple
         private HidDeviceInputReceiver inputReceiver;
         private DeviceItemInputParser inputParser;
 
+        private bool _IsRinging = false;
         private bool _LoopState = false;
         private bool _OffHook = false;
+        private bool _Polarity = false;
 
         private bool IsRequestPending = false;
+        public bool IsRinging { get { return this._IsRinging; } }
         public bool LoopState { get { return this._LoopState; } }
         public bool OffHook { get { return this._OffHook; } }
+        public bool Polarity { get { return this._Polarity; } }
 
-        public event Action<Phone, bool> RingingSignal = delegate { };
-        public event Action<Phone, bool> LoopPresence = delegate { };
-        public event Action<Phone, bool> RemoteOffHook = delegate { };
-        public event Action<Phone, bool> Polarity = delegate { };
+        public event Action<Phone, bool> RingingChanged = delegate { };
+        public event Action<Phone, bool> LoopStateChanged = delegate { };
+        public event Action<Phone, bool> OffHookChanged = delegate { };
+        public event Action<Phone, bool> PolarityChanged = delegate { };
 
         protected Phone(HidStream hidStream)
         {
@@ -70,6 +74,7 @@ namespace Maple
                         break;
                 }
             });
+
             SoftwareVersion = new Version(major, minor, rev);
 
             this.inputReceiver = reportDescriptor.CreateHidDeviceInputReceiver();
@@ -113,9 +118,12 @@ namespace Maple
 
         public void Dispose()
         {
+            Console.WriteLine("Maple DISPOSE with OffHook state: " + OffHook);
             if (OffHook)
             {
                 HangUp();
+                // TODO(lbayes): REMOVE ME!
+                Thread.Sleep(TimeSpan.FromSeconds(1));
             }
             this.inputReceiver.Received -= InputHandler;
             router.Dispose();
@@ -135,10 +143,10 @@ namespace Maple
                 // This will return false if (for example) the report applies to a different DeviceItem.
                 if (inputParser.TryParseReport(inputReportBuffer, 0, report))
                 {
-                    bool ringingChanged = false;
-                    bool offHookChanged = false;
-                    bool loopStateChanged = false;
-                    bool isRinging = false;
+                    bool _ringingChanged = false;
+                    bool _offHookChanged = false;
+                    bool _loopStateChanged = false;
+                    bool _polarityChanged = false;
 
                     while (inputParser.HasChanged)
                     {
@@ -155,20 +163,19 @@ namespace Maple
                         {
                             case HidUsage.Telephony.HookSwitch:
                                 _OffHook = Convert.ToBoolean(dataValue.GetLogicalValue());
-                                offHookChanged = true;
+                                _offHookChanged = true;
                                 break;
                             case HidUsage.Telephony.AlternateFunction:
-                                var polarity = Convert.ToBoolean(dataValue.GetLogicalValue());
-                                Polarity(this, polarity);
-                                Console.WriteLine("POLARITY? " + polarity);
+                                _Polarity = Convert.ToBoolean(dataValue.GetLogicalValue());
+                                _polarityChanged = true;
                                 break;
                             case HidUsage.Telephony.RingEnable:
-                                ringingChanged = true;
-                                isRinging = Convert.ToBoolean(dataValue.GetLogicalValue());
+                                _IsRinging = Convert.ToBoolean(dataValue.GetLogicalValue());
+                                _ringingChanged = true;
                                 break;
                             case HidUsage.Telephony.HostControl:
                                 _LoopState = Convert.ToBoolean(dataValue.GetLogicalValue());
-                                loopStateChanged = true;
+                                _loopStateChanged = true;
                                 break;
                             default:
                                 Console.WriteLine("Unhandled INPUT Event:" + usages);
@@ -178,20 +185,25 @@ namespace Maple
 
                     // Accumulate all state changes in this payload, then notify subscribers
                     // after the state has been updated.
-                    if (ringingChanged)
+                    if (_ringingChanged)
                     {
-                        Console.WriteLine("Ringing state changed: " + isRinging);
-                        RingingSignal(this, isRinging);
+                        Console.WriteLine("Ringing state changed: " + IsRinging);
+                        RingingChanged(this, IsRinging);
                     }
-                    if (loopStateChanged)
+                    if (_loopStateChanged)
                     {
                         Console.WriteLine("LoopState changed: " + LoopState);
-                        LoopPresence(this, LoopState);
+                        LoopStateChanged(this, LoopState);
                     }
-                    if (offHookChanged)
+                    if (_offHookChanged)
                     {
                         Console.WriteLine("OffHook changed: " + OffHook);
-                        RemoteOffHook(this, OffHook);
+                        OffHookChanged(this, OffHook);
+                    }
+                    if (_polarityChanged)
+                    {
+                        Console.WriteLine("Polarity changed: " + Polarity);
+                        PolarityChanged(this, Polarity);
                     }
                 }
             }
@@ -248,7 +260,6 @@ namespace Maple
                 Thread.Sleep(TimeSpan.FromMilliseconds(10));
                 // TODO(lbayes): Add a timeout to avoid blocking forever.
             }
-
         }
 
         private void WaitForResponse()
