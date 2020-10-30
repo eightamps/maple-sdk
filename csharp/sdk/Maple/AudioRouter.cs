@@ -1,8 +1,5 @@
 ﻿using NAudio.CoreAudioApi;
-using NAudio.Wave.SampleProviders;
 using NAudio.Wave;
-using System.Collections.Generic;
-using System.Threading;
 using System;
 
 namespace Maple
@@ -19,10 +16,7 @@ namespace Maple
         public String RxName { get; set; }
         public String TxName { get; set; }
 
-        private bool _IsActive = false;
-        public bool IsActive { get { return _IsActive;  } }
-
-        private Dictionary<char, Tuple<int, int>> DtmfLookup;
+        public bool IsActive { get; private set; } = false;
 
         private WaveInEvent MicSignal;
         private WaveInEvent PhoneSignal;
@@ -37,12 +31,20 @@ namespace Maple
             TxName = txName;
         }
 
+        public int DtmfDeviceNumber
+        {
+            get
+            {
+                return 0;
+            }
+        }
+
         private void onMicDataAvailable(object sender, WaveInEventArgs e)
         {
             // Console.WriteLine("BYTES RECEIVED WITH: " + e.BytesRecorded);
-            // byte[] buffer = new byte[e.BytesRecorded];
-            // Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
-            // PhoneOutputBuffer.AddSamples(buffer, 0, e.BytesRecorded);
+            byte[] buffer = new byte[e.BytesRecorded];
+            Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
+            PhoneOutputBuffer.AddSamples(buffer, 0, e.BytesRecorded);
         }
 
         private void onPhoneDataAvailable(object sender, WaveInEventArgs e)
@@ -51,106 +53,6 @@ namespace Maple
             byte[] buffer = new byte[e.BytesRecorded];
             Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
             SpeakerOutputBuffer.AddSamples(buffer, 0, e.BytesRecorded);
-        }
-
-        private void GenerateDtmf(TimeSpan duration, int top, int bottom, int deviceNumber=-1)
-        {
-            var one = new SignalGenerator()
-            {
-                Gain = 0.3,
-                Frequency = top,
-                Type = SignalGeneratorType.Sin
-            }.Take(duration);
-
-            var two = new SignalGenerator()
-            {
-                Gain = 0.3,
-                Frequency = bottom,
-                Type = SignalGeneratorType.Sin
-            }.Take(duration);
-
-            using (var wOne = new WaveOutEvent())
-            using (var wTwo = new WaveOutEvent())
-            {
-                if (deviceNumber > -1)
-                {
-                    wOne.DeviceNumber = deviceNumber;
-                    wTwo.DeviceNumber = deviceNumber;
-                }
-
-                wOne.Init(one);
-                wOne.Play();
-
-                wTwo.Init(two);
-                wTwo.Play();
-                while (wOne.PlaybackState == PlaybackState.Playing ||
-                    wTwo.PlaybackState == PlaybackState.Playing)
-                {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(10));
-                }
-            }
-        }
-
-        private Dictionary<char, Tuple<int, int>> GetLookup()
-        {
-            if (DtmfLookup == null)
-            {
-                Dictionary<char, Tuple<int, int>> values = new Dictionary<char, Tuple<int, int>>();
-                values.Add('1', Tuple.Create(697, 1209));
-                values.Add('2', Tuple.Create(697, 1336));
-                values.Add('3', Tuple.Create(697, 1477));
-                values.Add('A', Tuple.Create(697, 1633));
-
-                values.Add('4', Tuple.Create(770, 1209));
-                values.Add('5', Tuple.Create(770, 1336));
-                values.Add('6', Tuple.Create(770, 1477));
-                values.Add('B', Tuple.Create(770, 1633));
-
-                values.Add('7', Tuple.Create(852, 1209));
-                values.Add('8', Tuple.Create(852, 1336));
-                values.Add('9', Tuple.Create(852, 1477));
-                values.Add('C', Tuple.Create(852, 1633));
-
-                values.Add('*', Tuple.Create(941, 1209));
-                values.Add('0', Tuple.Create(941, 1336));
-                values.Add('#', Tuple.Create(941, 1477));
-                values.Add('D', Tuple.Create(941, 1633));
-                DtmfLookup = values;
-            }
-
-            return DtmfLookup;
-        }
-
-        private Tuple<int, int>[] StringToDtmf(String value)
-        {
-            var lookup = GetLookup();
-            var len = value.Length;
-            Tuple<int, int>[] tones = new Tuple<int, int>[len];
-
-            var i = 0;
-            foreach(var entry in value.ToCharArray())
-            {
-                tones[i] = lookup[entry];
-                i++;
-            }
-            return tones;
-        }
-
-        public void GenerateTones(String values)
-        {
-            if (!IsActive)
-            {
-                Start();
-            }
-            // Get the device index from the PhoneOutput signal.
-            var deviceNumber = PhoneOutput.DeviceNumber;
-            Console.WriteLine("GENERATE TONES FOR:" + deviceNumber);
-            var duration = TimeSpan.FromMilliseconds(200);
-            var tones = StringToDtmf(values);
-            foreach (var tone in tones)
-            {
-                GenerateDtmf(duration, tone.Item1, tone.Item2, deviceNumber);
-            }
         }
 
         private Tuple<MMDevice, int> GetCommunicationDeviceFor(DataFlow direction)
@@ -200,7 +102,7 @@ namespace Maple
                 return;
             }
 
-            _IsActive = true;
+            IsActive = true;
 
             var rxDeviceTuple = GetDeviceWithProductName(RxName, DataFlow.Capture);
             var txDeviceTuple = GetDeviceWithProductName(TxName, DataFlow.Render);
@@ -257,7 +159,7 @@ namespace Maple
             SpeakerOutput?.Stop();
             MicSignal = null;
             PhoneOutput = null;
-            _IsActive = false;
+            IsActive = false;
         }
 
         public void Dispose()
@@ -267,7 +169,7 @@ namespace Maple
             PhoneSignal?.Dispose();
             PhoneOutput?.Dispose();
             SpeakerOutput?.Dispose();
-            _IsActive = false;
+            IsActive = false;
         }
     }
 }

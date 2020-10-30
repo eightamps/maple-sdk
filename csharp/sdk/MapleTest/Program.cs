@@ -35,6 +35,11 @@ namespace MaplePhoneTest
                     input = "(510) 459-9053";
                 }
 
+                if (maple.OffHook)
+                {
+                    maple.HangUp();
+                }
+
                 Console.WriteLine("Dialing:" + input);
                 maple.Dial(input);
 

@@ -13,6 +13,7 @@ namespace Maple
         public Version HardwareVersion { get { return hiddev.ReleaseNumber; } }
 
         private AudioRouter router;
+        private Dtmf dtmf;
 
         private HidDevice hiddev { get { return stream.Device; } }
         private HidStream stream;
@@ -37,6 +38,7 @@ namespace Maple
         {
             this.stream = hidStream;
             this.router = new AudioRouter();
+            this.dtmf = new Dtmf(this.router.DtmfDeviceNumber);
 
             var reportDescriptor = hiddev.GetReportDescriptor();
             var deviceItem = reportDescriptor.DeviceItems.First();
@@ -271,36 +273,8 @@ namespace Maple
             }
         }
 
-        /**
-         * Take any set of characters and return a new string that includes only those
-         * characters that have a known DTMF code (in their original order).
-         */
-        private string filterPhoneNumberInput(String input)
-        {
-            string whitelist = "0123456789ABCD*#";
-            string filteredInput = "";
-            foreach (char c in input)
-            {
-                if (whitelist.IndexOf(c) > -1)
-                {
-                    filteredInput += c;
-                }
-            }
-
-            return filteredInput;
-        }
-
         public bool Dial(String input)
         {
-            // Strip any unsupported characters from the input string.
-            string filteredInput = filterPhoneNumberInput(input);
-            if (filteredInput != input) {
-                Console.WriteLine("Dial filtered input of: " + input + " to: " + filteredInput);
-            } else
-            {
-                Console.WriteLine("Dial with: " + input);
-            }
-
             // Ensure we're not already waiting for a response.
             WaitForResponse();
 
@@ -320,8 +294,14 @@ namespace Maple
             // RX Device.
             Thread.Sleep(TimeSpan.FromSeconds(3));
 
+
+            if (!router.IsActive)
+            {
+                router.Start();
+            }
+
             // Send the DTMF codes through the open line.
-            router.GenerateTones(filteredInput);
+            dtmf.GenerateTones(input);
             return true;
         }
 
