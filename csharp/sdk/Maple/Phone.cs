@@ -289,7 +289,7 @@ namespace Maple
                 TakeOffHook();
                 // TODO(lbayes): Instead, wait until a DTMF line open sound is detected on the expected
                 // RX Device.
-                Thread.Sleep(TimeSpan.FromSeconds(2));
+                Thread.Sleep(TimeSpan.FromSeconds(3));
             }
 
             // Send the DTMF codes through the open line.

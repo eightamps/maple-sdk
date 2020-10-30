@@ -6,37 +6,39 @@ namespace MaplePhoneTest
 {
     class Program
     {
+        private static Phone maple;
+
+        static void ExitHandler(object sender, EventArgs e)
+        {
+            Console.WriteLine("exit");
+            maple.Dispose();
+        }
+
         static void Main(string[] args)
         {
-            var maple = Phone.First();
+            maple = Phone.First();
             if (maple == null)
             {
                 Console.WriteLine("No Maple found!");
                 return;
             }
 
-            try
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(ExitHandler);
+
+            while (true)
             {
-                while (true)
+                Console.WriteLine("------------------------------");
+                Console.WriteLine("Dial a number? (default: 510 459-9053)");
+                string input = Console.ReadLine();
+
+                if (input == "")
                 {
-                    Console.WriteLine("------------------------------");
-                    Console.WriteLine("Dial a number? (default: 510 459-9053)");
-                    string input = Console.ReadLine();
-
-                    if (input == "")
-                    {
-                        input = "(510) 459-9053";
-                    }
-
-                    Console.WriteLine("Dialing:" + input);
-                    maple.Dial(input);
+                    input = "(510) 459-9053";
                 }
-            }
-            finally
-            {
-                maple.Dispose();
-            }
 
+                Console.WriteLine("Dialing:" + input);
+                maple.Dial(input);
+            }
 
             /*
             Action<Phone, bool> loop = delegate (Phone m, bool set) 
