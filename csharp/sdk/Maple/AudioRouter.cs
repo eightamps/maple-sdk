@@ -19,9 +19,11 @@ namespace Maple
         public String RxName { get; set; }
         public String TxName { get; set; }
 
+        private bool _IsRunning = false;
+        public bool IsRunning { get { return _IsRunning;  } }
+
         private Dictionary<char, Tuple<int, int>> DtmfLookup;
 
-        private bool IsStarted;
         private WaveInEvent MicSignal;
         private WaveInEvent PhoneSignal;
         private WaveOutEvent PhoneOutput;
@@ -33,7 +35,6 @@ namespace Maple
         {
             RxName = rxName;
             TxName = txName;
-            IsStarted = false;
         }
 
         private void onMicDataAvailable(object sender, WaveInEventArgs e)
@@ -54,7 +55,7 @@ namespace Maple
 
         private void GenerateDtmf(TimeSpan duration, int top, int bottom, int deviceNumber=-1)
         {
-            Console.WriteLine("GENERATE DTMF WITH: " + deviceNumber);
+            Console.WriteLine("GENERATE DTMF WITH deviceNumber: " + deviceNumber);
             var one = new SignalGenerator()
             {
                 Gain = 0.2,
@@ -139,6 +140,10 @@ namespace Maple
 
         public void GenerateTones(String values)
         {
+            if (!IsRunning)
+            {
+                Start();
+            }
             // Get the device index from the PhoneOutput signal.
             var deviceNumber = PhoneOutput.DeviceNumber;
             Console.WriteLine("GENERATE TONES WITH:" + deviceNumber);
@@ -192,12 +197,12 @@ namespace Maple
         public void Start()
         {
             // This method is not re-entrant, just bail if we're already running.
-            if (IsStarted)
+            if (IsRunning)
             {
                 return;
             }
 
-            IsStarted = true;
+            _IsRunning = true;
 
             var rxDeviceTuple = GetDeviceWithProductName(RxName, DataFlow.Capture);
             var txDeviceTuple = GetDeviceWithProductName(TxName, DataFlow.Render);
@@ -254,7 +259,7 @@ namespace Maple
             SpeakerOutput?.Stop();
             MicSignal = null;
             PhoneOutput = null;
-            IsStarted = false;
+            _IsRunning = false;
         }
 
         public void Dispose()
@@ -264,7 +269,7 @@ namespace Maple
             PhoneSignal?.Dispose();
             PhoneOutput?.Dispose();
             SpeakerOutput?.Dispose();
-            IsStarted = false;
+            _IsRunning = false;
         }
     }
 }

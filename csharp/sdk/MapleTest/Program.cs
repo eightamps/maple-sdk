@@ -15,10 +15,22 @@ namespace MaplePhoneTest
                 return;
             }
 
-            maple.Dial("15104599053");
+            while (true)
+            {
+                Console.WriteLine("------------------------------");
+                Console.WriteLine("Dial a number? (default: 510 459-9053)");
+                string input = Console.ReadLine();
 
-            Console.WriteLine("Waiting for 5 mins");
-            Thread.Sleep(TimeSpan.FromSeconds(300));
+                if (input == "")
+                {
+                    input = "(510) 459-9053";
+                }
+
+                Console.WriteLine("Dialing:" + input);
+                maple.Dial(input);
+            }
+
+            // maple.Dispose();
 
             /*
             Action<Phone, bool> loop = delegate (Phone m, bool set) 
@@ -47,8 +59,6 @@ namespace MaplePhoneTest
             maple.SetOffHook(false);
             Console.WriteLine("Phone ON HOOK?");
             */
-
-            maple.Dispose();
         }
     }
 }

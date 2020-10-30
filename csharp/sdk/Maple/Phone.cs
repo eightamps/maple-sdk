@@ -21,7 +21,13 @@ namespace Maple
         private Report txReport;
         private HidDeviceInputReceiver inputReceiver;
         private DeviceItemInputParser inputParser;
-        private bool loopState = false;
+
+        private bool _LoopState = false;
+        private bool _OffHook = false;
+
+        private bool IsRequestPending = false;
+        public bool LoopState { get { return this._LoopState; } }
+        public bool OffHook { get { return this._OffHook; } }
 
         public event Action<Phone, bool> RingingSignal = delegate { };
         public event Action<Phone, bool> LoopPresence = delegate { };
@@ -67,7 +73,7 @@ namespace Maple
             SoftwareVersion = new Version(major, minor, rev);
 
             this.inputReceiver = reportDescriptor.CreateHidDeviceInputReceiver();
-            this.inputReceiver.Received += InputReceiver_Received;
+            this.inputReceiver.Received += InputHandler;
             this.inputReceiver.Start(hidStream);
             this.inputParser = deviceItem.CreateDeviceItemInputParser();
 
@@ -90,8 +96,9 @@ namespace Maple
                 hidStream.ReadTimeout = Timeout.Infinite;
                 MaplePhoneControl = new Phone(hidStream);
             }
-            catch (Exception)
+            catch (Exception err)
             {
+                Console.WriteLine("ERROR: " + err.ToString());
                 return false;
             }
             return true;
@@ -106,18 +113,21 @@ namespace Maple
 
         public void Dispose()
         {
-            this.inputReceiver.Received -= InputReceiver_Received;
+            this.inputReceiver.Received -= InputHandler;
             SendControl(false);
             router.Dispose();
             stream.Dispose();
         }
 
-        private void InputReceiver_Received(object sender, EventArgs e)
+        private void InputHandler(object sender, EventArgs e)
         {
+            Console.WriteLine("--------------------------");
+            Console.WriteLine("Input Handler Called!");
             var inputReportBuffer = new byte[hiddev.GetMaxInputReportLength()];
             Report report;
             while (inputReceiver.TryRead(inputReportBuffer, 0, out report))
             {
+                Console.WriteLine("report: " + report);
                 // Parse the report if possible.
                 // This will return false if (for example) the report applies to a different DeviceItem.
                 if (inputParser.TryParseReport(inputReportBuffer, 0, report))
@@ -131,10 +141,17 @@ namespace Maple
                         var previousDataValue = inputParser.GetPreviousValue(changedIndex);
                         var dataValue = inputParser.GetValue(changedIndex);
 
-                        switch ((HidUsage.Telephony)dataValue.Usages.FirstOrDefault())
+                        // Console.WriteLine("Changed Index: " + changedIndex);
+                        // Console.WriteLine("previouseDataValue: " + previousDataValue);
+                        // Console.WriteLine("dataValue: " + dataValue);
+
+                        var usages = (HidUsage.Telephony)dataValue.Usages.FirstOrDefault();
+                        switch (usages)
                         {
                             case HidUsage.Telephony.HookSwitch:
-                                RemoteOffHook(this, Convert.ToBoolean(dataValue.GetLogicalValue()));
+                                _OffHook = !Convert.ToBoolean(dataValue.GetLogicalValue());
+                                Console.WriteLine("OFF HOOK CHANGED WITH: " + _OffHook);
+                                RemoteOffHook(this, _OffHook);
                                 break;
                             case HidUsage.Telephony.AlternateFunction:
                                 Polarity(this, Convert.ToBoolean(dataValue.GetLogicalValue()));
@@ -145,10 +162,12 @@ namespace Maple
                                 Console.WriteLine("RingEnable " + dataValue.DataIndex);
                                 break;
                             case HidUsage.Telephony.HostControl:
-                                loopState = Convert.ToBoolean(dataValue.GetLogicalValue());
-                                LoopPresence(this, loopState);
+                                Console.WriteLine("LOOP STATE CHANGED WITH: " + _LoopState);
+                                _LoopState = !Convert.ToBoolean(dataValue.GetLogicalValue());
+                                LoopPresence(this, _LoopState);
                                 break;
                             default:
+                                Console.WriteLine("Unhandled INPUT Event:" + usages);
                                 break;
                         }
                     }
@@ -159,32 +178,90 @@ namespace Maple
                     }
                 }
             }
+            IsRequestPending = false;
+            Console.WriteLine("--------------------------");
         }
 
-        public void SetOffHook(bool offhook)
+        /**
+         * Take the receiver Off Hook, if there is a valid line signal detected.
+         */
+        public bool TakeOffHook()
         {
-            // Never take the phone OFF_HOOK unless LOOP detect indicates a valid line is attached
-            if (offhook || loopState)
+            Console.WriteLine("Internal - Attempt to Take OffHook");
+            if (LoopState)
             {
-                SendControl(true, offhook);
+                Console.WriteLine("Internal - Taking OffHook");
+                // Never take the phone OFF_HOOK unless LOOP detect indicates a valid line is attached
+                SendControl(true, true);
+                Console.WriteLine("Waiting for OffHook Notification");
+                while (!OffHook)
+                {
+                    // Wait for firmware confirmation that the line is Off Hook.
+                    Thread.Sleep(TimeSpan.FromMilliseconds(10));
+                    // TODO(lbayes): Add a timeout to avoid blocking forever.
+                }
+
+                // Now that we're off hook, wire up for sound.
+                router.Start();
+                Console.WriteLine("OffHook Notification Received, and sound connected");
             }
-            SendControl(true, offhook);
+            else
+            {
+                Console.WriteLine("Cannot take off hook without valid line detected.");
+            }
+
+            return OffHook;
         }
 
-        public void Dial(String phoneNumbers)
+        /**
+         * Place the receiver back "On Hook"
+         */
+        public void HangUp()
         {
-            Console.WriteLine("INSIDE ------------------");
-            // If we're not already off-hook, go off-hook and then dial
-            SetOffHook(true);
-            router.Start();
+            SendControl(true, false);
+        }
+
+        public bool Dial(String phoneNumbers)
+        {
+            phoneNumbers = phoneNumbers.Replace("(", "")
+                                       .Replace(")", "")
+                                       .Replace(" ", "")
+                                       .Replace("-", "");
+
+            while(IsRequestPending)
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(10));
+                // TODO(lbayes): Add a timeout.
+            }
+
+            if (!LoopState)
+            {
+                Console.WriteLine("Cannot Dial without a valid line detected.");
+                return false;
+            }
+
+            if (!OffHook)
+            {
+                Console.WriteLine("Taking OffHook");
+                TakeOffHook();
+            }
 
             Thread.Sleep(TimeSpan.FromSeconds(5));
             // Send the DTMF codes through the open line.
             router.GenerateTones(phoneNumbers);
+            return true;
         }
 
-        public void SendControl(bool hostready, bool offhook = false)
+        public void SendControl(bool hostready, bool offHook = false)
         {
+            while (IsRequestPending)
+            {
+                Console.WriteLine("THERE IS A REQUEST PENDING!");
+                Thread.Sleep(TimeSpan.FromMilliseconds(10));
+                // TODO(lbayes): Add a timeout
+            }
+
+            IsRequestPending = true;
             var report = txReport;
             var buffer = report.CreateBuffer();
 
@@ -197,7 +274,7 @@ namespace Maple
                         dataItem.WriteRaw(buf, bitOffset, 0, Convert.ToUInt32(hostready));
                         break;
                     case HidUsage.Telephony.ActivateHandsetAudio:
-                        dataItem.WriteRaw(buf, bitOffset, 0, Convert.ToUInt32(offhook));
+                        dataItem.WriteRaw(buf, bitOffset, 0, Convert.ToUInt32(offHook));
                         break;
                     default:
                         break;
