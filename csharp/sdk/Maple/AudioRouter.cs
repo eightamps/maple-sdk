@@ -19,8 +19,8 @@ namespace Maple
         public String RxName { get; set; }
         public String TxName { get; set; }
 
-        private bool _IsRunning = false;
-        public bool IsRunning { get { return _IsRunning;  } }
+        private bool _IsActive = false;
+        public bool IsActive { get { return _IsActive;  } }
 
         private Dictionary<char, Tuple<int, int>> DtmfLookup;
 
@@ -40,9 +40,9 @@ namespace Maple
         private void onMicDataAvailable(object sender, WaveInEventArgs e)
         {
             // Console.WriteLine("BYTES RECEIVED WITH: " + e.BytesRecorded);
-            byte[] buffer = new byte[e.BytesRecorded];
-            Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
-            PhoneOutputBuffer.AddSamples(buffer, 0, e.BytesRecorded);
+            // byte[] buffer = new byte[e.BytesRecorded];
+            // Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
+            // PhoneOutputBuffer.AddSamples(buffer, 0, e.BytesRecorded);
         }
 
         private void onPhoneDataAvailable(object sender, WaveInEventArgs e)
@@ -55,17 +55,16 @@ namespace Maple
 
         private void GenerateDtmf(TimeSpan duration, int top, int bottom, int deviceNumber=-1)
         {
-            Console.WriteLine("GENERATE DTMF WITH deviceNumber: " + deviceNumber);
             var one = new SignalGenerator()
             {
-                Gain = 0.2,
+                Gain = 0.3,
                 Frequency = top,
                 Type = SignalGeneratorType.Sin
             }.Take(duration);
 
             var two = new SignalGenerator()
             {
-                Gain = 0.2,
+                Gain = 0.3,
                 Frequency = bottom,
                 Type = SignalGeneratorType.Sin
             }.Take(duration);
@@ -87,7 +86,7 @@ namespace Maple
                 while (wOne.PlaybackState == PlaybackState.Playing ||
                     wTwo.PlaybackState == PlaybackState.Playing)
                 {
-                    Thread.Sleep(1);
+                    Thread.Sleep(TimeSpan.FromMilliseconds(10));
                 }
             }
         }
@@ -131,7 +130,6 @@ namespace Maple
             var i = 0;
             foreach(var entry in value.ToCharArray())
             {
-                Console.WriteLine("Dialing: " + entry);
                 tones[i] = lookup[entry];
                 i++;
             }
@@ -140,14 +138,14 @@ namespace Maple
 
         public void GenerateTones(String values)
         {
-            if (!IsRunning)
+            if (!IsActive)
             {
                 Start();
             }
             // Get the device index from the PhoneOutput signal.
             var deviceNumber = PhoneOutput.DeviceNumber;
-            Console.WriteLine("GENERATE TONES WITH:" + deviceNumber);
-            var duration = TimeSpan.FromMilliseconds(100);
+            Console.WriteLine("GENERATE TONES FOR:" + deviceNumber);
+            var duration = TimeSpan.FromMilliseconds(200);
             var tones = StringToDtmf(values);
             foreach (var tone in tones)
             {
@@ -197,12 +195,12 @@ namespace Maple
         public void Start()
         {
             // This method is not re-entrant, just bail if we're already running.
-            if (IsRunning)
+            if (IsActive)
             {
                 return;
             }
 
-            _IsRunning = true;
+            _IsActive = true;
 
             var rxDeviceTuple = GetDeviceWithProductName(RxName, DataFlow.Capture);
             var txDeviceTuple = GetDeviceWithProductName(TxName, DataFlow.Render);
@@ -259,7 +257,7 @@ namespace Maple
             SpeakerOutput?.Stop();
             MicSignal = null;
             PhoneOutput = null;
-            _IsRunning = false;
+            _IsActive = false;
         }
 
         public void Dispose()
@@ -269,7 +267,7 @@ namespace Maple
             PhoneSignal?.Dispose();
             PhoneOutput?.Dispose();
             SpeakerOutput?.Dispose();
-            _IsRunning = false;
+            _IsActive = false;
         }
     }
 }

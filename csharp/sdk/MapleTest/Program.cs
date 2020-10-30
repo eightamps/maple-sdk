@@ -37,6 +37,10 @@ namespace MaplePhoneTest
 
                 Console.WriteLine("Dialing:" + input);
                 maple.Dial(input);
+
+                Console.WriteLine("Hang Up?");
+                Console.ReadLine();
+                maple.HangUp();
             }
 
             /*

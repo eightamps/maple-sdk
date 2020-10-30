@@ -22,16 +22,11 @@ namespace Maple
         private HidDeviceInputReceiver inputReceiver;
         private DeviceItemInputParser inputParser;
 
-        private bool _IsRinging = false;
-        private bool _LoopState = false;
-        private bool _OffHook = false;
-        private bool _Polarity = false;
-
         private bool IsRequestPending = false;
-        public bool IsRinging { get { return this._IsRinging; } }
-        public bool LoopState { get { return this._LoopState; } }
-        public bool OffHook { get { return this._OffHook; } }
-        public bool Polarity { get { return this._Polarity; } }
+        public bool IsRinging { get; private set; } = false;
+        public bool LoopState { get; private set; } = false;
+        public bool OffHook { get; private set; } = false;
+        public bool Polarity { get; private set; } = false;
 
         public event Action<Phone, bool> RingingChanged = delegate { };
         public event Action<Phone, bool> LoopStateChanged = delegate { };
@@ -162,19 +157,19 @@ namespace Maple
                         switch (usages)
                         {
                             case HidUsage.Telephony.HookSwitch:
-                                _OffHook = Convert.ToBoolean(dataValue.GetLogicalValue());
+                                OffHook = Convert.ToBoolean(dataValue.GetLogicalValue());
                                 _offHookChanged = true;
                                 break;
                             case HidUsage.Telephony.AlternateFunction:
-                                _Polarity = Convert.ToBoolean(dataValue.GetLogicalValue());
+                                Polarity = Convert.ToBoolean(dataValue.GetLogicalValue());
                                 _polarityChanged = true;
                                 break;
                             case HidUsage.Telephony.RingEnable:
-                                _IsRinging = Convert.ToBoolean(dataValue.GetLogicalValue());
+                                IsRinging = Convert.ToBoolean(dataValue.GetLogicalValue());
                                 _ringingChanged = true;
                                 break;
                             case HidUsage.Telephony.HostControl:
-                                _LoopState = Convert.ToBoolean(dataValue.GetLogicalValue());
+                                LoopState = Convert.ToBoolean(dataValue.GetLogicalValue());
                                 _loopStateChanged = true;
                                 break;
                             default:
@@ -244,6 +239,7 @@ namespace Maple
         public void HangUp()
         {
             SendControl(true, false);
+            router.Stop();
             WaitForResponse();
         }
 
@@ -275,18 +271,38 @@ namespace Maple
             }
         }
 
-        public bool Dial(String phoneNumbers)
+        /**
+         * Take any set of characters and return a new string that includes only those
+         * characters that have a known DTMF code (in their original order).
+         */
+        private string filterPhoneNumberInput(String input)
         {
-            phoneNumbers = phoneNumbers.Replace("(", "")
-                                       .Replace(")", "")
-                                       .Replace(" ", "")
-                                       .Replace("-", "");
-
-            while(IsRequestPending)
+            string whitelist = "0123456789ABCD*#";
+            string filteredInput = "";
+            foreach (char c in input)
             {
-                Thread.Sleep(TimeSpan.FromMilliseconds(10));
-                // TODO(lbayes): Add a timeout.
+                if (whitelist.IndexOf(c) > -1)
+                {
+                    filteredInput += c;
+                }
             }
+
+            return filteredInput;
+        }
+
+        public bool Dial(String input)
+        {
+            // Strip any unsupported characters from the input string.
+            string filteredInput = filterPhoneNumberInput(input);
+            if (filteredInput != input) {
+                Console.WriteLine("Dial filtered input of: " + input + " to: " + filteredInput);
+            } else
+            {
+                Console.WriteLine("Dial with: " + input);
+            }
+
+            // Ensure we're not already waiting for a response.
+            WaitForResponse();
 
             if (!LoopState)
             {
@@ -298,13 +314,14 @@ namespace Maple
             {
                 Console.WriteLine("Taking OffHook");
                 TakeOffHook();
-                // TODO(lbayes): Instead, wait until a DTMF line open sound is detected on the expected
-                // RX Device.
-                Thread.Sleep(TimeSpan.FromSeconds(3));
             }
 
+            // TODO(lbayes): Instead, wait until a DTMF line open sound is detected on the expected
+            // RX Device.
+            Thread.Sleep(TimeSpan.FromSeconds(3));
+
             // Send the DTMF codes through the open line.
-            router.GenerateTones(phoneNumbers);
+            router.GenerateTones(filteredInput);
             return true;
         }
 
