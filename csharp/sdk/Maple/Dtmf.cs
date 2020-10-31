@@ -8,27 +8,27 @@ namespace Maple
 {
     class Dtmf
     {
+        private Double DEFAULT_GAIN = 0.6;
+        private int DEFAULT_TONE_DURATION_MS = 80;
+
         private Dictionary<char, Tuple<int, int>> DtmfLookup;
 
-        private int DeviceNumber = -1;
-
-        public Dtmf(int deviceNumber)
+        public Dtmf()
         {
-            DeviceNumber = deviceNumber;
         }
 
         private void GenerateDtmf(TimeSpan duration, int top, int bottom, int deviceNumber = -1)
         {
             var one = new SignalGenerator()
             {
-                Gain = 0.3,
+                Gain = DEFAULT_GAIN,
                 Frequency = top,
                 Type = SignalGeneratorType.Sin
             }.Take(duration);
 
             var two = new SignalGenerator()
             {
-                Gain = 0.3,
+                Gain = DEFAULT_GAIN,
                 Frequency = bottom,
                 Type = SignalGeneratorType.Sin
             }.Take(duration);
@@ -47,10 +47,11 @@ namespace Maple
 
                 wTwo.Init(two);
                 wTwo.Play();
+
                 while (wOne.PlaybackState == PlaybackState.Playing ||
                     wTwo.PlaybackState == PlaybackState.Playing)
                 {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(10));
+                    Thread.Sleep(TimeSpan.FromMilliseconds(2));
                 }
             }
         }
@@ -59,27 +60,26 @@ namespace Maple
         {
             if (DtmfLookup == null)
             {
-                Dictionary<char, Tuple<int, int>> values = new Dictionary<char, Tuple<int, int>>();
-                values.Add('1', Tuple.Create(697, 1209));
-                values.Add('2', Tuple.Create(697, 1336));
-                values.Add('3', Tuple.Create(697, 1477));
-                values.Add('A', Tuple.Create(697, 1633));
+                DtmfLookup = new Dictionary<char, Tuple<int, int>>();
+                DtmfLookup.Add('1', Tuple.Create(697, 1209));
+                DtmfLookup.Add('2', Tuple.Create(697, 1336));
+                DtmfLookup.Add('3', Tuple.Create(697, 1477));
+                DtmfLookup.Add('A', Tuple.Create(697, 1633));
 
-                values.Add('4', Tuple.Create(770, 1209));
-                values.Add('5', Tuple.Create(770, 1336));
-                values.Add('6', Tuple.Create(770, 1477));
-                values.Add('B', Tuple.Create(770, 1633));
+                DtmfLookup.Add('4', Tuple.Create(770, 1209));
+                DtmfLookup.Add('5', Tuple.Create(770, 1336));
+                DtmfLookup.Add('6', Tuple.Create(770, 1477));
+                DtmfLookup.Add('B', Tuple.Create(770, 1633));
 
-                values.Add('7', Tuple.Create(852, 1209));
-                values.Add('8', Tuple.Create(852, 1336));
-                values.Add('9', Tuple.Create(852, 1477));
-                values.Add('C', Tuple.Create(852, 1633));
+                DtmfLookup.Add('7', Tuple.Create(852, 1209));
+                DtmfLookup.Add('8', Tuple.Create(852, 1336));
+                DtmfLookup.Add('9', Tuple.Create(852, 1477));
+                DtmfLookup.Add('C', Tuple.Create(852, 1633));
 
-                values.Add('*', Tuple.Create(941, 1209));
-                values.Add('0', Tuple.Create(941, 1336));
-                values.Add('#', Tuple.Create(941, 1477));
-                values.Add('D', Tuple.Create(941, 1633));
-                DtmfLookup = values;
+                DtmfLookup.Add('*', Tuple.Create(941, 1209));
+                DtmfLookup.Add('0', Tuple.Create(941, 1336));
+                DtmfLookup.Add('#', Tuple.Create(941, 1477));
+                DtmfLookup.Add('D', Tuple.Create(941, 1633));
             }
 
             return DtmfLookup;
@@ -120,7 +120,7 @@ namespace Maple
         }
 
 
-        public void GenerateTones(String input)
+        public void GenerateTones(String input, int deviceNumber)
         {
             // Strip any unsupported characters from the input string.
             string filteredInput = filterInput(input);
@@ -133,12 +133,12 @@ namespace Maple
             }
 
             // Get the device index from the PhoneOutput signal.
-            Console.WriteLine("GENERATE TONES FOR:" + DeviceNumber);
-            var duration = TimeSpan.FromMilliseconds(200);
+            Console.WriteLine("GENERATE TONES FOR:" + deviceNumber);
+            var duration = TimeSpan.FromMilliseconds(DEFAULT_TONE_DURATION_MS);
             var tones = StringToDtmf(filteredInput);
             foreach (var tone in tones)
             {
-                GenerateDtmf(duration, tone.Item1, tone.Item2, DeviceNumber);
+                GenerateDtmf(duration, tone.Item1, tone.Item2, deviceNumber);
             }
         }
 

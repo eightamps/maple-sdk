@@ -38,7 +38,7 @@ namespace Maple
         {
             this.stream = hidStream;
             this.router = new AudioRouter();
-            this.dtmf = new Dtmf(this.router.DtmfDeviceNumber);
+            this.dtmf = new Dtmf();
 
             var reportDescriptor = hiddev.GetReportDescriptor();
             var deviceItem = reportDescriptor.DeviceItems.First();
@@ -196,6 +196,7 @@ namespace Maple
                     {
                         Console.WriteLine("OffHook changed: " + OffHook);
                         SyncRouterToHookState();
+                        // Only take off hook if line is also available.
                         OffHookChanged(this, OffHook);
                     }
                     if (_polarityChanged)
@@ -235,9 +236,6 @@ namespace Maple
                 SendControl(true, true);
                 Console.WriteLine("Waiting for OffHook Notification");
                 WaitForOffHook();
-
-                // Now that we're off hook, wire up for sound.
-                // router.Start();
                 Console.WriteLine("OffHook Notification Received, and sound connected");
             }
             else
@@ -254,7 +252,6 @@ namespace Maple
         public void HangUp()
         {
             SendControl(true, false);
-            // router.Stop();
             WaitForResponse();
         }
 
@@ -307,16 +304,8 @@ namespace Maple
             // RX Device.
             Thread.Sleep(TimeSpan.FromSeconds(3));
 
-
-            /*
-            if (!router.IsActive)
-            {
-                router.Start();
-            }
-            */
-
             // Send the DTMF codes through the open line.
-            dtmf.GenerateTones(input);
+            dtmf.GenerateTones(input, router.DtmfDeviceNumber);
             return true;
         }
 

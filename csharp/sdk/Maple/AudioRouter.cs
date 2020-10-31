@@ -18,12 +18,19 @@ namespace Maple
 
         public bool IsActive { get; private set; } = false;
 
-        private WaveInEvent MicSignal;
-        private WaveInEvent PhoneSignal;
-        private WaveOutEvent PhoneOutput;
-        private WaveOutEvent SpeakerOutput;
-        private BufferedWaveProvider PhoneOutputBuffer;
-        private BufferedWaveProvider SpeakerOutputBuffer;
+        // Device that the DTMF helper should send it's sound output into.
+        public int DtmfDeviceNumber { get; private set; } = -1;
+
+        // Inbound audio signals (1) Microphone, (2) From Phone Line / 3rd party
+        private WaveInEvent FromMic;
+        private WaveInEvent FromPhoneLine;
+
+        // Outbound audio signals (1) Local Speakers, (2) To Phone Line / 3rd party
+        private WaveOutEvent ToSpeaker;
+        private WaveOutEvent ToPhoneLine;
+
+        private BufferedWaveProvider ToPhoneLineBuffer;
+        private BufferedWaveProvider ToSpeakerBuffer;
 
         public AudioRouter(String rxName = RX_NAME, String txName = TX_NAME)
         {
@@ -31,68 +38,13 @@ namespace Maple
             TxName = txName;
         }
 
-        public int DtmfDeviceNumber
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        private void onMicDataAvailable(object sender, WaveInEventArgs e)
-        {
-            // Console.WriteLine("BYTES RECEIVED WITH: " + e.BytesRecorded);
-            byte[] buffer = new byte[e.BytesRecorded];
-            Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
-            PhoneOutputBuffer.AddSamples(buffer, 0, e.BytesRecorded);
-        }
-
-        private void onPhoneDataAvailable(object sender, WaveInEventArgs e)
-        {
-            // Console.WriteLine("PHONE BYTES RECEIVED WITH: " + e.BytesRecorded);
-            byte[] buffer = new byte[e.BytesRecorded];
-            Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
-            SpeakerOutputBuffer.AddSamples(buffer, 0, e.BytesRecorded);
-        }
-
-        private Tuple<MMDevice, int> GetCommunicationDeviceFor(DataFlow direction)
-        {
-            using (var enumerator = new MMDeviceEnumerator())
-            {
-                var commDevice = enumerator.GetDefaultAudioEndpoint(direction, Role.Communications);
-                var devices = enumerator.EnumerateAudioEndPoints(direction, DeviceState.Active);
-
-                var commDeviceIndex = 0;
-                foreach(var device in devices) 
-                {
-                    if (device.FriendlyName == commDevice.FriendlyName)
-                    {
-                        break;
-                    }
-                    commDeviceIndex++;
-                }
-
-                return Tuple.Create(commDevice, commDeviceIndex);
-            }
-        }
-
-        private Tuple<MMDevice, int> GetDeviceWithProductName(String name, DataFlow direction=DataFlow.Render)
-        {
-            using (var enumerator = new MMDeviceEnumerator())
-            {
-                // Get the list of audio devices.
-                var devices = enumerator.EnumerateAudioEndPoints(direction, DeviceState.Active);
-                for (var i = 0; i < devices.Count; i++) 
-                {
-                    if (devices[i].FriendlyName.Contains(name))
-                    {
-                        Console.WriteLine("FOUND MATCH WITH NAME: " + name + "/" + devices[i].FriendlyName);
-                        return Tuple.Create(devices[i], i);
-                    }
-                }
-            }
-            return null;
-        }
+        /**
+         * This is the USB Bus device number for the device where
+         * DTMF tones should be sent in order for the telephone line
+         * to receive them.
+         */
+        public MMDevice ToPhoneLineDevice { get; private set; }
+        public MMDevice FromPhoneLineDevice { get; private set; }
 
         public void Start()
         {
@@ -102,76 +54,207 @@ namespace Maple
                 return;
             }
 
+            Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
             Console.WriteLine("AudioRouter.Start()");
 
+            // Get each of the 4 audio devices by name and data flow.
+            FromPhoneLineDevice = GetDeviceWithProductName(RxName, DataFlow.Capture);
+            ToPhoneLineDevice = GetDeviceWithProductName(TxName, DataFlow.Render);
+
+            var micDevice = GetCommunicationDeviceFor(DataFlow.Capture);
+            var speakerDevice = GetCommunicationDeviceFor(DataFlow.Render);
+
+            EnsureNotNull(ToPhoneLineDevice, FromPhoneLineDevice, micDevice, speakerDevice);
+
+            var fromPhoneLineIndex = WaveInDeviceToIndex(FromPhoneLineDevice);
+            var toPhoneLineIndex = MMDeviceToIndex(ToPhoneLineDevice);
+            var micIndex = -1; //  WaveInDeviceToIndex(micDevice);
+            var speakerIndex = -1; //  MMDeviceToIndex(speakerDevice);
+
+            // Configure the DTMF signal device number.
+            DtmfDeviceNumber = toPhoneLineIndex;
+
+            Console.WriteLine("mic index: " + micIndex + " device: " + micDevice.FriendlyName);
+            Console.WriteLine("speaker index: " + speakerIndex + " device: " + speakerDevice.FriendlyName);
+            Console.WriteLine("toPhoneLine index: " + toPhoneLineIndex + " device: " + ToPhoneLineDevice.FriendlyName);
+            Console.WriteLine("fromPhoneLine index: " + fromPhoneLineIndex + " device: " + FromPhoneLineDevice.FriendlyName);
+
+            var waveFormat = new WaveFormat();
+
+            // Connect the local Mic input to the Phone TX line
+            FromMic = new WaveInEvent()
+            {
+                NumberOfBuffers = 3,
+                DeviceNumber = micIndex
+            };
+            FromMic.WaveFormat = waveFormat;
+            FromMic.DataAvailable += onMicDataAvailable;
+
+            ToPhoneLine = new WaveOutEvent() {
+                DeviceNumber = toPhoneLineIndex,
+            };
+            ToPhoneLineBuffer = new BufferedWaveProvider(waveFormat);
+            ToPhoneLine.Init(ToPhoneLineBuffer);
+            ToPhoneLine.Play();
+            FromMic.StartRecording();
+
+            // ToSpeaker = new DirectSoundOut();
+            // Connect the Phone RX line to the local Speakers
+            FromPhoneLine = new WaveInEvent()
+            {
+                DeviceNumber = fromPhoneLineIndex,
+            };
+            FromPhoneLine.WaveFormat = waveFormat;
+            FromPhoneLine.DataAvailable += onPhoneDataAvailable;
+
+            ToSpeaker = new WaveOutEvent() {
+                DesiredLatency = 50,
+                NumberOfBuffers = 3,
+                DeviceNumber = speakerIndex,
+            };
+            ToSpeakerBuffer = new BufferedWaveProvider(waveFormat);
+            ToSpeaker.Init(ToSpeakerBuffer);
+            ToSpeaker.Play();
+            FromPhoneLine.StartRecording();
+
             IsActive = true;
-
-            var rxDeviceTuple = GetDeviceWithProductName(RxName, DataFlow.Capture);
-            var txDeviceTuple = GetDeviceWithProductName(TxName, DataFlow.Render);
-
-            if (rxDeviceTuple == null)
-            {
-                throw new Exception("Cannot find requested rx device at: " + RxName);
-            }
-
-            if (txDeviceTuple == null)
-            {
-                throw new Exception("Cannot find requested tx device at: " + TxName);
-            }
-
-            var renderTuple = GetCommunicationDeviceFor(DataFlow.Render);
-            var captureTuple = GetCommunicationDeviceFor(DataFlow.Capture);
-
-            Console.WriteLine("User Communication Input: " + captureTuple.Item1.DeviceFriendlyName);
-            Console.WriteLine("User Communication Output: " + renderTuple.Item1.DeviceFriendlyName);
-            Console.WriteLine("Phone RX: " + rxDeviceTuple.Item1.DeviceFriendlyName);
-            Console.WriteLine("Phone TX: " + txDeviceTuple.Item1.DeviceFriendlyName);
-
-            var waveFormat = new WaveFormat(22050, 1); // SampleRate & Channels
-
-            // Connect the local Mic input to the Phone Output
-            MicSignal = new WaveInEvent() { DeviceNumber = captureTuple.Item2 };
-            MicSignal.WaveFormat = waveFormat;
-            MicSignal.DataAvailable += onMicDataAvailable;
-
-            PhoneOutput = new WaveOutEvent() { DeviceNumber = rxDeviceTuple.Item2 };
-            PhoneOutputBuffer = new BufferedWaveProvider(waveFormat);
-            PhoneOutput.Init(PhoneOutputBuffer);
-            PhoneOutput.Play();
-
-            // Connect the Phone Signal to the local Speakers
-            PhoneSignal = new WaveInEvent() { DeviceNumber = txDeviceTuple.Item2 };
-            PhoneSignal.WaveFormat = waveFormat;
-            PhoneSignal.DataAvailable += onPhoneDataAvailable;
-
-            SpeakerOutput = new WaveOutEvent() { DeviceNumber = renderTuple.Item2 };
-            SpeakerOutputBuffer = new BufferedWaveProvider(waveFormat);
-            SpeakerOutput.Init(SpeakerOutputBuffer);
-            SpeakerOutput.Play();
-
-            MicSignal.StartRecording();
-            PhoneSignal.StartRecording();
         }
 
         public void Stop()
         {
             Console.WriteLine("AudioRouter.Stop()");
-            MicSignal?.StopRecording();
-            PhoneSignal?.StopRecording();
-            PhoneOutput?.Stop();
-            SpeakerOutput?.Stop();
-            MicSignal = null;
-            PhoneOutput = null;
+            FromMic?.StopRecording();
+            FromPhoneLine?.StopRecording();
+            ToPhoneLine?.Stop();
+            ToSpeaker?.Stop();
+            FromMic = null;
+            ToPhoneLine = null;
             IsActive = false;
+        }
+
+        private void EnsureNotNull(MMDevice toPhoneLineDevice, MMDevice fromPhoneLineDevice, MMDevice micDevice, MMDevice speakerDevice)
+        {
+            if (toPhoneLineDevice == null)
+            {
+                throw new Exception("Cannot find requested rx device at: " + RxName);
+            }
+            if (fromPhoneLineDevice == null)
+            {
+                throw new Exception("Cannot find requested tx device at: " + TxName);
+            }
+            if (micDevice == null)
+            {
+                throw new Exception("Cannot find Default Communication input device");
+            }
+            if (speakerDevice == null)
+            {
+                throw new Exception("Cannot find Default Communication output device");
+            }
+        }
+
+        private int WaveInDeviceToIndex(MMDevice device)
+        {
+            for (var i = -1; i < WaveInEvent.DeviceCount; i++)
+            {
+                var capabilities = WaveInEvent.GetCapabilities(i);
+                if (capabilities.ProductName == device.FriendlyName)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /*
+        private int WaveOutDeviceToIndex(MMDevice device)
+        {
+            for (var i = -1; i < WaveOut; i++)
+            {
+                var capabilities = WaveOut.GetCapabilities(i);
+                if (capabilities.ProductName == device.FriendlyName)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+        */
+
+        private int MMDeviceToIndex(MMDevice device, DataFlow direction = DataFlow.All, DeviceState state = DeviceState.Active)
+        {
+            var enumerator = new MMDeviceEnumerator();
+            var index = 0;
+            foreach (var other in enumerator.EnumerateAudioEndPoints(direction, state))
+            {
+                if (other.FriendlyName == device.FriendlyName)
+                {
+                    return index;
+                }
+                index++;
+            } 
+            return -1;
+        }
+
+        private void onMicDataAvailable(object sender, WaveInEventArgs e)
+        {
+            byte[] buffer = new byte[e.BytesRecorded];
+            Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
+            ToPhoneLineBuffer.AddSamples(buffer, 0, e.BytesRecorded);
+        }
+
+        private void onPhoneDataAvailable(object sender, WaveInEventArgs e)
+        {
+            // Console.WriteLine("PHONE BYTES RECEIVED WITH: " + e.BytesRecorded);
+            byte[] buffer = new byte[e.BytesRecorded];
+            Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
+            ToSpeakerBuffer.AddSamples(buffer, 0, e.BytesRecorded);
+        }
+
+        private MMDevice GetCommunicationDeviceFor(DataFlow direction)
+        {
+            using (var enumerator = new MMDeviceEnumerator())
+            {
+                var commDevice = enumerator.GetDefaultAudioEndpoint(direction, Role.Communications);
+                var devices = enumerator.EnumerateAudioEndPoints(direction, DeviceState.Active);
+
+                foreach (var device in devices)
+                {
+                    if (device.FriendlyName == commDevice.FriendlyName)
+                    {
+                        Console.WriteLine("FOUND COMM DEVICE WITH: " + device.FriendlyName);
+                        return commDevice;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        private MMDevice GetDeviceWithProductName(String name, DataFlow direction)
+        {
+            using (var enumerator = new MMDeviceEnumerator())
+            {
+                // Get the list of audio devices.
+                var devices = enumerator.EnumerateAudioEndPoints(direction, DeviceState.Active);
+                foreach (var device in devices)
+                {
+                    if (device.FriendlyName.Contains(name))
+                    {
+                        Console.WriteLine("GetDeviceWithProductName friendlyName: " + device.FriendlyName + " direction: " + direction);
+                        return device;
+                    }
+                }
+            }
+            return null;
         }
 
         public void Dispose()
         {
             Stop();
-            MicSignal?.Dispose();
-            PhoneSignal?.Dispose();
-            PhoneOutput?.Dispose();
-            SpeakerOutput?.Dispose();
+            FromMic?.Dispose();
+            FromPhoneLine?.Dispose();
+            ToPhoneLine?.Dispose();
+            ToSpeaker?.Dispose();
             IsActive = false;
         }
     }
