@@ -1,2 +1,0 @@
-#define AUDIOSTITCHER_API __declspec(dllexport)
-#define AUDIOSTITCHER_API __declspec(dllimport)
