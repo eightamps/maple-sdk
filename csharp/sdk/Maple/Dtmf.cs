@@ -119,7 +119,6 @@ namespace Maple
             return filteredInput;
         }
 
-
         public void GenerateTones(String input, int deviceNumber)
         {
             // Strip any unsupported characters from the input string.
@@ -133,8 +132,8 @@ namespace Maple
             }
 
             // Get the device index from the PhoneOutput signal.
-            Console.WriteLine("GENERATE TONES FOR:" + deviceNumber);
             var duration = TimeSpan.FromMilliseconds(DEFAULT_TONE_DURATION_MS);
+            Console.WriteLine("GenerateTones on deviceNumber: " + deviceNumber + " with duration: " + duration.TotalMilliseconds + "ms");
             var tones = StringToDtmf(filteredInput);
             foreach (var tone in tones)
             {

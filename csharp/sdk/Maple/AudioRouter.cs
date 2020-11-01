@@ -64,6 +64,7 @@ namespace Maple
             // Get each of the 4 audio devices by name and data flow.
             FromPhoneLineDevice = GetDeviceWithProductName(RxName, DataFlow.Capture);
             ToPhoneLineDevice = GetDeviceWithProductName(TxName, DataFlow.Render);
+
             // MicDevice = GetCommunicationDeviceFor(DataFlow.Capture);
             // SpeakerDevice = GetCommunicationDeviceFor(DataFlow.Render);
 
@@ -73,18 +74,19 @@ namespace Maple
             var toPhoneLineIndex = MMDeviceToIndex(ToPhoneLineDevice, DataFlow.Render);
             var micIndex = -1; //  Use Default Input Device (Control Panel Green Check)
             var speakerIndex = -1; //  Use Default Output Device (Control Panel Green Check)
+            DtmfDeviceNumber = toPhoneLineIndex;
 
-            Console.WriteLine("From Phone Index: " + fromPhoneLineIndex + " toPhoneLineIndex: " + toPhoneLineIndex);
+            Console.WriteLine("FromPhoneLine index: " + fromPhoneLineIndex + " Name: " + FromPhoneLineDevice.FriendlyName);
+            Console.WriteLine("ToPhoneLine index: " + toPhoneLineIndex + " Name: " + ToPhoneLineDevice.FriendlyName);
 
             // Configure the DTMF signal device number.
-            DtmfDeviceNumber = toPhoneLineIndex;
 
             var waveFormat = new WaveFormat();
 
             // Connect the local Mic input to the Phone TX line
             FromMic = new WaveInEvent()
             {
-                // NumberOfBuffers = 3,
+                NumberOfBuffers = 2,
                 DeviceNumber = micIndex
             };
             FromMic.WaveFormat = waveFormat;
@@ -180,6 +182,7 @@ namespace Maple
             {
                 if (other.FriendlyName == device.FriendlyName)
                 {
+                    Console.WriteLine("Matched: " + other.FriendlyName);
                     return index;
                 }
                 index++;

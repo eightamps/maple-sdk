@@ -307,7 +307,7 @@ namespace Maple
             }
 
             // Give it another second to settle down.
-            Thread.Sleep(TimeSpan.FromSeconds(1));
+            Thread.Sleep(TimeSpan.FromSeconds(3));
 
             // Send the DTMF codes through the open line.
             dtmf.GenerateTones(input, router.DtmfDeviceNumber);
