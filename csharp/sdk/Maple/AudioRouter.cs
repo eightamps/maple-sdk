@@ -109,7 +109,7 @@ namespace Maple
 
             ToSpeaker = new WaveOutEvent() {
                 DesiredLatency = 100,
-                // NumberOfBuffers = 3,
+                NumberOfBuffers = 2,
                 DeviceNumber = speakerIndex,
             };
             ToSpeakerBuffer = new BufferedWaveProvider(waveFormat);

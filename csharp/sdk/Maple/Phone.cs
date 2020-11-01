@@ -265,7 +265,7 @@ namespace Maple
             {
                 // Wait for firmware confirmation that the line is Off Hook.
                 // TODO(lbayes): Add tone detection for open line dial tone.
-                Thread.Sleep(TimeSpan.FromMilliseconds(10));
+                Thread.Sleep(TimeSpan.FromMilliseconds(5));
                 // TODO(lbayes): Add a timeout to avoid blocking forever.
             }
         }
@@ -300,9 +300,14 @@ namespace Maple
                 TakeOffHook();
             }
 
-            // TODO(lbayes): Instead, wait until a DTMF line open sound is detected on the expected
-            // RX Device.
-            Thread.Sleep(TimeSpan.FromSeconds(3));
+            // Wait for the audio router to get everything wired up.
+            while (!router.IsActive)
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(5));
+            }
+
+            // Give it another second to settle down.
+            Thread.Sleep(TimeSpan.FromSeconds(1));
 
             // Send the DTMF codes through the open line.
             dtmf.GenerateTones(input, router.DtmfDeviceNumber);
