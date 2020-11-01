@@ -32,19 +32,26 @@ namespace Maple
         private BufferedWaveProvider ToPhoneLineBuffer;
         private BufferedWaveProvider ToSpeakerBuffer;
 
+        public MMDevice ToPhoneLineDevice { get; private set; }
+        public MMDevice FromPhoneLineDevice { get; private set; }
+
+        /**
+         * NAudio MMDevice for the Microphone that's being used by this service.
+         * Using this reference, you can use other NAudio APIs to adjust this device's gain or settings.
+         */
+        // public MMDevice MicDevice { get; private set; }
+
+        /**
+         * NAudio MMDevice for the Speaker that's being used by this service.
+         * Using this reference, you can use other NAudio APIs to adjust this device's volume or settings.
+         */
+        // public MMDevice SpeakerDevice { get; private set; }
+
         public AudioRouter(String rxName = RX_NAME, String txName = TX_NAME)
         {
             RxName = rxName;
             TxName = txName;
         }
-
-        /**
-         * This is the USB Bus device number for the device where
-         * DTMF tones should be sent in order for the telephone line
-         * to receive them.
-         */
-        public MMDevice ToPhoneLineDevice { get; private set; }
-        public MMDevice FromPhoneLineDevice { get; private set; }
 
         public void Start()
         {
@@ -54,37 +61,30 @@ namespace Maple
                 return;
             }
 
-            Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-            Console.WriteLine("AudioRouter.Start()");
-
             // Get each of the 4 audio devices by name and data flow.
             FromPhoneLineDevice = GetDeviceWithProductName(RxName, DataFlow.Capture);
             ToPhoneLineDevice = GetDeviceWithProductName(TxName, DataFlow.Render);
+            // MicDevice = GetCommunicationDeviceFor(DataFlow.Capture);
+            // SpeakerDevice = GetCommunicationDeviceFor(DataFlow.Render);
 
-            var micDevice = GetCommunicationDeviceFor(DataFlow.Capture);
-            var speakerDevice = GetCommunicationDeviceFor(DataFlow.Render);
-
-            EnsureNotNull(ToPhoneLineDevice, FromPhoneLineDevice, micDevice, speakerDevice);
+            // EnsureNotNull(ToPhoneLineDevice, FromPhoneLineDevice, SpeakerDevice);
 
             var fromPhoneLineIndex = WaveInDeviceToIndex(FromPhoneLineDevice);
-            var toPhoneLineIndex = MMDeviceToIndex(ToPhoneLineDevice);
-            var micIndex = -1; //  WaveInDeviceToIndex(micDevice);
-            var speakerIndex = -1; //  MMDeviceToIndex(speakerDevice);
+            var toPhoneLineIndex = MMDeviceToIndex(ToPhoneLineDevice, DataFlow.Render);
+            var micIndex = -1; //  Use Default Input Device (Control Panel Green Check)
+            var speakerIndex = -1; //  Use Default Output Device (Control Panel Green Check)
+
+            Console.WriteLine("From Phone Index: " + fromPhoneLineIndex + " toPhoneLineIndex: " + toPhoneLineIndex);
 
             // Configure the DTMF signal device number.
             DtmfDeviceNumber = toPhoneLineIndex;
-
-            Console.WriteLine("mic index: " + micIndex + " device: " + micDevice.FriendlyName);
-            Console.WriteLine("speaker index: " + speakerIndex + " device: " + speakerDevice.FriendlyName);
-            Console.WriteLine("toPhoneLine index: " + toPhoneLineIndex + " device: " + ToPhoneLineDevice.FriendlyName);
-            Console.WriteLine("fromPhoneLine index: " + fromPhoneLineIndex + " device: " + FromPhoneLineDevice.FriendlyName);
 
             var waveFormat = new WaveFormat();
 
             // Connect the local Mic input to the Phone TX line
             FromMic = new WaveInEvent()
             {
-                NumberOfBuffers = 3,
+                // NumberOfBuffers = 3,
                 DeviceNumber = micIndex
             };
             FromMic.WaveFormat = waveFormat;
@@ -108,8 +108,8 @@ namespace Maple
             FromPhoneLine.DataAvailable += onPhoneDataAvailable;
 
             ToSpeaker = new WaveOutEvent() {
-                DesiredLatency = 50,
-                NumberOfBuffers = 3,
+                DesiredLatency = 100,
+                // NumberOfBuffers = 3,
                 DeviceNumber = speakerIndex,
             };
             ToSpeakerBuffer = new BufferedWaveProvider(waveFormat);
@@ -122,14 +122,17 @@ namespace Maple
 
         public void Stop()
         {
-            Console.WriteLine("AudioRouter.Stop()");
-            FromMic?.StopRecording();
-            FromPhoneLine?.StopRecording();
-            ToPhoneLine?.Stop();
-            ToSpeaker?.Stop();
-            FromMic = null;
-            ToPhoneLine = null;
-            IsActive = false;
+            if (IsActive)
+            {
+                Console.WriteLine("AudioRouter.Stop()");
+                FromMic?.StopRecording();
+                FromPhoneLine?.StopRecording();
+                ToPhoneLine?.Stop();
+                ToSpeaker?.Stop();
+                FromMic = null;
+                ToPhoneLine = null;
+                IsActive = false;
+            }
         }
 
         private void EnsureNotNull(MMDevice toPhoneLineDevice, MMDevice fromPhoneLineDevice, MMDevice micDevice, MMDevice speakerDevice)
@@ -152,6 +155,10 @@ namespace Maple
             }
         }
 
+        /**
+         * Get the index for the provided MMDevice as it relates to available
+         * WaveIn devices.
+         */
         private int WaveInDeviceToIndex(MMDevice device)
         {
             for (var i = -1; i < WaveInEvent.DeviceCount; i++)
@@ -164,21 +171,6 @@ namespace Maple
             }
             return -1;
         }
-
-        /*
-        private int WaveOutDeviceToIndex(MMDevice device)
-        {
-            for (var i = -1; i < WaveOut; i++)
-            {
-                var capabilities = WaveOut.GetCapabilities(i);
-                if (capabilities.ProductName == device.FriendlyName)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-        */
 
         private int MMDeviceToIndex(MMDevice device, DataFlow direction = DataFlow.All, DeviceState state = DeviceState.Active)
         {
@@ -255,6 +247,8 @@ namespace Maple
             FromPhoneLine?.Dispose();
             ToPhoneLine?.Dispose();
             ToSpeaker?.Dispose();
+            // MicDevice?.Dispose();
+            // SpeakerDevice?.Dispose();
             IsActive = false;
         }
     }
