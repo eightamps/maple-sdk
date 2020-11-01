@@ -5,18 +5,18 @@ namespace MaplePhoneTest
 {
     class Program
     {
-        private static Phone maple;
+        private static Phone phone;
 
         static void ExitHandler(object sender, EventArgs e)
         {
             Console.WriteLine("exit");
-            maple.Dispose();
+            phone.Dispose();
         }
 
         static void Main(string[] args)
         {
-            maple = Phone.First();
-            if (maple == null)
+            phone = Phone.First();
+            if (phone == null)
             {
                 Console.WriteLine("No Maple found!");
                 return;
@@ -35,17 +35,17 @@ namespace MaplePhoneTest
                     input = "(510) 459-9053";
                 }
 
-                if (maple.OffHook)
+                if (phone.OffHook)
                 {
-                    maple.HangUp();
+                    phone.HangUp();
                 }
 
                 Console.WriteLine("Dialing:" + input);
-                maple.Dial(input);
+                phone.Dial(input);
 
                 Console.WriteLine("Hang Up?");
                 Console.ReadLine();
-                maple.HangUp();
+                phone.HangUp();
             }
 
             /*
