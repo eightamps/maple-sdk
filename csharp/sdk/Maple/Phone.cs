@@ -12,16 +12,16 @@ namespace Maple
         public Version SoftwareVersion { get; private set; }
         public Version HardwareVersion { get { return hiddev.ReleaseNumber; } }
 
-        private AudioRouter router;
-        private Dtmf dtmf;
+        private readonly AudioStitcher stitcher;
+        private readonly Dtmf dtmf;
 
         private HidDevice hiddev { get { return stream.Device; } }
-        private HidStream stream;
+        private readonly HidStream stream;
 
-        private Report verReport;
-        private Report txReport;
-        private HidDeviceInputReceiver inputReceiver;
-        private DeviceItemInputParser inputParser;
+        private readonly Report verReport;
+        private readonly Report txReport;
+        private readonly HidDeviceInputReceiver inputReceiver;
+        private readonly DeviceItemInputParser inputParser;
 
         private bool IsRequestPending = false;
         public bool IsRinging { get; private set; } = false;
@@ -34,10 +34,13 @@ namespace Maple
         public event Action<Phone, bool> OffHookChanged = delegate { };
         public event Action<Phone, bool> PolarityChanged = delegate { };
 
+        private const String PhoneCapture = "Telephone Audio";
+        private const String PhoneRender = "Telephone Audio";
+
         protected Phone(HidStream hidStream)
         {
             this.stream = hidStream;
-            this.router = new AudioRouter();
+            this.stitcher = new AudioStitcher(PhoneCapture, PhoneRender);
             this.dtmf = new Dtmf();
 
             var reportDescriptor = hiddev.GetReportDescriptor();
@@ -123,14 +126,12 @@ namespace Maple
                 Thread.Sleep(TimeSpan.FromSeconds(1));
             }
             this.inputReceiver.Received -= InputHandler;
-            router.Dispose();
+            stitcher.Dispose();
             stream.Dispose();
         }
 
         private void InputHandler(object sender, EventArgs e)
         {
-            Console.WriteLine(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-            Console.WriteLine("Input Handler Called!");
             var inputReportBuffer = new byte[hiddev.GetMaxInputReportLength()];
             Report report;
             while (inputReceiver.TryRead(inputReportBuffer, 0, out report))
@@ -212,13 +213,13 @@ namespace Maple
 
         private void SyncRouterToHookState()
         {
-            if (OffHook && !router.IsActive)
+            if (OffHook && !stitcher.IsActive)
             {
-                router.Start();
+                stitcher.Start();
             }
-            else if (!OffHook && router.IsActive)
+            else if (!OffHook && stitcher.IsActive)
             {
-                router.Stop();
+                stitcher.Stop();
             }
         }
 
@@ -301,7 +302,7 @@ namespace Maple
             }
 
             // Wait for the audio router to get everything wired up.
-            while (!router.IsActive)
+            while (!stitcher.IsActive)
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(5));
             }
@@ -310,7 +311,7 @@ namespace Maple
             Thread.Sleep(TimeSpan.FromSeconds(3));
 
             // Send the DTMF codes through the open line.
-            dtmf.GenerateTones(input, router.DtmfDeviceNumber);
+            dtmf.GenerateTones(input, stitcher);
             return true;
         }
 

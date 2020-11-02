@@ -13,8 +13,8 @@ namespace Maple
         // const String RX_NAME = "4- USB Audio Device"; // Unconfigured HS100B for dev
         // const String TX_NAME = "4- USB Audio Device"; // Unconfigured HS100B for dev
 
-        public String RxName { get; set; }
-        public String TxName { get; set; }
+        public String RxName { get; private set; }
+        public String TxName { get; private set; }
 
         public bool IsActive { get; private set; } = false;
 
@@ -137,6 +137,7 @@ namespace Maple
             }
         }
 
+        /*
         private void EnsureNotNull(MMDevice toPhoneLineDevice, MMDevice fromPhoneLineDevice, MMDevice micDevice, MMDevice speakerDevice)
         {
             if (toPhoneLineDevice == null)
@@ -156,6 +157,7 @@ namespace Maple
                 throw new Exception("Cannot find Default Communication output device");
             }
         }
+        */
 
         /**
          * Get the index for the provided MMDevice as it relates to available

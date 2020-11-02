@@ -1,4 +1,5 @@
-﻿using NAudio.Wave.SampleProviders;
+﻿using NAudio.CoreAudioApi;
+using NAudio.Wave.SampleProviders;
 using NAudio.Wave;
 using System.Collections.Generic;
 using System.Threading;
@@ -8,8 +9,8 @@ namespace Maple
 {
     class Dtmf
     {
-        private Double DEFAULT_GAIN = 0.6;
-        private int DEFAULT_TONE_DURATION_MS = 80;
+        private readonly Double DEFAULT_GAIN = 0.6;
+        private readonly int DEFAULT_TONE_DURATION_MS = 80;
 
         private Dictionary<char, Tuple<int, int>> DtmfLookup;
 
@@ -17,6 +18,85 @@ namespace Maple
         {
         }
 
+        public void GenerateTones(String phoneNumbers, AudioStitcher output)
+        {
+            // Strip any unsupported characters from the phoneNumbers string.
+            string filteredInput = filterPhoneNumbers(phoneNumbers);
+            if (filteredInput != phoneNumbers)
+            {
+                Console.WriteLine("GenerateTones filtered phoneNumbers of: " + phoneNumbers + " to: " + filteredInput);
+            }
+            else
+            {
+                Console.WriteLine("GenerateTones with: " + phoneNumbers);
+            }
+
+            // Get the device index from the PhoneOutput signal.
+            var duration = TimeSpan.FromMilliseconds(DEFAULT_TONE_DURATION_MS);
+            // Console.WriteLine("GenerateTones on device: " + output.FriendlyName + " with duration: " + duration.TotalMilliseconds + "ms");
+            var tones = StringToDtmf(filteredInput);
+            foreach (var tone in tones)
+            {
+                GenerateDtmf(duration, tone.Item1, tone.Item2, output);
+            }
+        }
+
+        private void GenerateDtmf(TimeSpan duration, int top, int bottom, AudioStitcher stitcher)
+        {
+            var waveFormat = stitcher.FromMicChannel.WaveFormat;
+            var one = new SignalGenerator(waveFormat.SampleRate, 1)
+            {
+                Gain = DEFAULT_GAIN,
+                Frequency = top,
+                Type = SignalGeneratorType.Sin
+            };
+
+            var two = new SignalGenerator(waveFormat.SampleRate, 1)
+            {
+                Gain = DEFAULT_GAIN,
+                Frequency = bottom,
+                Type = SignalGeneratorType.Sin
+            };
+
+            var inputs = new List<ISampleProvider>() { one, two };
+            var samples = new MixingSampleProvider(inputs).Take(duration).ToWaveProvider();
+
+            // var sampleCount = 10;
+
+            // byte[] buffer = new byte[sampleCount];
+            // stitcher.FromMicBuffer.AddSamples(buffer, 0, sampleCount);
+
+            // var wp = samples.ToWaveProvider();
+
+            // stitcher.FromMicBuffer.AddSamples
+
+            // var waveOut = new WaveOutEvent();
+            // waveOut.DeviceNumber = stitcher.ToPhoneLineDevice;
+            // waveOut.Init(provider.Take(duration));
+            // waveOut.Play();
+
+            /*
+            while (waveOut.PlaybackState == PlaybackState.Playing)
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(2));
+            }
+            */
+
+            /*
+            using (var wOut = new WasapiOut(output.ToPhoneLineDevice, AudioClientShareMode.Shared, false, AudioStitcher.DEFAULT_LATENCY))
+            {
+                wOut.Init(provider.Take(duration));
+                wOut.Play();
+
+                while (wOut.PlaybackState == PlaybackState.Playing)
+                {
+                    Thread.Sleep(TimeSpan.FromMilliseconds(2));
+                }
+            }
+            */
+        }
+
+        /*
         private void GenerateDtmf(TimeSpan duration, int top, int bottom, int deviceNumber = -1)
         {
             var one = new SignalGenerator()
@@ -55,6 +135,7 @@ namespace Maple
                 }
             }
         }
+        */
 
         private Dictionary<char, Tuple<int, int>> GetLookup()
         {
@@ -85,6 +166,9 @@ namespace Maple
             return DtmfLookup;
         }
 
+        /**
+         * Build a collection of tone Tuples from the provided string value.
+         */
         private Tuple<int, int>[] StringToDtmf(String value)
         {
             var lookup = GetLookup();
@@ -104,11 +188,11 @@ namespace Maple
          * Take any set of characters and return a new string that includes only those
          * characters that have a known DTMF code (in their original order).
          */
-        private string filterInput(String input)
+        private string filterPhoneNumbers(String phoneNumbers)
         {
             string whitelist = "0123456789ABCD*#";
             string filteredInput = "";
-            foreach (char c in input)
+            foreach (char c in phoneNumbers)
             {
                 if (whitelist.IndexOf(c) > -1)
                 {
@@ -119,16 +203,17 @@ namespace Maple
             return filteredInput;
         }
 
-        public void GenerateTones(String input, int deviceNumber)
+        /*
+        public void GenerateTones(String phoneNumbers, int deviceNumber)
         {
-            // Strip any unsupported characters from the input string.
-            string filteredInput = filterInput(input);
-            if (filteredInput != input) {
-                Console.WriteLine("GenerateTones filtered input of: " + input + " to: " + filteredInput);
+            // Strip any unsupported characters from the phoneNumbers string.
+            string filteredInput = filterPhoneNumbers(phoneNumbers);
+            if (filteredInput != phoneNumbers) {
+                Console.WriteLine("GenerateTones filtered phoneNumbers of: " + phoneNumbers + " to: " + filteredInput);
             }
             else
             {
-                Console.WriteLine("GenerateTones with: " + input);
+                Console.WriteLine("GenerateTones with: " + phoneNumbers);
             }
 
             // Get the device index from the PhoneOutput signal.
@@ -140,6 +225,7 @@ namespace Maple
                 GenerateDtmf(duration, tone.Item1, tone.Item2, deviceNumber);
             }
         }
+        */
 
     }
 }
