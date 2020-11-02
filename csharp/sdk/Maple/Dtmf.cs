@@ -45,14 +45,14 @@ namespace Maple
         private void GenerateDtmf(TimeSpan duration, int top, int bottom, AudioStitcher stitcher)
         {
             var waveFormat = stitcher.ToSpeakerChannel.OutputWaveFormat;
-            var one = new SignalGenerator(waveFormat.SampleRate, 1)
+            var one = new SignalGenerator(waveFormat.SampleRate, 2)
             {
                 Gain = DEFAULT_GAIN,
                 Frequency = top,
                 Type = SignalGeneratorType.Sin
             };
 
-            var two = new SignalGenerator(waveFormat.SampleRate, 1)
+            var two = new SignalGenerator(waveFormat.SampleRate, 2)
             {
                 Gain = DEFAULT_GAIN,
                 Frequency = bottom,
