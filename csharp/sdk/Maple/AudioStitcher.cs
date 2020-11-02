@@ -25,8 +25,8 @@ namespace Maple
         public WasapiCapture FromPhoneLineChannel { get; private set; }
         public WasapiOut ToSpeakerChannel { get; private set; }
 
-        public BufferedWaveProvider FromPhoneLineBuffer { get; private set; }
-        public BufferedWaveProvider FromMicBuffer { get; private set; }
+        public BufferedWaveProvider ToSpeakerBuffer { get; private set; }
+        public BufferedWaveProvider ToPhoneLineBuffer { get; private set; }
 
         public int SampleRate
         {
@@ -58,20 +58,20 @@ namespace Maple
             // Configure the Line to Speaker connection.
             FromPhoneLineChannel = new WasapiCapture(FromPhoneLineDevice, true);
             FromPhoneLineChannel.DataAvailable += FromPhoneLineDataAvailable;
-            FromPhoneLineBuffer = new BufferedWaveProvider(FromPhoneLineChannel.WaveFormat);
 
             ToSpeakerChannel = new WasapiOut(ToSpeakerDevice, AudioClientShareMode.Shared, true, DEFAULT_LATENCY);
-            ToSpeakerChannel.Init(FromPhoneLineBuffer);
+            ToSpeakerBuffer = new BufferedWaveProvider(FromPhoneLineChannel.WaveFormat);
+            ToSpeakerChannel.Init(ToSpeakerBuffer);
             ToSpeakerChannel.Play();
             FromPhoneLineChannel.StartRecording();
 
             // Configure the Mic to Line connection.
             FromMicChannel = new WasapiCapture(FromMicDevice, true);
             FromMicChannel.DataAvailable += FromMicDataAvailable;
-            FromMicBuffer = new BufferedWaveProvider(FromMicChannel.WaveFormat);
 
             ToPhoneLineChannel = new WasapiOut(ToPhoneLineDevice, AudioClientShareMode.Shared, true, DEFAULT_LATENCY);
-            ToPhoneLineChannel.Init(FromMicBuffer);
+            ToPhoneLineBuffer = new BufferedWaveProvider(FromMicChannel.WaveFormat);
+            ToPhoneLineChannel.Init(ToPhoneLineBuffer);
             ToPhoneLineChannel.Play();
             FromMicChannel.StartRecording();
 
@@ -92,12 +92,36 @@ namespace Maple
             IsActive = false;
         }
 
+        private int phoneLineDeviceNumber = -2;
+        public int ToPhoneLineDeviceNumber()
+        {
+            if (phoneLineDeviceNumber == -2)
+            {
+                var enumerator = new MMDeviceEnumerator().EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
+                var index = 0;
+                var foundIndex = -1;
+                foreach (var device in enumerator)
+                {
+                    Console.WriteLine("CHECKING index: " + index + " for: " + device.FriendlyName);
+                    if (device.FriendlyName == ToPhoneLineDevice.FriendlyName)
+                    {
+                        foundIndex = index;
+                    }
+                    index++;
+                }
+
+                phoneLineDeviceNumber = foundIndex;
+            }
+
+            return phoneLineDeviceNumber;
+        }
+
         private void FromPhoneLineDataAvailable(object sender, WaveInEventArgs e)
         {
             // Console.WriteLine("FROM PHONE LINE DATA AVAIL!");
             byte[] buffer = new byte[e.BytesRecorded];
             Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
-            FromPhoneLineBuffer.AddSamples(buffer, 0, e.BytesRecorded);
+            ToSpeakerBuffer.AddSamples(buffer, 0, e.BytesRecorded);
         }
 
         private void FromMicDataAvailable(object sender, WaveInEventArgs e)
@@ -105,7 +129,7 @@ namespace Maple
             // Console.WriteLine("FROM PHONE LINE DATA AVAIL!");
             byte[] buffer = new byte[e.BytesRecorded];
             Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
-            FromMicBuffer.AddSamples(buffer, 0, e.BytesRecorded);
+            ToPhoneLineBuffer.AddSamples(buffer, 0, e.BytesRecorded);
         }
 
         private MMDevice GetDeviceWithProductName(String name, DataFlow direction)

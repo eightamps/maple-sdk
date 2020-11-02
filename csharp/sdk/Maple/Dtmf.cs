@@ -18,7 +18,7 @@ namespace Maple
         {
         }
 
-        public void GenerateTones(String phoneNumbers, AudioStitcher output)
+        public void GenerateTones(String phoneNumbers, AudioStitcher stitcher)
         {
             // Strip any unsupported characters from the phoneNumbers string.
             string filteredInput = filterPhoneNumbers(phoneNumbers);
@@ -37,21 +37,21 @@ namespace Maple
             var tones = StringToDtmf(filteredInput);
             foreach (var tone in tones)
             {
-                GenerateDtmf(duration, tone.Item1, tone.Item2, output);
+                GenerateDtmf(duration, tone.Item1, tone.Item2, stitcher);
             }
         }
 
         private void GenerateDtmf(TimeSpan duration, int top, int bottom, AudioStitcher stitcher)
         {
-            var waveFormat = stitcher.FromMicChannel.WaveFormat;
-            var one = new SignalGenerator(waveFormat.SampleRate, 1)
+            // var waveFormat = stitcher.FromMicChannel.WaveFormat;
+            var one = new SignalGenerator()
             {
                 Gain = DEFAULT_GAIN,
                 Frequency = top,
                 Type = SignalGeneratorType.Sin
             };
 
-            var two = new SignalGenerator(waveFormat.SampleRate, 1)
+            var two = new SignalGenerator()
             {
                 Gain = DEFAULT_GAIN,
                 Frequency = bottom,
@@ -59,40 +59,45 @@ namespace Maple
             };
 
             var inputs = new List<ISampleProvider>() { one, two };
-            var samples = new MixingSampleProvider(inputs).Take(duration).ToWaveProvider();
+            var samples = new MixingSampleProvider(inputs);
+            // samples.AddMixerInput(one);
+            // samples.AddMixerInput(two);
+            var timedSamples = samples.Take(duration);
 
-            // var sampleCount = 10;
+            var wave = new WasapiOut(stitcher.ToPhoneLineDevice, AudioClientShareMode.Shared, true, AudioStitcher.DEFAULT_LATENCY);
+            wave.Init(timedSamples.ToWaveProvider16());
+            wave.Play();
 
-            // byte[] buffer = new byte[sampleCount];
-            // stitcher.FromMicBuffer.AddSamples(buffer, 0, sampleCount);
-
-            // var wp = samples.ToWaveProvider();
-
-            // stitcher.FromMicBuffer.AddSamples
-
-            // var waveOut = new WaveOutEvent();
-            // waveOut.DeviceNumber = stitcher.ToPhoneLineDevice;
-            // waveOut.Init(provider.Take(duration));
-            // waveOut.Play();
-
-            /*
-            while (waveOut.PlaybackState == PlaybackState.Playing)
+            while (wave.PlaybackState == PlaybackState.Playing)
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(2));
             }
+
+            /*
+            var timedSamples = samples.Take(duration).ToWaveProvider16();
+            var count = 20000;
+            var offset = 0;
+            byte[] source = new byte[count];
+            timedSamples.Read(source, offset, count);
+            // Buffer.BlockCopy(source, 0, dest, 0, e.BytesRecorded);
+            stitcher.ToSpeakerBuffer.AddSamples(source, 0, count);
+            Thread.Sleep(TimeSpan.FromMilliseconds(40));
             */
 
             /*
-            using (var wOut = new WasapiOut(output.ToPhoneLineDevice, AudioClientShareMode.Shared, false, AudioStitcher.DEFAULT_LATENCY))
-            {
-                wOut.Init(provider.Take(duration));
-                wOut.Play();
+            // This works, it will play the sounds on the speakers, but not through the phone line!
+            var wave = new WaveOutEvent();
+            wave.DeviceNumber = -1; // stitcher.ToPhoneLineDeviceNumber();
+            Console.WriteLine("YOOOOOOOOOOOOOOOOOOOOOOOOOOOO: " + wave.DeviceNumber);
+            wave.Init(timedSamples);
+            wave.Play();
 
-                while (wOut.PlaybackState == PlaybackState.Playing)
-                {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(2));
-                }
+            while (wave.PlaybackState == PlaybackState.Playing)
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(2));
             }
+            // Wait a few milliseconds for background threads to get cleaned up.
+            Thread.Sleep(TimeSpan.FromMilliseconds(5));
             */
         }
 
