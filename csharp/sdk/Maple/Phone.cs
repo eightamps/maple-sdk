@@ -34,8 +34,10 @@ namespace Maple
         public event Action<Phone, bool> OffHookChanged = delegate { };
         public event Action<Phone, bool> PolarityChanged = delegate { };
 
-        private const String PhoneCapture = "Telephone Audio";
-        private const String PhoneRender = "Telephone Audio";
+        // public static readonly String PhoneCapture = "Microphone (Telephone Audio)";
+        // public static readonly String PhoneRender = "Speakers (Telephone Audio)";
+        public static readonly String PhoneCapture = "Telephone Audio";
+        public static readonly String PhoneRender = "Telephone Audio";
 
         protected Phone(HidStream hidStream)
         {
@@ -215,7 +217,7 @@ namespace Maple
         {
             if (OffHook && !stitcher.IsActive)
             {
-                stitcher.Start();
+                stitcher.StartWave();
             }
             else if (!OffHook && stitcher.IsActive)
             {

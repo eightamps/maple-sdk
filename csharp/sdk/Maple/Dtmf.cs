@@ -20,6 +20,7 @@ namespace Maple
 
         public void GenerateTones(String phoneNumbers, AudioStitcher stitcher)
         {
+            Console.WriteLine("----------------------");
             Console.WriteLine("GenerateTones with:" + phoneNumbers);
             // Strip any unsupported characters from the phoneNumbers string.
             string filteredInput = filterPhoneNumbers(phoneNumbers);
@@ -36,23 +37,27 @@ namespace Maple
             var duration = TimeSpan.FromMilliseconds(DEFAULT_TONE_DURATION_MS);
             // Console.WriteLine("GenerateTones on device: " + output.FriendlyName + " with duration: " + duration.TotalMilliseconds + "ms");
             var tones = StringToDtmf(filteredInput);
+            Console.WriteLine("GenerateDtmf start");
             foreach (var tone in tones)
             {
                 GenerateDtmf(duration, tone.Item1, tone.Item2, stitcher);
             }
+            Console.WriteLine("GenerateDtmf done");
         }
 
         private void GenerateDtmf(TimeSpan duration, int top, int bottom, AudioStitcher stitcher)
         {
-            var waveFormat = stitcher.ToSpeakerChannel.OutputWaveFormat;
-            var one = new SignalGenerator(waveFormat.SampleRate, 2)
+            var waveFormat = stitcher.FromPhoneLineWaveFormat;
+            var channelCount = waveFormat.Channels;
+            Console.WriteLine("SampleRate: " + waveFormat.SampleRate + " channelCount: " + channelCount);
+            var one = new SignalGenerator(waveFormat.SampleRate, channelCount)
             {
                 Gain = DEFAULT_GAIN,
                 Frequency = top,
                 Type = SignalGeneratorType.Sin
             };
 
-            var two = new SignalGenerator(waveFormat.SampleRate, 2)
+            var two = new SignalGenerator(waveFormat.SampleRate, channelCount)
             {
                 Gain = DEFAULT_GAIN,
                 Frequency = bottom,
@@ -63,11 +68,51 @@ namespace Maple
             var samples = new MixingSampleProvider(inputs);
             var timedSamples = samples.Take(duration);
 
+            // GenerateDso(stitcher, timedSamples, duration);
+            // GenerateWasapi(stitcher, timedSamples, duration);
+            GenerateWaveOut(stitcher, timedSamples, duration);
+        }
+
+        private void GenerateDso(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
+        {
+            using (var dso = new DirectSoundOut(stitcher.ToPhoneLineDso.Guid))
+            {
+                dso.Init(samples);
+                dso.Play();
+
+                while (dso.PlaybackState == PlaybackState.Playing)
+                {
+                    Thread.Sleep(TimeSpan.FromMilliseconds(5));
+                }
+            }
+        }
+
+        private void GenerateWasapi(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
+        {
             using (var wave = new WasapiOut(stitcher.ToPhoneLineDevice, AudioClientShareMode.Shared, true, 100))
             {
-                wave.Init(timedSamples);
+                wave.Init(samples);
                 wave.Play();
-                Thread.Sleep(duration + TimeSpan.FromMilliseconds(10));
+
+                while (wave.PlaybackState == PlaybackState.Playing)
+                {
+                    Thread.Sleep(TimeSpan.FromMilliseconds(5));
+                }
+            }
+        }
+
+        private void GenerateWaveOut(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
+        {
+            using (var wave = new WaveOutEvent())
+            {
+                wave.DeviceNumber = stitcher.FromMicIndex;
+                wave.Init(samples);
+                wave.Play();
+
+                while (wave.PlaybackState == PlaybackState.Playing)
+                {
+                    Thread.Sleep(TimeSpan.FromMilliseconds(5));
+                }
             }
         }
 
