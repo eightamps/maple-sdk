@@ -10,7 +10,7 @@ namespace Maple
     class Dtmf
     {
         private readonly Double DEFAULT_GAIN = 0.6;
-        private readonly int DEFAULT_TONE_DURATION_MS = 100;
+        private readonly int DEFAULT_TONE_DURATION_MS = 150;
 
         private Dictionary<char, Tuple<int, int>> DtmfLookup;
 
@@ -18,7 +18,7 @@ namespace Maple
         {
         }
 
-        public void GenerateTones(String phoneNumbers, AudioStitcher stitcher)
+        public void GenerateDtmfTones(String phoneNumbers, AudioStitcher stitcher)
         {
             Console.WriteLine("----------------------");
             Console.WriteLine("GenerateTones with:" + phoneNumbers);
@@ -40,12 +40,12 @@ namespace Maple
             Console.WriteLine("GenerateDtmf start");
             foreach (var tone in tones)
             {
-                GenerateDtmf(duration, tone.Item1, tone.Item2, stitcher);
+                GenerateDtmfTone(stitcher, duration, tone.Item1, tone.Item2);
             }
             Console.WriteLine("GenerateDtmf done");
         }
 
-        private void GenerateDtmf(TimeSpan duration, int top, int bottom, AudioStitcher stitcher)
+        private void GenerateDtmfTone(AudioStitcher stitcher, TimeSpan duration, int freq1, int freq2)
         {
             var waveFormat = stitcher.FromPhoneLineWaveFormat;
             var channelCount = waveFormat.Channels;
@@ -53,14 +53,14 @@ namespace Maple
             var one = new SignalGenerator(waveFormat.SampleRate, channelCount)
             {
                 Gain = DEFAULT_GAIN,
-                Frequency = top,
+                Frequency = freq1,
                 Type = SignalGeneratorType.Sin
             };
 
             var two = new SignalGenerator(waveFormat.SampleRate, channelCount)
             {
                 Gain = DEFAULT_GAIN,
-                Frequency = bottom,
+                Frequency = freq2,
                 Type = SignalGeneratorType.Sin
             };
 
@@ -103,9 +103,12 @@ namespace Maple
 
         private void GenerateWaveOut(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
         {
+            var deviceNumber = 0; //  stitcher.ToSpeakerWave.DeviceNumber;
+            Console.WriteLine("Using Device Index: " + deviceNumber);
+
             using (var wave = new WaveOutEvent())
             {
-                wave.DeviceNumber = stitcher.FromMicIndex;
+                wave.DeviceNumber = deviceNumber;
                 wave.Init(samples);
                 wave.Play();
 

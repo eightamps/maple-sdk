@@ -313,7 +313,7 @@ namespace Maple
             Thread.Sleep(TimeSpan.FromSeconds(3));
 
             // Send the DTMF codes through the open line.
-            dtmf.GenerateTones(input, stitcher);
+            dtmf.GenerateDtmfTones(input, stitcher);
             return true;
         }
 

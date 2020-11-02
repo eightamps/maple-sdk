@@ -268,7 +268,7 @@ namespace Maple
             var index = 0;
             foreach (var device in enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
             {
-                if (device.FriendlyName == name)
+                if (device.FriendlyName.Contains(name))
                 {
                     Console.WriteLine("Found requested device at index: " + index);
                     return index;
@@ -282,7 +282,7 @@ namespace Maple
         {
             foreach (var device in DirectSoundOut.Devices)
             {
-                if (name == "" || device.Description == name) 
+                if (name == "" || device.Description.Contains(name)) 
                 {
                     Console.WriteLine("FOUND MATCH:" + name);
                     return device;
