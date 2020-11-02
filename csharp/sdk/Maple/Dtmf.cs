@@ -10,7 +10,7 @@ namespace Maple
     class Dtmf
     {
         private readonly Double DEFAULT_GAIN = 0.6;
-        private readonly int DEFAULT_TONE_DURATION_MS = 80;
+        private readonly int DEFAULT_TONE_DURATION_MS = 100;
 
         private Dictionary<char, Tuple<int, int>> DtmfLookup;
 
@@ -20,6 +20,7 @@ namespace Maple
 
         public void GenerateTones(String phoneNumbers, AudioStitcher stitcher)
         {
+            Console.WriteLine("GenerateTones with:" + phoneNumbers);
             // Strip any unsupported characters from the phoneNumbers string.
             string filteredInput = filterPhoneNumbers(phoneNumbers);
             if (filteredInput != phoneNumbers)
@@ -43,15 +44,15 @@ namespace Maple
 
         private void GenerateDtmf(TimeSpan duration, int top, int bottom, AudioStitcher stitcher)
         {
-            // var waveFormat = stitcher.FromMicChannel.WaveFormat;
-            var one = new SignalGenerator()
+            var waveFormat = stitcher.ToSpeakerChannel.OutputWaveFormat;
+            var one = new SignalGenerator(waveFormat.SampleRate, 1)
             {
                 Gain = DEFAULT_GAIN,
                 Frequency = top,
                 Type = SignalGeneratorType.Sin
             };
 
-            var two = new SignalGenerator()
+            var two = new SignalGenerator(waveFormat.SampleRate, 1)
             {
                 Gain = DEFAULT_GAIN,
                 Frequency = bottom,
@@ -60,87 +61,15 @@ namespace Maple
 
             var inputs = new List<ISampleProvider>() { one, two };
             var samples = new MixingSampleProvider(inputs);
-            // samples.AddMixerInput(one);
-            // samples.AddMixerInput(two);
             var timedSamples = samples.Take(duration);
 
-            var wave = new WasapiOut(stitcher.ToPhoneLineDevice, AudioClientShareMode.Shared, true, AudioStitcher.DEFAULT_LATENCY);
-            wave.Init(timedSamples.ToWaveProvider16());
-            wave.Play();
-
-            while (wave.PlaybackState == PlaybackState.Playing)
+            using (var wave = new WasapiOut(stitcher.ToPhoneLineDevice, AudioClientShareMode.Shared, true, 100))
             {
-                Thread.Sleep(TimeSpan.FromMilliseconds(2));
-            }
-
-            /*
-            var timedSamples = samples.Take(duration).ToWaveProvider16();
-            var count = 20000;
-            var offset = 0;
-            byte[] source = new byte[count];
-            timedSamples.Read(source, offset, count);
-            // Buffer.BlockCopy(source, 0, dest, 0, e.BytesRecorded);
-            stitcher.ToSpeakerBuffer.AddSamples(source, 0, count);
-            Thread.Sleep(TimeSpan.FromMilliseconds(40));
-            */
-
-            /*
-            // This works, it will play the sounds on the speakers, but not through the phone line!
-            var wave = new WaveOutEvent();
-            wave.DeviceNumber = -1; // stitcher.ToPhoneLineDeviceNumber();
-            Console.WriteLine("YOOOOOOOOOOOOOOOOOOOOOOOOOOOO: " + wave.DeviceNumber);
-            wave.Init(timedSamples);
-            wave.Play();
-
-            while (wave.PlaybackState == PlaybackState.Playing)
-            {
-                Thread.Sleep(TimeSpan.FromMilliseconds(2));
-            }
-            // Wait a few milliseconds for background threads to get cleaned up.
-            Thread.Sleep(TimeSpan.FromMilliseconds(5));
-            */
-        }
-
-        /*
-        private void GenerateDtmf(TimeSpan duration, int top, int bottom, int deviceNumber = -1)
-        {
-            var one = new SignalGenerator()
-            {
-                Gain = DEFAULT_GAIN,
-                Frequency = top,
-                Type = SignalGeneratorType.Sin
-            }.Take(duration);
-
-            var two = new SignalGenerator()
-            {
-                Gain = DEFAULT_GAIN,
-                Frequency = bottom,
-                Type = SignalGeneratorType.Sin
-            }.Take(duration);
-
-            using (var wOne = new WaveOutEvent())
-            using (var wTwo = new WaveOutEvent())
-            {
-                if (deviceNumber > -1)
-                {
-                    wOne.DeviceNumber = deviceNumber;
-                    wTwo.DeviceNumber = deviceNumber;
-                }
-
-                wOne.Init(one);
-                wOne.Play();
-
-                wTwo.Init(two);
-                wTwo.Play();
-
-                while (wOne.PlaybackState == PlaybackState.Playing ||
-                    wTwo.PlaybackState == PlaybackState.Playing)
-                {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(2));
-                }
+                wave.Init(timedSamples);
+                wave.Play();
+                Thread.Sleep(duration + TimeSpan.FromMilliseconds(10));
             }
         }
-        */
 
         private Dictionary<char, Tuple<int, int>> GetLookup()
         {
@@ -207,30 +136,5 @@ namespace Maple
 
             return filteredInput;
         }
-
-        /*
-        public void GenerateTones(String phoneNumbers, int deviceNumber)
-        {
-            // Strip any unsupported characters from the phoneNumbers string.
-            string filteredInput = filterPhoneNumbers(phoneNumbers);
-            if (filteredInput != phoneNumbers) {
-                Console.WriteLine("GenerateTones filtered phoneNumbers of: " + phoneNumbers + " to: " + filteredInput);
-            }
-            else
-            {
-                Console.WriteLine("GenerateTones with: " + phoneNumbers);
-            }
-
-            // Get the device index from the PhoneOutput signal.
-            var duration = TimeSpan.FromMilliseconds(DEFAULT_TONE_DURATION_MS);
-            Console.WriteLine("GenerateTones on deviceNumber: " + deviceNumber + " with duration: " + duration.TotalMilliseconds + "ms");
-            var tones = StringToDtmf(filteredInput);
-            foreach (var tone in tones)
-            {
-                GenerateDtmf(duration, tone.Item1, tone.Item2, deviceNumber);
-            }
-        }
-        */
-
     }
 }
