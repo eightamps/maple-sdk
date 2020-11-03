@@ -217,7 +217,7 @@ namespace Maple
         {
             if (OffHook && !stitcher.IsActive)
             {
-                stitcher.StartWave();
+                stitcher.Start();
             }
             else if (!OffHook && stitcher.IsActive)
             {

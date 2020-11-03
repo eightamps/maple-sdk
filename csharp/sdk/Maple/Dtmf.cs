@@ -47,7 +47,7 @@ namespace Maple
 
         private void GenerateDtmfTone(AudioStitcher stitcher, TimeSpan duration, int freq1, int freq2)
         {
-            var waveFormat = stitcher.FromPhoneLineWaveFormat;
+            var waveFormat = stitcher.ToPhoneLineBuffer.WaveFormat;
             var channelCount = waveFormat.Channels;
             Console.WriteLine("SampleRate: " + waveFormat.SampleRate + " channelCount: " + channelCount);
             var one = new SignalGenerator(waveFormat.SampleRate, channelCount)
@@ -71,6 +71,7 @@ namespace Maple
             // GenerateDso(stitcher, timedSamples, duration);
             // GenerateWasapi(stitcher, timedSamples, duration);
             GenerateWaveOut(stitcher, timedSamples, duration);
+            // GenerateMixerOut(stitcher, timedSamples, duration);
         }
 
         private void GenerateDso(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
@@ -101,9 +102,21 @@ namespace Maple
             }
         }
 
+        private void GenerateMixerOut(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
+        {
+            Console.WriteLine("Using Mixer Output");
+            var count = 10000;
+            // byte[] buffer = new byte[count];
+            // samples.ToWaveProvider16().Read(buffer, 0, count);
+            // stitcher.ToPhoneLineBuffer.AddSamples(buffer, 0, count);
+
+            // stitcher.ToPhoneLineMixer.AddInputStream(samples.ToWaveProvider());
+            Thread.Sleep(duration + TimeSpan.FromMilliseconds(10));
+        }
+
         private void GenerateWaveOut(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
         {
-            var deviceNumber = 0; //  stitcher.ToSpeakerWave.DeviceNumber;
+            var deviceNumber = stitcher.ToSpeakerWave.DeviceNumber;
             Console.WriteLine("Using Device Index: " + deviceNumber);
 
             using (var wave = new WaveOutEvent())

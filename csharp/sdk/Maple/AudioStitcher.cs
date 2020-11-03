@@ -17,6 +17,7 @@ namespace Maple
         public int ToPhoneLineIndex { get; private set; }
         public int ToSpeakerIndex { get; private set; }
         public int FromMicIndex { get; private set; }
+        public MixingWaveProvider32 ToPhoneLineMixer { get; private set; }
 
         public WaveFormat FromPhoneLineWaveFormat { get; private set; }
 
@@ -71,6 +72,11 @@ namespace Maple
             RxName = rxName;
             TxName = txName;
             ToPhoneLineIndex = GetDeviceIndexFor(TxName);
+        }
+
+        public void Start()
+        {
+            StartWave();
         }
 
         public void StartDso()
@@ -193,7 +199,13 @@ namespace Maple
 
             ToPhoneLineWave = new WaveOutEvent();
             ToPhoneLineWave.DeviceNumber = ToPhoneLineIndex;
-            ToPhoneLineBuffer = new BufferedWaveProvider(FromMicWave.WaveFormat);
+            ToPhoneLineBuffer = new BufferedWaveProvider(FromMicWave.WaveFormat); //  WaveFormat.CreateIeeeFloatWaveFormat(44100, 2));
+
+            // NOTE(lbayes): Tried buffering bits into a shared mixer,
+            // but this did not work either.
+            // ToPhoneLineMixer = new MixingWaveProvider32();
+            // ToPhoneLineMixer.AddInputStream(ToPhoneLineBuffer);
+
             ToPhoneLineWave.Init(ToPhoneLineBuffer);
             ToPhoneLineWave.Play();
             FromMicWave.StartRecording();
