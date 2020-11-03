@@ -9,7 +9,8 @@ namespace Maple
 {
     class Dtmf
     {
-        private readonly Double DEFAULT_GAIN = 0.6;
+        private readonly Double DEFAULT_GAIN = 0.4;
+        private readonly int DEFAULT_LATENCY = 80;
         private readonly int DEFAULT_TONE_DURATION_MS = 300;
 
         private Dictionary<char, Tuple<int, int>> DtmfLookup;
@@ -47,9 +48,9 @@ namespace Maple
 
         private void GenerateDtmfTone(AudioStitcher stitcher, TimeSpan duration, int freq1, int freq2)
         {
-            var waveFormat = stitcher.ToPhoneLineBuffer.WaveFormat;
+            var waveFormat = new WaveFormat(); //  stitcher.FromMicWave.WaveFormat;
             var channelCount = waveFormat.Channels;
-            Console.WriteLine("SampleRate: " + waveFormat.SampleRate + " channelCount: " + channelCount);
+            Console.Write("SampleRate: " + waveFormat.SampleRate + " channelCount: " + channelCount + " - ");
             var one = new SignalGenerator(waveFormat.SampleRate, channelCount)
             {
                 Gain = DEFAULT_GAIN,
@@ -65,30 +66,41 @@ namespace Maple
             };
 
             var inputs = new List<ISampleProvider>() { one, two };
-            var samples = new MixingSampleProvider(inputs);
-            var timedSamples = samples.Take(duration);
+            // var samples = new MixingSampleProvider(inputs);
+            // var timedSamples = samples.Take(duration);
 
-            GenerateWaveOut(stitcher, timedSamples, duration);
+            GenerateWaveOut(stitcher, one, two, duration);
             // GenerateDso(stitcher, timedSamples, duration);
             // GenerateWasapi(stitcher, timedSamples, duration);
             // GenerateMixerOut(stitcher, timedSamples, duration);
         }
         
-        private void GenerateWaveOut(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
+        private void GenerateWaveOut(AudioStitcher stitcher, ISampleProvider freq1, ISampleProvider freq2, TimeSpan duration)
         {
             var deviceNumber = stitcher.ToPhoneLineWave.DeviceNumber;
-            Console.WriteLine("Using Device Index: " + deviceNumber);
+            Console.WriteLine("Device Index: " + deviceNumber);
 
-            using (var wave = new WaveOutEvent())
+            using (var one = new WaveOutEvent())
+            using (var two = new WaveOutEvent())
             {
-                wave.DeviceNumber = deviceNumber;
-                wave.Init(samples.ToWaveProvider());
-                wave.Play();
+                one.DesiredLatency = DEFAULT_LATENCY;
+                one.DeviceNumber = deviceNumber;
+                one.Init(freq1.Take(duration));
 
-                while (wave.PlaybackState == PlaybackState.Playing)
+                two.DesiredLatency = DEFAULT_LATENCY;
+                two.DeviceNumber = deviceNumber;
+                two.Init(freq2.Take(duration));
+
+                one.Play();
+                two.Play();
+
+                while (one.PlaybackState == PlaybackState.Playing ||
+                    two.PlaybackState == PlaybackState.Playing)
                 {
                     Thread.Sleep(TimeSpan.FromMilliseconds(5));
                 }
+
+                Thread.Sleep(TimeSpan.FromMilliseconds(100));
             }
         }
 

@@ -1,6 +1,7 @@
 ﻿using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using System;
+using System.Threading;
 
 namespace Maple
 {
@@ -18,8 +19,6 @@ namespace Maple
         public int ToSpeakerIndex { get; private set; }
         public int FromMicIndex { get; private set; }
         public MixingWaveProvider32 ToPhoneLineMixer { get; private set; }
-
-        public WaveFormat FromPhoneLineWaveFormat { get; private set; }
 
         /**
          * =========================================
@@ -98,7 +97,6 @@ namespace Maple
             FromPhoneLineChannel = new WasapiCapture(FromPhoneLineDevice, true);
             FromPhoneLineChannel.WaveFormat = new WaveFormat(44100, 16, 1);
             FromPhoneLineChannel.DataAvailable += FromPhoneLineDataAvailable;
-            FromPhoneLineWaveFormat = FromPhoneLineChannel.WaveFormat;
 
             ToSpeakerDsoChannel = new DirectSoundOut(ToSpeakerDso.Guid);
             ToSpeakerBuffer = new BufferedWaveProvider(FromPhoneLineChannel.WaveFormat);
@@ -129,7 +127,6 @@ namespace Maple
             FromPhoneLineChannel = new WasapiCapture(FromPhoneLineDevice, true);
             FromPhoneLineChannel.WaveFormat = new WaveFormat(44100, 16, 1);
             FromPhoneLineChannel.DataAvailable += FromPhoneLineDataAvailable;
-            FromPhoneLineWaveFormat = FromPhoneLineChannel.WaveFormat;
 
             ToSpeakerChannel = new WasapiOut(ToSpeakerDevice, AudioClientShareMode.Shared, true, DEFAULT_LATENCY);
             ToSpeakerBuffer = new BufferedWaveProvider(FromPhoneLineChannel.WaveFormat);
@@ -165,28 +162,29 @@ namespace Maple
             Console.WriteLine("RxName:" + RxName);
 
             // Get each of the 4 audio devices by name and data flow.
-            FromPhoneLineDevice = GetMMDeviceByName(RxName, DataFlow.Capture);
-            FromPhoneLineIndex = GetDeviceIndexFor(RxName);
+            FromPhoneLineDevice = GetMMDeviceByName(RxName, DataFlow.Render);
+            FromPhoneLineIndex = GetDeviceIndexFor(FromPhoneLineDevice.FriendlyName);
 
-            ToPhoneLineDevice = GetMMDeviceByName(TxName, DataFlow.Render);
-            ToPhoneLineIndex = GetDeviceIndexFor(TxName);
-
-            ToSpeakerDevice = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
-            ToSpeakerIndex = GetDeviceIndexFor(ToSpeakerDevice.FriendlyName);
+            ToPhoneLineDevice = GetMMDeviceByName(TxName, DataFlow.Capture);
+            ToPhoneLineIndex = GetDeviceIndexFor(ToPhoneLineDevice.FriendlyName);
 
             FromMicDevice = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
             FromMicIndex = GetDeviceIndexFor(FromMicDevice.FriendlyName);
+
+            ToSpeakerDevice = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
+            ToSpeakerIndex = GetDeviceIndexFor(ToSpeakerDevice.FriendlyName);
 
             Console.WriteLine("Microphone: " + FromMicDevice?.FriendlyName);
             Console.WriteLine("Speakers: " + ToSpeakerDevice?.FriendlyName);
             Console.WriteLine("FromPhoneLine: " + FromPhoneLineDevice?.FriendlyName);
             Console.WriteLine("ToPhoneLine: " + ToPhoneLineDevice?.FriendlyName);
 
+            var waveFormat = new WaveFormat();
+
             // Configure the Line to Speaker connection.
             FromPhoneLineWave = new WaveInEvent();
             FromPhoneLineWave.DeviceNumber = FromPhoneLineIndex;
             FromPhoneLineWave.DataAvailable += FromPhoneLineDataAvailable;
-            FromPhoneLineWaveFormat = FromPhoneLineWave.WaveFormat;
 
             ToSpeakerWave = new WaveOutEvent();
             ToSpeakerBuffer = new BufferedWaveProvider(FromPhoneLineWave.WaveFormat);
@@ -208,10 +206,12 @@ namespace Maple
             // ToPhoneLineMixer = new MixingWaveProvider32();
             // ToPhoneLineMixer.AddInputStream(ToPhoneLineBuffer);
 
-            ToSpeakerWave.Play();
             ToPhoneLineWave.Play();
-            FromPhoneLineWave.StartRecording();
+            ToSpeakerWave.Play();
             FromMicWave.StartRecording();
+            FromPhoneLineWave.StartRecording();
+
+            Thread.Sleep(TimeSpan.FromMilliseconds(200));
         }
 
         public void Stop()
@@ -283,7 +283,7 @@ namespace Maple
             {
                 if (device.FriendlyName.Contains(name))
                 {
-                    Console.WriteLine("Found requested device at index: " + index);
+                    // Console.WriteLine("Found requested device at index: " + index);
                     return index;
                 }
                 index++;
@@ -297,7 +297,7 @@ namespace Maple
             {
                 if (name == "" || device.Description.Contains(name)) 
                 {
-                    Console.WriteLine("FOUND MATCH:" + name);
+                    // Console.WriteLine("FOUND MATCH:" + name);
                     return device;
                 }
             }
@@ -314,7 +314,7 @@ namespace Maple
                 {
                     if (device.FriendlyName.Contains(name))
                     {
-                        Console.WriteLine("GetDeviceWithProductName friendlyName: " + device.FriendlyName + " direction: " + direction);
+                        // Console.WriteLine("GetDeviceWithProductName friendlyName: " + device.FriendlyName + " direction: " + direction);
                         return device;
                     }
                 }
