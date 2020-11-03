@@ -10,7 +10,7 @@ namespace Maple
     class Dtmf
     {
         private readonly Double DEFAULT_GAIN = 0.6;
-        private readonly int DEFAULT_TONE_DURATION_MS = 150;
+        private readonly int DEFAULT_TONE_DURATION_MS = 300;
 
         private Dictionary<char, Tuple<int, int>> DtmfLookup;
 
@@ -68,10 +68,28 @@ namespace Maple
             var samples = new MixingSampleProvider(inputs);
             var timedSamples = samples.Take(duration);
 
+            GenerateWaveOut(stitcher, timedSamples, duration);
             // GenerateDso(stitcher, timedSamples, duration);
             // GenerateWasapi(stitcher, timedSamples, duration);
-            GenerateWaveOut(stitcher, timedSamples, duration);
             // GenerateMixerOut(stitcher, timedSamples, duration);
+        }
+        
+        private void GenerateWaveOut(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
+        {
+            var deviceNumber = stitcher.ToPhoneLineWave.DeviceNumber;
+            Console.WriteLine("Using Device Index: " + deviceNumber);
+
+            using (var wave = new WaveOutEvent())
+            {
+                wave.DeviceNumber = deviceNumber;
+                wave.Init(samples.ToWaveProvider());
+                wave.Play();
+
+                while (wave.PlaybackState == PlaybackState.Playing)
+                {
+                    Thread.Sleep(TimeSpan.FromMilliseconds(5));
+                }
+            }
         }
 
         private void GenerateDso(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
@@ -112,24 +130,6 @@ namespace Maple
 
             // stitcher.ToPhoneLineMixer.AddInputStream(samples.ToWaveProvider());
             Thread.Sleep(duration + TimeSpan.FromMilliseconds(10));
-        }
-
-        private void GenerateWaveOut(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
-        {
-            var deviceNumber = stitcher.ToSpeakerWave.DeviceNumber;
-            Console.WriteLine("Using Device Index: " + deviceNumber);
-
-            using (var wave = new WaveOutEvent())
-            {
-                wave.DeviceNumber = deviceNumber;
-                wave.Init(samples);
-                wave.Play();
-
-                while (wave.PlaybackState == PlaybackState.Playing)
-                {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(5));
-                }
-            }
         }
 
         private Dictionary<char, Tuple<int, int>> GetLookup()

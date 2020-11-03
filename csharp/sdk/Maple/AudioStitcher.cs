@@ -157,16 +157,19 @@ namespace Maple
                 return;
             }
 
+            IsActive = true;
+
             Console.WriteLine("----------------------------");
             Console.WriteLine("Wave AudioStitcher.Start()");
             Console.WriteLine("TxName:" + TxName);
             Console.WriteLine("RxName:" + RxName);
 
             // Get each of the 4 audio devices by name and data flow.
-            FromPhoneLineDevice = GetMMDeviceByName(TxName, DataFlow.Capture);
-            FromPhoneLineIndex = GetDeviceIndexFor(TxName);
-            ToPhoneLineDevice = GetMMDeviceByName(RxName, DataFlow.Render);
-            ToPhoneLineIndex = GetDeviceIndexFor(RxName);
+            FromPhoneLineDevice = GetMMDeviceByName(RxName, DataFlow.Capture);
+            FromPhoneLineIndex = GetDeviceIndexFor(RxName);
+
+            ToPhoneLineDevice = GetMMDeviceByName(TxName, DataFlow.Render);
+            ToPhoneLineIndex = GetDeviceIndexFor(TxName);
 
             ToSpeakerDevice = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
             ToSpeakerIndex = GetDeviceIndexFor(ToSpeakerDevice.FriendlyName);
@@ -189,8 +192,6 @@ namespace Maple
             ToSpeakerBuffer = new BufferedWaveProvider(FromPhoneLineWave.WaveFormat);
 
             ToSpeakerWave.Init(ToSpeakerBuffer);
-            ToSpeakerWave.Play();
-            FromPhoneLineWave.StartRecording();
 
             // Configure the Mic to Line connection.
             FromMicWave = new WaveInEvent();
@@ -200,17 +201,17 @@ namespace Maple
             ToPhoneLineWave = new WaveOutEvent();
             ToPhoneLineWave.DeviceNumber = ToPhoneLineIndex;
             ToPhoneLineBuffer = new BufferedWaveProvider(FromMicWave.WaveFormat); //  WaveFormat.CreateIeeeFloatWaveFormat(44100, 2));
+            ToPhoneLineWave.Init(ToPhoneLineBuffer);
 
             // NOTE(lbayes): Tried buffering bits into a shared mixer,
             // but this did not work either.
             // ToPhoneLineMixer = new MixingWaveProvider32();
             // ToPhoneLineMixer.AddInputStream(ToPhoneLineBuffer);
 
-            ToPhoneLineWave.Init(ToPhoneLineBuffer);
+            ToSpeakerWave.Play();
             ToPhoneLineWave.Play();
+            FromPhoneLineWave.StartRecording();
             FromMicWave.StartRecording();
-
-            IsActive = true;
         }
 
         public void Stop()
