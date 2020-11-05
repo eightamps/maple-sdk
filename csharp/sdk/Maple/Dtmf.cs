@@ -9,9 +9,9 @@ namespace Maple
 {
     class Dtmf
     {
-        private readonly Double DEFAULT_GAIN = 0.4;
+        private readonly Double DEFAULT_GAIN = 0.9;
         private readonly int DEFAULT_LATENCY = 80;
-        private readonly int DEFAULT_TONE_DURATION_MS = 300;
+        private readonly int DEFAULT_TONE_DURATION_MS = 100;
 
         private Dictionary<char, Tuple<int, int>> DtmfLookup;
 
@@ -48,7 +48,7 @@ namespace Maple
 
         private void GenerateDtmfTone(AudioStitcher stitcher, TimeSpan duration, int freq1, int freq2)
         {
-            var waveFormat = new WaveFormat(); //  stitcher.FromMicWave.WaveFormat;
+            var waveFormat = stitcher.ToPhoneLineWaveFormat;
             var channelCount = waveFormat.Channels;
             Console.Write("SampleRate: " + waveFormat.SampleRate + " channelCount: " + channelCount + " - ");
             var one = new SignalGenerator(waveFormat.SampleRate, channelCount)
@@ -66,15 +66,32 @@ namespace Maple
             };
 
             var inputs = new List<ISampleProvider>() { one, two };
-            // var samples = new MixingSampleProvider(inputs);
+            var samples = new MixingSampleProvider(inputs);
             // var timedSamples = samples.Take(duration);
 
-            GenerateWaveOut(stitcher, one, two, duration);
+            // GenerateWaveOut(stitcher, one, two, duration);
             // GenerateDso(stitcher, timedSamples, duration);
-            // GenerateWasapi(stitcher, timedSamples, duration);
+            GenerateWasapi(stitcher, samples, duration); // one, two, duration);
             // GenerateMixerOut(stitcher, timedSamples, duration);
+            Console.WriteLine("");
         }
-        
+
+        private void GenerateWasapi(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
+        {
+            var sampleStream = samples.ToWaveProvider();
+            stitcher.ToPhoneLineChannel.Pause();
+            stitcher.ToPhoneLineMixer.AddInputStream(sampleStream);
+            stitcher.ToPhoneLineChannel.Play();
+
+            Thread.Sleep(duration);
+
+            stitcher.ToPhoneLineChannel.Pause();
+            stitcher.ToPhoneLineMixer.RemoveInputStream(sampleStream);
+            stitcher.ToPhoneLineChannel.Play();
+
+            Thread.Sleep(TimeSpan.FromMilliseconds(60));
+        }
+
         private void GenerateWaveOut(AudioStitcher stitcher, ISampleProvider freq1, ISampleProvider freq2, TimeSpan duration)
         {
             var deviceNumber = stitcher.ToPhoneLineWave.DeviceNumber;
@@ -112,20 +129,6 @@ namespace Maple
                 dso.Play();
 
                 while (dso.PlaybackState == PlaybackState.Playing)
-                {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(5));
-                }
-            }
-        }
-
-        private void GenerateWasapi(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
-        {
-            using (var wave = new WasapiOut(stitcher.ToPhoneLineDevice, AudioClientShareMode.Shared, true, 100))
-            {
-                wave.Init(samples);
-                wave.Play();
-
-                while (wave.PlaybackState == PlaybackState.Playing)
                 {
                     Thread.Sleep(TimeSpan.FromMilliseconds(5));
                 }
