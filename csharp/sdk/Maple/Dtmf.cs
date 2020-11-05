@@ -9,9 +9,9 @@ namespace Maple
 {
     class Dtmf
     {
-        private readonly Double DEFAULT_GAIN = 0.3;
-        private readonly int DEFAULT_LATENCY = 80;
-        private readonly int DEFAULT_TONE_DURATION_MS = 100;
+        private readonly Double DEFAULT_GAIN = 0.4;
+        private readonly TimeSpan DEFAULT_TONE_DURATION_MS = TimeSpan.FromMilliseconds(100);
+        private readonly TimeSpan DEFAULT_TONE_PAUSE_DURATION_MS = TimeSpan.FromMilliseconds(100);
 
         private Dictionary<char, Tuple<int, int>> DtmfLookup;
 
@@ -21,8 +21,7 @@ namespace Maple
 
         public void GenerateDtmfTones(String phoneNumbers, AudioStitcher stitcher)
         {
-            Console.WriteLine("----------------------");
-            Console.WriteLine("GenerateTones with:" + phoneNumbers);
+            Console.WriteLine("Generate DTMF Tones for:" + phoneNumbers);
             // Strip any unsupported characters from the phoneNumbers string.
             string filteredInput = filterPhoneNumbers(phoneNumbers);
             if (filteredInput != phoneNumbers)
@@ -35,22 +34,21 @@ namespace Maple
             }
 
             // Get the device index from the PhoneOutput signal.
-            var duration = TimeSpan.FromMilliseconds(DEFAULT_TONE_DURATION_MS);
-            // Console.WriteLine("GenerateTones on device: " + output.FriendlyName + " with duration: " + duration.TotalMilliseconds + "ms");
+            var duration = DEFAULT_TONE_DURATION_MS;
             var tones = StringToDtmf(filteredInput);
-            Console.WriteLine("GenerateDtmf start");
+            // Console.WriteLine("GenerateDtmf start");
             foreach (var tone in tones)
             {
                 GenerateDtmfTone(stitcher, duration, tone.Item1, tone.Item2);
+                Thread.Sleep(DEFAULT_TONE_PAUSE_DURATION_MS);
             }
-            Console.WriteLine("GenerateDtmf done");
         }
 
         private void GenerateDtmfTone(AudioStitcher stitcher, TimeSpan duration, int freq1, int freq2)
         {
             var waveFormat = stitcher.FromMicChannel.WaveFormat;
             var channelCount = waveFormat.Channels;
-            Console.Write("SampleRate: " + waveFormat.SampleRate + " channelCount: " + channelCount + " - ");
+
             var one = new SignalGenerator(waveFormat.SampleRate, channelCount)
             {
                 Gain = DEFAULT_GAIN,
@@ -67,13 +65,8 @@ namespace Maple
 
             var inputs = new List<ISampleProvider>() { one, two };
             var samples = new MixingSampleProvider(inputs);
-            // var timedSamples = samples.Take(duration);
 
-            // GenerateWaveOut(stitcher, one, two, duration);
-            // GenerateDso(stitcher, timedSamples, duration);
             GenerateWasapi(stitcher, samples, duration); // one, two, duration);
-            // GenerateMixerOut(stitcher, timedSamples, duration);
-            Console.WriteLine("");
         }
 
         private void GenerateWasapi(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
@@ -90,61 +83,6 @@ namespace Maple
             stitcher.ToPhoneLineChannel.Play();
 
             Thread.Sleep(TimeSpan.FromMilliseconds(60));
-        }
-
-        private void GenerateWaveOut(AudioStitcher stitcher, ISampleProvider freq1, ISampleProvider freq2, TimeSpan duration)
-        {
-            var deviceNumber = stitcher.ToPhoneLineWave.DeviceNumber;
-            Console.WriteLine("Device Index: " + deviceNumber);
-
-            using (var one = new WaveOutEvent())
-            using (var two = new WaveOutEvent())
-            {
-                one.DesiredLatency = DEFAULT_LATENCY;
-                one.DeviceNumber = deviceNumber;
-                one.Init(freq1.Take(duration));
-
-                two.DesiredLatency = DEFAULT_LATENCY;
-                two.DeviceNumber = deviceNumber;
-                two.Init(freq2.Take(duration));
-
-                one.Play();
-                two.Play();
-
-                while (one.PlaybackState == PlaybackState.Playing ||
-                    two.PlaybackState == PlaybackState.Playing)
-                {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(5));
-                }
-
-                Thread.Sleep(TimeSpan.FromMilliseconds(100));
-            }
-        }
-
-        private void GenerateDso(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
-        {
-            using (var dso = new DirectSoundOut(stitcher.ToPhoneLineDso.Guid))
-            {
-                dso.Init(samples);
-                dso.Play();
-
-                while (dso.PlaybackState == PlaybackState.Playing)
-                {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(5));
-                }
-            }
-        }
-
-        private void GenerateMixerOut(AudioStitcher stitcher, ISampleProvider samples, TimeSpan duration)
-        {
-            Console.WriteLine("Using Mixer Output");
-            var count = 10000;
-            // byte[] buffer = new byte[count];
-            // samples.ToWaveProvider16().Read(buffer, 0, count);
-            // stitcher.ToPhoneLineBuffer.AddSamples(buffer, 0, count);
-
-            // stitcher.ToPhoneLineMixer.AddInputStream(samples.ToWaveProvider());
-            Thread.Sleep(duration + TimeSpan.FromMilliseconds(10));
         }
 
         private Dictionary<char, Tuple<int, int>> GetLookup()
