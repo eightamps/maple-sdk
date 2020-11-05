@@ -7,10 +7,13 @@ namespace Maple
 {
     public class AudioStitcher : IDisposable
     {
-        public const int DEFAULT_LATENCY = 100;
+        public const int DEFAULT_LATENCY = 80;
         public const bool DEFAULT_SYNC = true;
-        public const int DEFAULT_SAMPLE_RATE = 44100;
-        public const int DEFAULT_OUT_CH = 2;
+
+        public const int DEFAULT_OUT_SAMPLE_RATE = 44100;
+        public const int DEFAULT_OUT_CH = 1;
+
+        public const int DEFAULT_IN_SAMPLE_RATE = 48000;
         public const int DEFAULT_IN_CH = 1;
         public const AudioClientShareMode DEFAULT_SHARE = AudioClientShareMode.Shared;
 
@@ -28,7 +31,7 @@ namespace Maple
         public Wave16ToFloatProvider FromMicBufferFloat { get; private set; }
         public WaveFormat WaveFormatIeee { get; private set; }
         public WaveFormat ToPhoneLineWaveFormat { get; private set; }
-        public WaveFormat FromPhoneLineWaveFormat { get; private set; }
+        // public WaveFormat FromPhoneLineWaveFormat { get; private set; }
         // public BufferedWaveProvider FromDtmfBuffer { get; private set; }
 
         /**
@@ -106,46 +109,44 @@ namespace Maple
             Console.WriteLine("Wasapi AudioStitcher.Start()");
 
             // var waveFormat = new WaveFormat(44100, 1);
-            ToPhoneLineWaveFormat = new WaveFormat(DEFAULT_SAMPLE_RATE, DEFAULT_OUT_CH);
-            FromPhoneLineWaveFormat = new WaveFormat(DEFAULT_SAMPLE_RATE, DEFAULT_IN_CH);
+            ToPhoneLineWaveFormat = new WaveFormat(DEFAULT_OUT_SAMPLE_RATE, DEFAULT_OUT_CH);
+            // FromPhoneLineWaveFormat = new WaveFormat(DEFAULT_IN_SAMPLE_RATE, DEFAULT_IN_CH);
             // WaveFormatIeee = WaveFormat.CreateIeeeFloatWaveFormat(DEFAULT_SAMPLE_RATE, DEFAULT_OUT_CH);
-
-            LogWaveFormat("ToPhoneLine", ToPhoneLineWaveFormat);
-            LogWaveFormat("FromPhoneLine", FromPhoneLineWaveFormat);
             // LogWaveFormat("WFIEEE", WaveFormatIeee);
 
             // Get each of the 4 audio devices by name and data flow.
             FromPhoneLineDevice = GetMMDeviceByName(RxName, DataFlow.Capture);
-            Console.WriteLine("EEEEEK");
             ToPhoneLineDevice = GetMMDeviceByName(TxName, DataFlow.Render);
-            Console.WriteLine("AAAAAK");
 
             ToSpeakerDevice = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
             FromMicDevice = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
 
             // Configure the Line to Speaker connection.
             FromPhoneLineChannel = new WasapiCapture(FromPhoneLineDevice, DEFAULT_SYNC, DEFAULT_LATENCY);
-            FromPhoneLineChannel.WaveFormat = FromPhoneLineWaveFormat;
+            // FromPhoneLineChannel.WaveFormat = FromPhoneLineWaveFormat;
             // FromPhoneLineChannel.WaveFormat = new WaveFormat(44100, 16, 1);
             FromPhoneLineChannel.DataAvailable += FromPhoneLineDataAvailable;
 
             ToSpeakerChannel = new WasapiOut(ToSpeakerDevice, DEFAULT_SHARE, DEFAULT_SYNC, DEFAULT_LATENCY);
-            ToSpeakerBuffer = new BufferedWaveProvider(FromPhoneLineWaveFormat); //  FromPhoneLineChannel.WaveFormat);
+            ToSpeakerBuffer = new BufferedWaveProvider(FromPhoneLineChannel.WaveFormat);
 
             // Configure the Mic to Line connection.
-            // FromMicChannel = new WasapiCapture(FromMicDevice, DEFAULT_SYNC);
-            // FromMicChannel.DataAvailable += FromMicDataAvailable;
+            FromMicChannel = new WasapiCapture(FromMicDevice, DEFAULT_SYNC, DEFAULT_LATENCY);
+            // FromMicChannel.WaveFormat = ToPhoneLineWaveFormat;
+            FromMicChannel.DataAvailable += FromMicDataAvailable;
+
+            LogWaveFormat("ToPhoneLine:      ", ToPhoneLineWaveFormat);
+            LogWaveFormat("FromPhoneLine:    ", FromPhoneLineChannel.WaveFormat);
+            LogWaveFormat("FromMicChannel:   ", FromMicChannel.WaveFormat);
+            LogWaveFormat("ToSpeakerChannel: ", ToSpeakerChannel.OutputWaveFormat);
 
             ToPhoneLineChannel = new WasapiOut(ToPhoneLineDevice, DEFAULT_SHARE, DEFAULT_SYNC, DEFAULT_LATENCY);
 
-            // FromMicBuffer = new BufferedWaveProvider(ToPhoneLineWaveFormat);
+            FromMicBuffer = new BufferedWaveProvider(FromMicChannel.WaveFormat);
             // FromMicBufferFloat = new Wave16ToFloatProvider(FromMicBuffer);
 
-            // FromDtmfBuffer = new BufferedWaveProvider(waveFormatIee);
-
             ToPhoneLineMixer = new MixingWaveProvider32();
-            // ToPhoneLineMixer.AddInputStream(FromMicBuffer);
-            // ToPhoneLineMixer.AddInputStream(FromDtmfBuffer);
+            ToPhoneLineMixer.AddInputStream(FromMicBuffer);
 
             ToSpeakerChannel.Init(ToSpeakerBuffer);
             ToPhoneLineChannel.Init(ToPhoneLineMixer);
@@ -154,7 +155,7 @@ namespace Maple
             ToSpeakerChannel.Play();
             ToPhoneLineChannel.Play();
             FromPhoneLineChannel.StartRecording();
-            // FromMicChannel.StartRecording();
+            FromMicChannel.StartRecording();
 
             IsActive = true;
         }
@@ -367,7 +368,6 @@ namespace Maple
                 var devices = enumerator.EnumerateAudioEndPoints(direction, DeviceState.Active);
                 foreach (var device in devices)
                 {
-                    Console.WriteLine("CHECKING DEVICE:" + device.FriendlyName);
                     if (device.FriendlyName.Contains(name))
                     {
                         // Console.WriteLine("GetDeviceWithProductName friendlyName: " + device.FriendlyName + " direction: " + direction);

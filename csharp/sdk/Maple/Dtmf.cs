@@ -9,7 +9,7 @@ namespace Maple
 {
     class Dtmf
     {
-        private readonly Double DEFAULT_GAIN = 0.9;
+        private readonly Double DEFAULT_GAIN = 0.3;
         private readonly int DEFAULT_LATENCY = 80;
         private readonly int DEFAULT_TONE_DURATION_MS = 100;
 
@@ -48,7 +48,7 @@ namespace Maple
 
         private void GenerateDtmfTone(AudioStitcher stitcher, TimeSpan duration, int freq1, int freq2)
         {
-            var waveFormat = stitcher.ToPhoneLineWaveFormat;
+            var waveFormat = stitcher.FromMicChannel.WaveFormat;
             var channelCount = waveFormat.Channels;
             Console.Write("SampleRate: " + waveFormat.SampleRate + " channelCount: " + channelCount + " - ");
             var one = new SignalGenerator(waveFormat.SampleRate, channelCount)
