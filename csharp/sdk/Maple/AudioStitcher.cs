@@ -1,13 +1,12 @@
 ﻿using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using System;
-using System.Threading;
 
 namespace Maple
 {
     public class AudioStitcher : IDisposable
     {
-        public const int DEFAULT_LATENCY = 80;
+        public const int DEFAULT_LATENCY = 40;
         public const bool DEFAULT_SYNC = true;
 
         public const int DEFAULT_OUT_SAMPLE_RATE = 44100;
