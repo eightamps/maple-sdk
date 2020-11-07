@@ -137,7 +137,7 @@ namespace Maple
             stream.Dispose();
         }
 
-        public void SetTerminal(uint outTerminalId, List<ValueTuple<uint, bool>> contactsToSet)
+        private void SetTerminal(uint outTerminalId, List<ValueTuple<uint, bool>> contactsToSet)
         {
             if (outTerminalId >= outTerminals.Length)
             {
@@ -172,6 +172,43 @@ namespace Maple
                 }
             });
             stream.Write(buffer);
+        }
+
+        public void Activate(uint contactIndex)
+        {
+            var contacts = new List<ValueTuple<uint, bool>>();
+            // contacts are active low -> activate means set pin low
+            contacts.Add(new ValueTuple<uint, bool>(contactIndex, false));
+            // only one terminal exists now
+            SetTerminal(0, contacts);
+        }
+
+        public void Deactivate(uint contactIndex)
+        {
+            var contacts = new List<ValueTuple<uint, bool>>();
+            // contacts are active low -> deactivate means set pin high
+            contacts.Add(new ValueTuple<uint, bool>(contactIndex, true));
+            // only one terminal exists now
+            SetTerminal(0, contacts);
+        }
+
+        public void ActivateForDuration(uint contactIndex, TimeSpan duration)
+        {
+            Activate(contactIndex);
+            Thread.Sleep(duration);
+            Deactivate(contactIndex);
+        }
+
+        public void DeactivateForDuration(uint contactIndex, TimeSpan duration)
+        {
+            Deactivate(contactIndex);
+            Thread.Sleep(duration);
+            Activate(contactIndex);
+        }
+
+        public string GetSerialNumber()
+        {
+            return hiddev.GetSerialNumber();
         }
 
         public static bool TryOpen(HidDevice hiddev, out ControlUnit CtrlUnit)
