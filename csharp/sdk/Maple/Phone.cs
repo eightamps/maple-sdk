@@ -339,7 +339,7 @@ namespace Maple
                         break;
                     case HidUsage.Telephony.ActivateHandsetAudio:
                         Console.WriteLine("Sending offHook with: " + offHook);
-                        dataItem.WriteRaw(buf, bitOffset, 0, Convert.ToUInt32(!offHook));
+                        dataItem.WriteRaw(buf, bitOffset, 0, Convert.ToUInt32(offHook));
                         break;
                     default:
                         break;
