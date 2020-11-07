@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Maple;
 
 namespace MaplePhoneTest
@@ -11,6 +12,36 @@ namespace MaplePhoneTest
         {
             Console.WriteLine("exit");
             phone.Dispose();
+        }
+
+        static void InitiatePhoneCall(String input)
+        {
+            if (input == "")
+            {
+                input = "(510) 459-9053";
+            }
+
+            if (phone.OffHook)
+            {
+                phone.HangUp();
+            }
+
+            Console.WriteLine("Dialing:" + input);
+            phone.Dial(input);
+
+            Console.WriteLine("Hang Up?");
+            Console.ReadLine();
+            phone.HangUp();
+        }
+
+        static void testOutputs()
+        {
+            var control = ControlUnit.First();
+            var duration = TimeSpan.FromMilliseconds(200);
+            // Test a single output as simply as possible.
+            control.Activate(3);
+            Thread.Sleep(duration + TimeSpan.FromMilliseconds(100));
+            control.Deactivate(3);
         }
 
         static void Main(string[] args)
@@ -27,25 +58,20 @@ namespace MaplePhoneTest
             while (true)
             {
                 Console.WriteLine("------------------------------");
-                Console.WriteLine("Dial a number? (default: 510 459-9053)");
+                Console.WriteLine("Press 'a' + Enter to test outputs, or");
+                Console.WriteLine("dial a number? (default: 510 459-9053)");
                 string input = Console.ReadLine();
 
-                if (input == "")
+                switch (input)
                 {
-                    input = "(510) 459-9053";
+                    case "a":
+                        testOutputs();
+                        break;
+                    default:
+                        InitiatePhoneCall(input);
+                        break;
                 }
 
-                if (phone.OffHook)
-                {
-                    phone.HangUp();
-                }
-
-                Console.WriteLine("Dialing:" + input);
-                phone.Dial(input);
-
-                Console.WriteLine("Hang Up?");
-                Console.ReadLine();
-                phone.HangUp();
             }
 
             /*
