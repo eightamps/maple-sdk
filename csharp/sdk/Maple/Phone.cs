@@ -123,12 +123,10 @@ namespace Maple
         public void Dispose()
         {
             Console.WriteLine("Maple DISPOSE with OffHook state: " + OffHook);
-            if (OffHook)
-            {
-                HangUp();
-                // TODO(lbayes): REMOVE ME!
-                Thread.Sleep(TimeSpan.FromSeconds(1));
-            }
+
+            // disable telephone control (also hangs up)
+            SendControl(false);
+
             this.inputReceiver.Received -= InputHandler;
             stitcher.Dispose();
             stream.Dispose();
