@@ -38,18 +38,22 @@ namespace MaplePhoneTest
         {
             var control = ControlUnit.First();
             var duration = TimeSpan.FromMilliseconds(200);
-            // Test a single output as simply as possible.
-            control.Activate(3);
-            Thread.Sleep(duration + TimeSpan.FromMilliseconds(100));
-            control.Deactivate(3);
+            for (uint index = 0; index <= 9; index++)
+            {
+                control.ActivateForDuration(index, duration);
+                Thread.Sleep(duration);
+            }
         }
 
         static void Main(string[] args)
         {
-            phone = Phone.First();
-            if (phone == null)
+            try
             {
-                Console.WriteLine("No Maple found!");
+                phone = Phone.First();
+            } catch (InvalidOperationException err)
+            {
+                Console.WriteLine("Unable to find Phone, is it plugged in and powered on?");
+                Console.WriteLine("Exiting now");
                 return;
             }
 
