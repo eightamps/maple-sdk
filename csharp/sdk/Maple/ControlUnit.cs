@@ -164,7 +164,7 @@ namespace Maple
                     case HidUsage.EightAmps.HaTerminalContactValue:
                         foreach (var contact in contactsToSet)
                         {
-                            dataItem.WriteRaw(buf, bitOffset, (int)contact.Item1, (uint)(contact.Item2 ? 1 : 3));
+                            dataItem.WriteRaw(buf, bitOffset, (int)contact.Item1, (uint)(contact.Item2 ? 1 : -1));
                         }
                         break;
                     default:
