@@ -38,7 +38,8 @@ namespace MaplePhoneTest
         {
             var control = ControlUnit.First();
             var duration = TimeSpan.FromMilliseconds(200);
-            for (uint index = 0; index <= 9; index++)
+            var count = 10;
+            for (uint index = 0; index < count; index++)
             {
                 control.ActivateForDuration(index, duration);
                 Thread.Sleep(duration);

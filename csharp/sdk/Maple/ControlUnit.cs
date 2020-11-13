@@ -178,7 +178,7 @@ namespace Maple
         {
             var contacts = new List<ValueTuple<uint, bool>>();
             // contacts are active low -> activate means set pin low
-            contacts.Add(new ValueTuple<uint, bool>(contactIndex, false));
+            contacts.Add(new ValueTuple<uint, bool>(contactIndex, true));
             // only one terminal exists now
             SetTerminal(0, contacts);
         }
@@ -187,7 +187,7 @@ namespace Maple
         {
             var contacts = new List<ValueTuple<uint, bool>>();
             // contacts are active low -> deactivate means set pin high
-            contacts.Add(new ValueTuple<uint, bool>(contactIndex, true));
+            contacts.Add(new ValueTuple<uint, bool>(contactIndex, false));
             // only one terminal exists now
             SetTerminal(0, contacts);
         }
