@@ -164,7 +164,7 @@ namespace Maple
                     case HidUsage.EightAmps.HaTerminalContactValue:
                         foreach (var contact in contactsToSet)
                         {
-                            dataItem.WriteRaw(buf, bitOffset, (int)contact.Item1, (uint)(contact.Item2 ? 1 : 3));
+                            dataItem.WriteRaw(buf, bitOffset, (int)contact.Item1, (uint)(contact.Item2 ? 1 : -1));
                         }
                         break;
                     default:
@@ -174,10 +174,24 @@ namespace Maple
             stream.Write(buffer);
         }
 
+        public uint GetOutTerminalCount()
+        {
+            return (uint)outTerminals.Length;
+        }
+
+        public uint GetOutContactCount(uint outTerminalId = 0)
+        {
+            if (outTerminalId >= outTerminals.Length)
+            {
+                throw new ArgumentOutOfRangeException("outTerminalId", outTerminalId, "Must be a valid selector of an output terminal");
+            }
+            return outTerminals[outTerminalId];
+        }
+
         public void Activate(uint contactIndex)
         {
             var contacts = new List<ValueTuple<uint, bool>>();
-            // contacts are active low -> activate means set pin low
+            // contacts are active high -> activate means set pin high
             contacts.Add(new ValueTuple<uint, bool>(contactIndex, true));
             // only one terminal exists now
             SetTerminal(0, contacts);
@@ -186,7 +200,7 @@ namespace Maple
         public void Deactivate(uint contactIndex)
         {
             var contacts = new List<ValueTuple<uint, bool>>();
-            // contacts are active low -> deactivate means set pin high
+            // contacts are active high -> deactivate means set pin low
             contacts.Add(new ValueTuple<uint, bool>(contactIndex, false));
             // only one terminal exists now
             SetTerminal(0, contacts);

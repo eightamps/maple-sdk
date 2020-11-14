@@ -38,7 +38,7 @@ namespace MaplePhoneTest
         {
             var control = ControlUnit.First();
             var duration = TimeSpan.FromMilliseconds(200);
-            var count = 10;
+            var count = control.GetOutContactCount();
             for (uint index = 0; index < count; index++)
             {
                 control.ActivateForDuration(index, duration);
