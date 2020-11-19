@@ -73,7 +73,7 @@ namespace Maple
             });
         }
 
-        public void Hangup(PhoneCallback callback)
+        public void HangUp(PhoneCallback callback)
         {
             this.Queue.Enqueue((Phone phone) => 
             {
