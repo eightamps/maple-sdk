@@ -36,7 +36,7 @@ namespace Maple
 
         // public static readonly String PhoneCapture = "Microphone (Telephone Audio)";
         // public static readonly String PhoneRender = "Speakers (Telephone Audio)";
-        public static readonly String PhoneCapture = "ASI Microphone";
+        public static readonly String PhoneCapture = "ASI Telephone";
         public static readonly String PhoneRender = "ASI Telephone";
 
         protected Phone(HidStream hidStream)
@@ -266,7 +266,7 @@ namespace Maple
             {
                 // Wait for firmware confirmation that the line is Off Hook.
                 // TODO(lbayes): Add tone detection for open line dial tone.
-                Thread.Sleep(TimeSpan.FromMilliseconds(5));
+                Thread.Sleep(TimeSpan.FromMilliseconds(100));
                 // TODO(lbayes): Add a timeout to avoid blocking forever.
             }
         }
