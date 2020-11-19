@@ -51,7 +51,7 @@ namespace MaplePhoneTest
             try
             {
                 phone = Phone.First();
-            } catch (InvalidOperationException err)
+            } catch (InvalidOperationException)
             {
                 Console.WriteLine("Unable to find Phone, is it plugged in and powered on?");
                 Console.WriteLine("Exiting now");
