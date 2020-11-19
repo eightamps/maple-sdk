@@ -11,8 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HidSharp\HidSharp\HidSharp.csproj" />
     <PackageReference Include="NAudio" Version="1.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HidSharp\HidSharp\HidSharp.NETStandard.csproj" />
   </ItemGroup>
 
 </Project>

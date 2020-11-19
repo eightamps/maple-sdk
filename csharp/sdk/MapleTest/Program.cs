@@ -76,7 +76,6 @@ namespace MaplePhoneTest
                         InitiatePhoneCall(input);
                         break;
                 }
-
             }
 
             /*
