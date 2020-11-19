@@ -6,7 +6,7 @@ namespace MaplePhoneTest
 {
     class Program
     {
-        private static Phone phone;
+        private static PhoneAsync phone = new PhoneAsync();
 
         static void ExitHandler(object sender, EventArgs e)
         {
@@ -21,17 +21,17 @@ namespace MaplePhoneTest
                 input = "(510) 459-9053";
             }
 
-            if (phone.OffHook)
-            {
-                phone.HangUp();
-            }
-
             Console.WriteLine("Dialing:" + input);
-            phone.Dial(input);
+            phone.Dial(input, (PhoneStatus status, string message) =>
+            {
+                Console.WriteLine("Hang Up?");
+                Console.ReadLine();
+                phone.HangUp((PhoneStatus status, string message) =>
+                {
+                    Console.WriteLine("HUNG UP with:", status,  message);
+                });
+            });
 
-            Console.WriteLine("Hang Up?");
-            Console.ReadLine();
-            phone.HangUp();
         }
 
         static void testOutputs()
@@ -50,7 +50,7 @@ namespace MaplePhoneTest
         {
             try
             {
-                phone = Phone.First();
+                phone = new PhoneAsync();
             } catch (InvalidOperationException)
             {
                 Console.WriteLine("Unable to find Phone, is it plugged in and powered on?");
