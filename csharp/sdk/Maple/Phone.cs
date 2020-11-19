@@ -36,10 +36,8 @@ namespace Maple
 
         // public static readonly String PhoneCapture = "Microphone (Telephone Audio)";
         // public static readonly String PhoneRender = "Speakers (Telephone Audio)";
-        // public static readonly String PhoneCapture = "Telephone Audio";
-        // public static readonly String PhoneRender = "Telephone Audio";
-        public static readonly String PhoneCapture = "USB Audio Device";
-        public static readonly String PhoneRender = "USB Audio Device";
+        public static readonly String PhoneCapture = "ASI Microphone";
+        public static readonly String PhoneRender = "ASI Telephone";
 
         protected Phone(HidStream hidStream)
         {
