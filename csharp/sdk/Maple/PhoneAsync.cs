@@ -21,6 +21,7 @@ namespace Maple
 
         public PhoneAsync()
         {
+            this.Queue = new Queue<Action<Phone>>();
             this.Connect();
         }
 
@@ -59,28 +60,30 @@ namespace Maple
         private void Enqueue(Action<Phone> action)
         {
             this.Connect();
+            this.Queue.Clear();
             this.Queue.Enqueue(action);
         }
 
-        public void Dial(string phoneNumber, PhoneCallback callback)
+        public void Dial(string phoneNumber, PhoneCallback callback = null)
         {
             this.Enqueue((Phone phone) => 
             {
                 Console.WriteLine("YOOOOOOOOOOOOOOOOOOO INSIDE");
                 Console.WriteLine("PHONE NUBMER:", phoneNumber);
                 phone.Dial(phoneNumber);
-                callback(PhoneStatus.SUCCESS, "Call Started with: " + phoneNumber);
+                callback?.Invoke(PhoneStatus.SUCCESS, "Call Started with: " + phoneNumber);
             });
         }
 
-        public void HangUp(PhoneCallback callback)
+        public void HangUp(PhoneCallback callback = null)
         {
             this.Queue.Enqueue((Phone phone) => 
             {
                 Console.WriteLine("HANGUP INSIDE");
                 Console.WriteLine("PHONE NUBMER:");
                 phone.HangUp();
-                callback(PhoneStatus.SUCCESS, "Hung Up Dude");
+
+                callback?.Invoke(PhoneStatus.SUCCESS, "Hung Up Dude");
             });
         }
 
