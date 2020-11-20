@@ -17,6 +17,10 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="NAudio" Version="1.10.0" />
   </ItemGroup>
