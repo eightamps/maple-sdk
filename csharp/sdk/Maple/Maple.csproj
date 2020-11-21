@@ -26,7 +26,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HidSharp\HidSharp\HidSharp.NETStandard.csproj" />
+    <Reference Include="HidSharp">
+      <HintPath>..\..\..\..\..\Vendor DLLs\HidSharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
