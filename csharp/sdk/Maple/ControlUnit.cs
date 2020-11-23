@@ -250,7 +250,16 @@ namespace Maple
         public static ControlUnit First()
         {
             ControlUnit r = null;
-            var device = DeviceList.Local.GetHidDevices().First(d => ControlUnit.TryOpen(d, out r));
+
+            try
+            {
+                var device = DeviceList.Local.GetHidDevices().First(d => ControlUnit.TryOpen(d, out r));
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
             return r;
         }
     }
