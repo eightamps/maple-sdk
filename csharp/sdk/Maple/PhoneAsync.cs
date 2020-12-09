@@ -18,6 +18,7 @@ namespace Maple
         private Queue<Action<Phone>> Queue;
 
         private const int THREAD_SLEEP_DURATION = 10;
+        public event Action<Phone, bool> RingingChanged;
 
         public PhoneAsync()
         {
@@ -35,6 +36,7 @@ namespace Maple
                     try
                     {
                         phone = Phone.First();
+                        phone.RingingChanged += this.PhoneRingingChangedHandler;
                     }
                     catch (Exception ex)
                     {
@@ -55,6 +57,11 @@ namespace Maple
                 });
                 this.PhoneThread.Start();
             }
+        }
+
+        private void PhoneRingingChangedHandler(Phone phone, bool ringingState)
+        {
+            this.RingingChanged?.Invoke(phone, ringingState);
         }
 
         private void Enqueue(Action<Phone> action)
@@ -84,6 +91,15 @@ namespace Maple
                 phone.HangUp();
 
                 callback?.Invoke(PhoneStatus.SUCCESS, "Hung Up Dude");
+            });
+        }
+
+        public void TakeOffHook(PhoneCallback callback = null)
+        {
+            this.Enqueue((Phone phone) =>
+            {
+                phone.TakeOffHook();
+                callback?.Invoke(PhoneStatus.SUCCESS, "Took it off hook Dude");
             });
         }
 
