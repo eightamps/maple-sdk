@@ -108,6 +108,12 @@ namespace Maple
             if (this.PhoneThread.IsAlive)
             {
                 this.PhoneThread.Abort();
+                var phone = Phone.First();
+
+                if(phone != null)
+                {
+                    Phone.First().RingingChanged -= this.PhoneRingingChangedHandler;
+                }
             }
         }
     }
