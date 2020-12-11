@@ -286,14 +286,14 @@ namespace Maple
 
         public bool Dial(String input)
         {
-            // Ensure we're not already waiting for a response.
-            WaitForResponse();
-
             if (!LoopState)
             {
                 Console.WriteLine("Cannot Dial without a valid line detected.");
                 return false;
             }
+
+            // Ensure we're not already waiting for a response.
+            WaitForResponse();
 
             if (!OffHook)
             {
