@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿
 namespace HidUsage
 {
     public enum Telephony : uint
