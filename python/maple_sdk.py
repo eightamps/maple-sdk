@@ -3,6 +3,7 @@ import hid
 MAPLE_VID = 0x335E
 MAPLE_PID = 0x8A01
 MAPLE_ENVY_INF = 3
+PHONE_REPORT_ID = 0x000B0001
 
 
 class MapleSdk:
@@ -11,6 +12,9 @@ class MapleSdk:
         print("Maple SDK Instantiated")
         with hid.Device(vid=MAPLE_VID, pid=MAPLE_PID) as device:
             self.__print_device(device)
+            report = device.read(11, 100)
+            print("+++++++++++++++++")
+            print(f"report: {report}")
 
     def __print_device(self, d):
         print("+++++++++++++++++++")
