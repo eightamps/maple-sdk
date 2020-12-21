@@ -143,18 +143,32 @@ namespace Maple
 
         private void FromPhoneLineDataAvailable(object sender, WaveInEventArgs e)
         {
-            // Console.WriteLine("FROM PHONE LINE DATA AVAIL!");
-            byte[] buffer = new byte[e.BytesRecorded];
-            Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
-            ToSpeakerBuffer.AddSamples(buffer, 0, e.BytesRecorded);
+            try
+            {
+                // Console.WriteLine("FROM PHONE LINE DATA AVAIL!");
+                byte[] buffer = new byte[e.BytesRecorded];
+                Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
+                ToSpeakerBuffer.AddSamples(buffer, 0, e.BytesRecorded);
+            }
+            catch (Exception err)
+            {
+                Console.WriteLine("ERROR: FromPhoneLine Buffer error: " + err.ToString());
+            }
         }
 
         private void FromMicDataAvailable(object sender, WaveInEventArgs e)
         {
             // Console.WriteLine("FROM PHONE LINE DATA AVAIL!");
-            byte[] buffer = new byte[e.BytesRecorded];
-            Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
-            FromMicBuffer.AddSamples(buffer, 0, e.BytesRecorded);
+            try
+            {
+                byte[] buffer = new byte[e.BytesRecorded];
+                Buffer.BlockCopy(e.Buffer, 0, buffer, 0, e.BytesRecorded);
+                FromMicBuffer.AddSamples(buffer, 0, e.BytesRecorded);
+            }
+            catch (Exception err)
+            {
+                Console.WriteLine("ERROR: FromMicData Buffer error:" + err.StackTrace.ToString());
+            }
         }
 
         private int GetDeviceIndexFor(String name)
