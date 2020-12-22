@@ -229,6 +229,10 @@ namespace Maple
         {
             Console.WriteLine("Maple DISPOSE with OffHook state: " + OffHook);
 
+            this.inputReceiver.Received -= InputHandler;
+            // disable telephone control (also hangs up)
+            SendControl(false);
+
             if (ringTimer != null)
             {
                 ClearRingTimer();
@@ -239,10 +243,6 @@ namespace Maple
                 DtmfThread.Abort();
             }
 
-            // disable telephone control (also hangs up)
-            SendControl(false);
-
-            this.inputReceiver.Received -= InputHandler;
             stitcher.Dispose();
             stream.Dispose();
         }
