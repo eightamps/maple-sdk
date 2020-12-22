@@ -8,9 +8,16 @@ using System.Timers;
 
 namespace Maple
 {
+    enum RingState
+    {
+        Waiting,
+        Ringing,
+    }
+
     public class Phone : IDisposable
     {
-        private int USB_RESPONSE_TIMEOUT_MS = 100;
+        private const long RING_DURATION_MS = 1800;
+        private const int USB_RESPONSE_TIMEOUT_MS = 50;
         public Version SoftwareVersion { get; private set; }
         public Version HardwareVersion { get { return hiddev.ReleaseNumber; } }
 
@@ -20,6 +27,9 @@ namespace Maple
 
         private HidDevice hiddev { get { return stream.Device; } }
         private readonly HidStream stream;
+        private RingState ringState = RingState.Waiting;
+        private System.Timers.Timer ringTimer;
+        private System.Timers.Timer ringExitTimer;
 
         private readonly Report verReport;
         private readonly Report txReport;
@@ -39,20 +49,14 @@ namespace Maple
 
         private System.Timers.Timer ResponseTimeoutTimer;
 
-        private bool isRinging;
         public bool IsRinging {
             get
             {
-                return isRinging;
+                return ringState == RingState.Ringing;
             }
             private set
             {
-                if (value != isRinging)
-                {
-                    isRinging = value;
-                    Console.WriteLine("Ringing state changed: " + isRinging);
-                    RingingChanged(this, isRinging);
-                }
+                UpdateRingState(value);
             }
         }
 
@@ -140,6 +144,56 @@ namespace Maple
             SendControl(true);
         }
 
+        private void UpdateRingState(bool ringSignal)
+        {
+            // Only enter the ring state if:
+            // 1) The signal indicates RINGING state AND
+            // 2) We were last in the Waiting state AND
+            // 3) We are not currently waiting for a previous ring event to end.
+            if (ringSignal && ringState == RingState.Waiting && ringTimer == null)
+            {
+                // We'll automatically exit Ringing state after RING_DURATION_MS,
+                // so we can discard any off transitions from firmware.
+                EnterRingingState();
+            }
+        }
+
+        private void EnterRingingState()
+        {
+            ringTimer = new System.Timers.Timer(RING_DURATION_MS);
+            ringTimer.Elapsed += OnRingTimerHandler;
+            ringTimer.AutoReset = false;
+            ringTimer.Enabled = true;
+            ringTimer.Start();
+
+            // Switch into Ringing state.
+            ringState = RingState.Ringing;
+            // Notify observers
+            RingingChanged(this, IsRinging);
+        }
+
+        private void ExitRingingState()
+        {
+            ClearRingTimer();
+            ringState = RingState.Waiting;
+        }
+
+        private void ClearRingTimer()
+        {
+            if (ringTimer != null)
+            {
+                ringTimer.Stop();
+                ringTimer.Elapsed -= OnRingTimerHandler;
+                ringTimer.Dispose();
+                ringTimer = null;
+            }
+        }
+
+        private void OnRingTimerHandler(object source, ElapsedEventArgs e)
+        {
+            ExitRingingState();
+        }
+
         public static bool TryOpen(HidDevice hiddev, out Phone MaplePhoneControl)
         {
             MaplePhoneControl = null;
@@ -174,6 +228,11 @@ namespace Maple
         public void Dispose()
         {
             Console.WriteLine("Maple DISPOSE with OffHook state: " + OffHook);
+
+            if (ringTimer != null)
+            {
+                ClearRingTimer();
+            }
 
             if (DtmfDialIsInProgress())
             {
