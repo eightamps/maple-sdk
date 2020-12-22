@@ -19,6 +19,8 @@ namespace Maple
 
         private const int THREAD_SLEEP_DURATION = 10;
         public event Action<Phone, bool> RingingChanged;
+        public event Action<Phone, bool> HookStateChanged;
+        public event Action<Phone, bool> LineIsAvailableChanged;
 
         public PhoneAsync()
         {
@@ -37,23 +39,24 @@ namespace Maple
                     {
                         phone = Phone.First();
                         phone.RingingChanged += this.PhoneRingingChangedHandler;
+                        phone.OffHookChanged += this.PhoneHookStateChangedHandler;
+                        phone.LineIsAvailableChanged += this.PhoneLineIsAvailableChangedHandler;
+
+                        while (true)
+                        {
+                            if (this.Queue.Count > 0)
+                            {
+                                var operation = this.Queue.Dequeue();
+                                operation(phone);
+                            }
+                            Thread.Sleep(TimeSpan.FromMilliseconds(THREAD_SLEEP_DURATION));
+                        }
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"Unable to attach to Phone: {ex}");
                         return;
                     }
-
-                    while (true)
-                    {
-                        if (this.Queue.Count > 0)
-                        {
-                            var operation = this.Queue.Dequeue();
-                            operation(phone);
-                        }
-                        Thread.Sleep(TimeSpan.FromMilliseconds(THREAD_SLEEP_DURATION));
-                    }
-
                 });
                 this.PhoneThread.Start();
             }
@@ -62,6 +65,16 @@ namespace Maple
         private void PhoneRingingChangedHandler(Phone phone, bool ringingState)
         {
             this.RingingChanged?.Invoke(phone, ringingState);
+        }
+
+        private void PhoneHookStateChangedHandler(Phone phone, bool hookState)
+        {
+            this.HookStateChanged?.Invoke(phone, hookState);
+        }
+
+        private void PhoneLineIsAvailableChangedHandler(Phone phone, bool lineIsAvailable)
+        {
+            this.LineIsAvailableChanged?.Invoke(phone, lineIsAvailable);
         }
 
         private void Enqueue(Action<Phone> action)
@@ -77,20 +90,31 @@ namespace Maple
             {
                 Console.WriteLine("YOOOOOOOOOOOOOOOOOOO INSIDE");
                 Console.WriteLine("PHONE NUBMER:", phoneNumber);
-                phone.Dial(phoneNumber);
-                callback?.Invoke(PhoneStatus.SUCCESS, "Call Started with: " + phoneNumber);
+                if (phone.Dial(phoneNumber))
+                {
+                    callback?.Invoke(PhoneStatus.SUCCESS, "Call Started with: " + phoneNumber);
+                }
+                else
+                {
+                    callback?.Invoke(PhoneStatus.FAILURE, "Unable to dial right now, try again later.");
+                }
             });
         }
 
         public void HangUp(PhoneCallback callback = null)
         {
-            this.Queue.Enqueue((Phone phone) => 
+            this.Enqueue((Phone phone) => 
             {
                 Console.WriteLine("HANGUP INSIDE");
                 Console.WriteLine("PHONE NUBMER:");
-                phone.HangUp();
-
-                callback?.Invoke(PhoneStatus.SUCCESS, "Hung Up Dude");
+                if (phone.HangUp())
+                {
+                    callback?.Invoke(PhoneStatus.SUCCESS, "Phone is on hook");
+                }
+                else
+                {
+                    callback?.Invoke(PhoneStatus.FAILURE, "Failed to hang up phone");
+                }
             });
         }
 
@@ -98,8 +122,14 @@ namespace Maple
         {
             this.Enqueue((Phone phone) =>
             {
-                phone.TakeOffHook();
-                callback?.Invoke(PhoneStatus.SUCCESS, "Took it off hook Dude");
+                if (phone.TakeOffHook())
+                {
+                    callback?.Invoke(PhoneStatus.SUCCESS, "Phone is off hook");
+                }
+                else
+                {
+                    callback?.Invoke(PhoneStatus.FAILURE, "Unable to take off hook");
+                }
             });
         }
 
@@ -112,7 +142,9 @@ namespace Maple
 
                 if(phone != null)
                 {
-                    Phone.First().RingingChanged -= this.PhoneRingingChangedHandler;
+                    phone.RingingChanged -= this.PhoneRingingChangedHandler;
+                    phone.OffHookChanged -= this.PhoneHookStateChangedHandler;
+                    phone.LineIsAvailableChanged -= this.PhoneLineIsAvailableChangedHandler;
                 }
             }
         }

@@ -4,16 +4,19 @@ using HidSharp.Reports.Input;
 using System;
 using System.Linq;
 using System.Threading;
+using System.Timers;
 
 namespace Maple
 {
     public class Phone : IDisposable
     {
+        private int USB_RESPONSE_TIMEOUT_MS = 100;
         public Version SoftwareVersion { get; private set; }
         public Version HardwareVersion { get { return hiddev.ReleaseNumber; } }
 
         private readonly AudioStitcher stitcher;
         private readonly Dtmf dtmf;
+        private Thread DtmfThread;
 
         private HidDevice hiddev { get { return stream.Device; } }
         private readonly HidStream stream;
@@ -24,13 +27,8 @@ namespace Maple
         private readonly DeviceItemInputParser inputParser;
 
         private bool IsRequestPending = false;
-        public bool IsRinging { get; private set; } = false;
-        public bool LoopState { get; private set; } = false;
-        public bool OffHook { get; private set; } = false;
-        public bool Polarity { get; private set; } = false;
-
         public event Action<Phone, bool> RingingChanged = delegate { };
-        public event Action<Phone, bool> LoopStateChanged = delegate { };
+        public event Action<Phone, bool> LineIsAvailableChanged = delegate { };
         public event Action<Phone, bool> OffHookChanged = delegate { };
         public event Action<Phone, bool> PolarityChanged = delegate { };
 
@@ -39,6 +37,61 @@ namespace Maple
         public static readonly String PhoneCapture = "ASI Telephone";
         public static readonly String PhoneRender = "ASI Telephone";
 
+        private System.Timers.Timer ResponseTimeoutTimer;
+
+        private bool isRinging;
+        public bool IsRinging {
+            get
+            {
+                return isRinging;
+            }
+            private set
+            {
+                if (value != isRinging)
+                {
+                    isRinging = value;
+                    Console.WriteLine("Ringing state changed: " + isRinging);
+                    RingingChanged(this, isRinging);
+                }
+            }
+        }
+
+        private bool lineIsAvailable;
+        public bool LineIsAvailable {
+            get
+            {
+                return lineIsAvailable;
+            }
+            private set
+            {
+                if (value != lineIsAvailable)
+                {
+                    lineIsAvailable = value;
+                    Console.WriteLine("LineIsAvailable changed: " + lineIsAvailable);
+                    LineIsAvailableChanged(this, lineIsAvailable);
+                }
+            }
+        }
+
+        private bool offHook;
+        public bool OffHook
+        {
+            get
+            {
+                return offHook;
+            }
+            private set
+            {
+                if (value != offHook)
+                {
+                    offHook = value;
+                    Console.WriteLine("OffHook changed: " + offHook);
+                    SyncStitcherToHookState();
+                    // Only take off hook if line is also available.
+                    OffHookChanged(this, offHook);
+                }
+            }
+        }
         protected Phone(HidStream hidStream)
         {
             this.stream = hidStream;
@@ -122,6 +175,11 @@ namespace Maple
         {
             Console.WriteLine("Maple DISPOSE with OffHook state: " + OffHook);
 
+            if (DtmfDialIsInProgress())
+            {
+                DtmfThread.Abort();
+            }
+
             // disable telephone control (also hangs up)
             SendControl(false);
 
@@ -141,83 +199,41 @@ namespace Maple
                 // This will return false if (for example) the report applies to a different DeviceItem.
                 if (inputParser.TryParseReport(inputReportBuffer, 0, report))
                 {
-                    bool _ringingChanged = false;
-                    bool _offHookChanged = false;
-                    bool _loopStateChanged = false;
-                    bool _polarityChanged = false;
-
                     while (inputParser.HasChanged)
                     {
                         int changedIndex = inputParser.GetNextChangedIndex();
-                        var previousDataValue = inputParser.GetPreviousValue(changedIndex);
+                        // var previousDataValue = inputParser.GetPreviousValue(changedIndex);
                         var dataValue = inputParser.GetValue(changedIndex);
-
-                        // Console.WriteLine("Changed Index: " + changedIndex);
-                        // Console.WriteLine("previouseDataValue: " + previousDataValue);
-                        // Console.WriteLine("dataValue: " + dataValue);
 
                         var usages = (HidUsage.Telephony)dataValue.Usages.FirstOrDefault();
                         switch (usages)
                         {
-                            case HidUsage.Telephony.HookSwitch:
+                            case HidUsage.Telephony.HookState:
                                 OffHook = Convert.ToBoolean(dataValue.GetLogicalValue());
-                                _offHookChanged = true;
                                 break;
-                            case HidUsage.Telephony.AlternateFunction:
-                                Polarity = Convert.ToBoolean(dataValue.GetLogicalValue());
-                                _polarityChanged = true;
-                                break;
-                            case HidUsage.Telephony.RingEnable:
+                            case HidUsage.Telephony.RingState:
                                 IsRinging = Convert.ToBoolean(dataValue.GetLogicalValue());
-                                _ringingChanged = true;
                                 break;
-                            case HidUsage.Telephony.HostControl:
-                                LoopState = Convert.ToBoolean(dataValue.GetLogicalValue());
-                                _loopStateChanged = true;
+                            case HidUsage.Telephony.LineIsAvailable:
+                                LineIsAvailable = Convert.ToBoolean(dataValue.GetLogicalValue());
                                 break;
                             default:
                                 Console.WriteLine("Unhandled INPUT Event:" + usages);
                                 break;
                         }
                     }
-
-                    // Accumulate all state changes in this payload, then notify subscribers
-                    // after the state has been updated.
-                    if (_ringingChanged)
-                    {
-                        Console.WriteLine("Ringing state changed: " + IsRinging);
-                        RingingChanged(this, IsRinging);
-                    }
-                    if (_loopStateChanged)
-                    {
-                        Console.WriteLine("LoopState changed: " + LoopState);
-                        LoopStateChanged(this, LoopState);
-                    }
-                    if (_offHookChanged)
-                    {
-                        Console.WriteLine("OffHook changed: " + OffHook);
-                        SyncRouterToHookState();
-                        // Only take off hook if line is also available.
-                        OffHookChanged(this, OffHook);
-                    }
-                    if (_polarityChanged)
-                    {
-                        Console.WriteLine("Polarity changed: " + Polarity);
-                        PolarityChanged(this, Polarity);
-                    }
                 }
             }
-            IsRequestPending = false;
-            Console.WriteLine("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+            StopResponseTimeoutIfRunning();
         }
 
-        private void SyncRouterToHookState()
+        private void SyncStitcherToHookState()
         {
             if (OffHook && !stitcher.IsActive)
             {
                 stitcher.Start();
             }
-            else if (!OffHook && stitcher.IsActive)
+            else if (!OffHook && stitcher.IsActive) 
             {
                 stitcher.Stop();
             }
@@ -230,7 +246,7 @@ namespace Maple
         {
             Console.WriteLine("Internal - Attempt to Take OffHook");
             // Never take the phone OFF_HOOK unless LOOP detect indicates a valid line is attached
-            if (LoopState)
+            if (LineIsAvailable)
             {
                 Console.WriteLine("Internal - Taking OffHook");
                 // Attempt to take it off hook now
@@ -250,10 +266,16 @@ namespace Maple
         /**
          * Place the receiver back "On Hook"
          */
-        public void HangUp()
+        public bool HangUp()
         {
+            if (DtmfDialIsInProgress())
+            {
+                DtmfThread.Abort();
+            }
+
             SendControl(true, false);
             WaitForResponse();
+            return !OffHook;
         }
 
         private void WaitForOffHook()
@@ -261,13 +283,13 @@ namespace Maple
             if (!OffHook)
             {
                 Console.WriteLine("Waiting for OffHook"); 
-            }
-            while (!OffHook)
-            {
-                // Wait for firmware confirmation that the line is Off Hook.
-                // TODO(lbayes): Add tone detection for open line dial tone.
-                Thread.Sleep(TimeSpan.FromMilliseconds(100));
-                // TODO(lbayes): Add a timeout to avoid blocking forever.
+                while (!OffHook)
+                {
+                    // Wait for firmware confirmation that the line is Off Hook.
+                    // TODO(lbayes): Add tone detection for open line dial tone.
+                    Thread.Sleep(TimeSpan.FromMilliseconds(100));
+                    // TODO(lbayes): Add a timeout to avoid blocking forever.
+                }
             }
         }
 
@@ -276,17 +298,17 @@ namespace Maple
             if (IsRequestPending)
             {
                 Console.WriteLine("Waiting for a response");
-            }
-            while (IsRequestPending)
-            {
-                Thread.Sleep(TimeSpan.FromMilliseconds(10));
-                // TODO(lbayes): Add a timeout to avoid blocking forever.
+                while (IsRequestPending)
+                {
+                    Thread.Sleep(TimeSpan.FromMilliseconds(10));
+                    // TODO(lbayes): Add a timeout to avoid blocking forever.
+                }
             }
         }
 
         public bool Dial(String input)
         {
-            if (!LoopState)
+            if (!LineIsAvailable)
             {
                 Console.WriteLine("Cannot Dial without a valid line detected.");
                 return false;
@@ -310,9 +332,60 @@ namespace Maple
             // Give it another second to settle down.
             Thread.Sleep(TimeSpan.FromSeconds(3));
 
-            // Send the DTMF codes through the open line.
-            dtmf.GenerateDtmfTones(input, stitcher);
+            // Dial using a separate thread with DTMF
+            DtmfDial(input);
             return true;
+        }
+        private void DtmfDial(string input)
+        {
+            // If we're already waiting for tones, let them finish before 
+            // we add more.
+            if (DtmfDialIsInProgress())
+            {
+                DtmfThread.Join();
+            }
+
+            DtmfThread = new Thread(() =>
+            {
+                // Send the DTMF codes through the open line.
+                dtmf.GenerateDtmfTones(input, stitcher);
+            });
+            DtmfThread.Start();
+        }
+        private bool DtmfDialIsInProgress()
+        {
+            return DtmfThread != null && DtmfThread.IsAlive;
+        }
+        
+        private void StartResponseTimeout()
+        {
+            StopResponseTimeoutIfRunning();
+
+            if (ResponseTimeoutTimer == null)
+            {
+                ResponseTimeoutTimer = new System.Timers.Timer(USB_RESPONSE_TIMEOUT_MS);
+                ResponseTimeoutTimer.Elapsed += OnResponseTimeout;
+                ResponseTimeoutTimer.AutoReset = false;
+                ResponseTimeoutTimer.Enabled = true;
+                ResponseTimeoutTimer.Start();
+                IsRequestPending = true;
+            } 
+        }
+
+        private void StopResponseTimeoutIfRunning()
+        {
+            if (ResponseTimeoutTimer != null && ResponseTimeoutTimer.Enabled)
+            {
+                ResponseTimeoutTimer.Stop();
+                ResponseTimeoutTimer = null;
+            }
+            IsRequestPending = false;
+        }
+
+        private void OnResponseTimeout(object source, ElapsedEventArgs e)
+        {
+            StopResponseTimeoutIfRunning();
+            IsRequestPending = false;
         }
 
         public void SendControl(bool hostready, bool offHook = false)
@@ -323,7 +396,7 @@ namespace Maple
                 WaitForResponse();
             }
 
-            IsRequestPending = true;
+            StartResponseTimeout();
             var report = txReport;
             var buffer = report.CreateBuffer();
 

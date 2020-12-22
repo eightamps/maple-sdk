@@ -5,10 +5,10 @@ namespace HidUsage
     {
         Phone = 0x000B0001,
         DualModePhone = 0x000B014B,
-        HookSwitch = 0x000B0020,
+        HookState = 0x000B0020,
         AlternateFunction = 0x000B0029,
-        RingEnable = 0x000B002D,
-        HostControl = 0x000B00F0,
+        RingState = 0x000B002D,
+        LineIsAvailable = 0x000B00F0,
         HostAvailable,
         HostCallActive,
         ActivateHandsetAudio,
