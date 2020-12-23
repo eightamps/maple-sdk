@@ -1,5 +1,4 @@
-﻿using NAudio.CoreAudioApi;
-using NAudio.Wave.SampleProviders;
+﻿using NAudio.Wave.SampleProviders;
 using NAudio.Wave;
 using System.Collections.Generic;
 using System.Threading;

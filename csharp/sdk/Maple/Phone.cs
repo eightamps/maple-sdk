@@ -29,7 +29,6 @@ namespace Maple
         private readonly HidStream stream;
         private RingState ringState = RingState.Waiting;
         private System.Timers.Timer ringTimer;
-        private System.Timers.Timer ringExitTimer;
 
         private readonly Report verReport;
         private readonly Report txReport;
