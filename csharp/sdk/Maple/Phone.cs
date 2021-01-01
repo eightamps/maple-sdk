@@ -2,6 +2,8 @@
 using HidSharp.Reports;
 using HidSharp.Reports.Input;
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Timers;
@@ -18,6 +20,8 @@ namespace Maple
     {
         private const long RING_DURATION_MS = 1800;
         private const int USB_RESPONSE_TIMEOUT_MS = 50;
+        private const int TIMEOUT_MS = 500;
+        private const long OFF_HOOK_TIMEOUT_MS = 1000;
         public Version SoftwareVersion { get; private set; }
         public Version HardwareVersion { get { return hiddev.ReleaseNumber; } }
 
@@ -35,11 +39,12 @@ namespace Maple
         private readonly HidDeviceInputReceiver inputReceiver;
         private readonly DeviceItemInputParser inputParser;
 
-        private bool IsRequestPending = false;
+        private bool IsRequestPending;
         public event Action<Phone, bool> RingingChanged = delegate { };
         public event Action<Phone, bool> LineIsAvailableChanged = delegate { };
         public event Action<Phone, bool> OffHookChanged = delegate { };
         public event Action<Phone, bool> PolarityChanged = delegate { };
+        public event Action<Phone> Disconnected = delegate { };
 
         // public static readonly String PhoneCapture = "Microphone (Telephone Audio)";
         // public static readonly String PhoneRender = "Speakers (Telephone Audio)";
@@ -48,6 +53,7 @@ namespace Maple
 
         private System.Timers.Timer ResponseTimeoutTimer;
 
+        public bool CommunicationFailure { get; private set; }
         public bool IsRinging {
             get
             {
@@ -229,8 +235,13 @@ namespace Maple
             Console.WriteLine("Maple DISPOSE with OffHook state: " + OffHook);
 
             this.inputReceiver.Received -= InputHandler;
-            // disable telephone control (also hangs up)
-            SendControl(false);
+
+            // Only attempt to notify the device if we haven't already
+            // had a communication failure.
+            if (this.CommunicationFailure == false)
+            {
+                SendControl(false);
+            }
 
             if (ringTimer != null)
             {
@@ -244,13 +255,16 @@ namespace Maple
 
             stitcher.Dispose();
             stream.Dispose();
+            this.offHook = false;
         }
 
         private void InputHandler(object sender, EventArgs e)
         {
             var inputReportBuffer = new byte[hiddev.GetMaxInputReportLength()];
             Report report;
-            while (inputReceiver.TryRead(inputReportBuffer, 0, out report))
+            var sw = Stopwatch.StartNew();
+            while (inputReceiver.TryRead(inputReportBuffer, 0, out report) &&
+                sw.ElapsedMilliseconds < TIMEOUT_MS)
             {
                 // Console.WriteLine("report: " + report.ToString());
                 // Parse the report if possible.
@@ -282,7 +296,7 @@ namespace Maple
                     }
                 }
             }
-            StopResponseTimeoutIfRunning();
+            IsRequestPending = false;
         }
 
         private void SyncStitcherToHookState()
@@ -291,7 +305,7 @@ namespace Maple
             {
                 stitcher.Start();
             }
-            else if (!OffHook && stitcher.IsActive) 
+            else if (!OffHook && stitcher.IsActive)
             {
                 stitcher.Stop();
             }
@@ -340,14 +354,15 @@ namespace Maple
         {
             if (!OffHook)
             {
-                Console.WriteLine("Waiting for OffHook"); 
-                while (!OffHook)
+                var sw = Stopwatch.StartNew();
+                Console.WriteLine("Waiting for OffHook");
+                while (!offHook && sw.ElapsedMilliseconds < OFF_HOOK_TIMEOUT_MS)
                 {
-                    // Wait for firmware confirmation that the line is Off Hook.
-                    // TODO(lbayes): Add tone detection for open line dial tone.
+                    // Wait for firmware confirmation that the line is Off Hook,
+                    // or timeout expired.
                     Thread.Sleep(TimeSpan.FromMilliseconds(100));
-                    // TODO(lbayes): Add a timeout to avoid blocking forever.
                 }
+                sw.Stop();
             }
         }
 
@@ -356,11 +371,15 @@ namespace Maple
             if (IsRequestPending)
             {
                 Console.WriteLine("Waiting for a response");
-                while (IsRequestPending)
+                var sw = Stopwatch.StartNew();
+                while (IsRequestPending && sw.ElapsedMilliseconds < TIMEOUT_MS)
                 {
                     Thread.Sleep(TimeSpan.FromMilliseconds(10));
-                    // TODO(lbayes): Add a timeout to avoid blocking forever.
                 }
+                sw.Stop();
+
+                // We've either timed out our the request status was updated externally.
+                IsRequestPending = false;
             }
         }
 
@@ -382,10 +401,12 @@ namespace Maple
             }
 
             // Wait for the audio router to get everything wired up.
-            while (!stitcher.IsActive)
+            var sw = Stopwatch.StartNew();
+            while (!stitcher.IsActive && sw.ElapsedMilliseconds < TIMEOUT_MS)
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(5));
             }
+            sw.Stop();
 
             // Give it another second to settle down.
             Thread.Sleep(TimeSpan.FromSeconds(3));
@@ -414,37 +435,6 @@ namespace Maple
         {
             return DtmfThread != null && DtmfThread.IsAlive;
         }
-        
-        private void StartResponseTimeout()
-        {
-            StopResponseTimeoutIfRunning();
-
-            if (ResponseTimeoutTimer == null)
-            {
-                ResponseTimeoutTimer = new System.Timers.Timer(USB_RESPONSE_TIMEOUT_MS);
-                ResponseTimeoutTimer.Elapsed += OnResponseTimeout;
-                ResponseTimeoutTimer.AutoReset = false;
-                ResponseTimeoutTimer.Enabled = true;
-                ResponseTimeoutTimer.Start();
-                IsRequestPending = true;
-            } 
-        }
-
-        private void StopResponseTimeoutIfRunning()
-        {
-            if (ResponseTimeoutTimer != null && ResponseTimeoutTimer.Enabled)
-            {
-                ResponseTimeoutTimer.Stop();
-                ResponseTimeoutTimer = null;
-            }
-            IsRequestPending = false;
-        }
-
-        private void OnResponseTimeout(object source, ElapsedEventArgs e)
-        {
-            StopResponseTimeoutIfRunning();
-            IsRequestPending = false;
-        }
 
         public void SendControl(bool hostready, bool offHook = false)
         {
@@ -454,7 +444,6 @@ namespace Maple
                 WaitForResponse();
             }
 
-            StartResponseTimeout();
             var report = txReport;
             var buffer = report.CreateBuffer();
 
@@ -474,7 +463,17 @@ namespace Maple
                         break;
                 }
             });
-            stream.Write(buffer);
+
+            try
+            {
+                IsRequestPending = true;
+                stream.Write(buffer);
+            }
+            catch (IOException e)
+            {
+                this.CommunicationFailure = true;
+                Disconnected(this);
+            }
         }
     }
 }
