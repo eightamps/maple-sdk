@@ -61,8 +61,6 @@ namespace Maple
         {
             Console.WriteLine("----------------------------");
             Console.WriteLine("Wasapi AudioStitcher.Start()");
-            IsActive = true;
-
             // Get each of the 4 audio devices by name and data flow.
             FromPhoneLineDevice = GetMMDeviceByName(RxName, DataFlow.Capture);
             ToPhoneLineDevice = GetMMDeviceByName(TxName, DataFlow.Render);
@@ -100,6 +98,8 @@ namespace Maple
             FromMicChannel.StartRecording();
             ToSpeakerChannel.Play();
             ToPhoneLineChannel.Play();
+
+            IsActive = true;
         }
 
         public void Stop()

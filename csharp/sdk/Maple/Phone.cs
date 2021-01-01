@@ -1,12 +1,12 @@
-﻿using HidSharp;
+﻿using HidSharp.Reports.Input;
 using HidSharp.Reports;
-using HidSharp.Reports.Input;
-using System;
+using HidSharp;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Timers;
+using System;
 
 namespace Maple
 {
@@ -19,15 +19,17 @@ namespace Maple
     public class Phone : IDisposable
     {
         private const long RING_DURATION_MS = 1800;
-        private const int USB_RESPONSE_TIMEOUT_MS = 50;
+        private const int USB_TIMEOUT_MS = 50;
         private const int TIMEOUT_MS = 500;
+        private const int STITCHER_TIMEOUT_MS = 3000;
+        private const int STITCHER_DELAY_MS = 1000;
         private const long OFF_HOOK_TIMEOUT_MS = 1000;
-        public Version SoftwareVersion { get; private set; }
-        public Version HardwareVersion { get { return hiddev.ReleaseNumber; } }
 
         private readonly AudioStitcher stitcher;
         private readonly Dtmf dtmf;
-        private Thread DtmfThread;
+        private Thread dtmfThread;
+        private bool isRequestPending;
+        private bool _OffHook;
 
         private HidDevice hiddev { get { return stream.Device; } }
         private readonly HidStream stream;
@@ -39,21 +41,17 @@ namespace Maple
         private readonly HidDeviceInputReceiver inputReceiver;
         private readonly DeviceItemInputParser inputParser;
 
-        private bool IsRequestPending;
         public event Action<Phone, bool> RingingChanged = delegate { };
         public event Action<Phone, bool> LineIsAvailableChanged = delegate { };
         public event Action<Phone, bool> OffHookChanged = delegate { };
         public event Action<Phone, bool> PolarityChanged = delegate { };
         public event Action<Phone> Disconnected = delegate { };
-
-        // public static readonly String PhoneCapture = "Microphone (Telephone Audio)";
-        // public static readonly String PhoneRender = "Speakers (Telephone Audio)";
         public static readonly String PhoneCapture = "ASI Telephone";
         public static readonly String PhoneRender = "ASI Telephone";
-
-        private System.Timers.Timer ResponseTimeoutTimer;
-
+        public Version SoftwareVersion { get; private set; }
+        public Version HardwareVersion { get { return hiddev.ReleaseNumber; } }
         public bool CommunicationFailure { get; private set; }
+
         public bool IsRinging {
             get
             {
@@ -81,23 +79,21 @@ namespace Maple
                 }
             }
         }
-
-        private bool offHook;
         public bool OffHook
         {
             get
             {
-                return offHook;
+                return _OffHook;
             }
             private set
             {
-                if (value != offHook)
+                if (value != _OffHook)
                 {
-                    offHook = value;
-                    Console.WriteLine("OffHook changed: " + offHook);
+                    _OffHook = value;
+                    Console.WriteLine("OffHook changed: " + _OffHook);
                     SyncStitcherToHookState();
                     // Only take off hook if line is also available.
-                    OffHookChanged(this, offHook);
+                    OffHookChanged(this, _OffHook);
                 }
             }
         }
@@ -250,12 +246,12 @@ namespace Maple
 
             if (DtmfDialIsInProgress())
             {
-                DtmfThread.Abort();
+                dtmfThread.Abort();
             }
 
             stitcher.Dispose();
             stream.Dispose();
-            this.offHook = false;
+            this._OffHook = false;
         }
 
         private void InputHandler(object sender, EventArgs e)
@@ -296,7 +292,8 @@ namespace Maple
                     }
                 }
             }
-            IsRequestPending = false;
+            sw.Stop();
+            isRequestPending = false;
         }
 
         private void SyncStitcherToHookState()
@@ -342,7 +339,7 @@ namespace Maple
         {
             if (DtmfDialIsInProgress())
             {
-                DtmfThread.Abort();
+                dtmfThread.Abort();
             }
 
             SendControl(true, false);
@@ -356,7 +353,7 @@ namespace Maple
             {
                 var sw = Stopwatch.StartNew();
                 Console.WriteLine("Waiting for OffHook");
-                while (!offHook && sw.ElapsedMilliseconds < OFF_HOOK_TIMEOUT_MS)
+                while (!_OffHook && sw.ElapsedMilliseconds < OFF_HOOK_TIMEOUT_MS)
                 {
                     // Wait for firmware confirmation that the line is Off Hook,
                     // or timeout expired.
@@ -366,20 +363,34 @@ namespace Maple
             }
         }
 
+        private void WaitForStitcher()
+        {
+            // Wait for the audio router to get everything wired up.
+            var sw = Stopwatch.StartNew();
+            while (!stitcher.IsActive && sw.ElapsedMilliseconds < STITCHER_TIMEOUT_MS)
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(5));
+            }
+            sw.Stop();
+
+            // Wait another few seconds for everything to be ready.
+            Thread.Sleep(TimeSpan.FromMilliseconds(STITCHER_DELAY_MS));
+        }
+
         private void WaitForResponse()
         {
-            if (IsRequestPending)
+            if (isRequestPending)
             {
                 Console.WriteLine("Waiting for a response");
                 var sw = Stopwatch.StartNew();
-                while (IsRequestPending && sw.ElapsedMilliseconds < TIMEOUT_MS)
+                while (isRequestPending && sw.ElapsedMilliseconds < USB_TIMEOUT_MS)
                 {
                     Thread.Sleep(TimeSpan.FromMilliseconds(10));
                 }
                 sw.Stop();
 
                 // We've either timed out our the request status was updated externally.
-                IsRequestPending = false;
+                isRequestPending = false;
             }
         }
 
@@ -400,16 +411,7 @@ namespace Maple
                 TakeOffHook();
             }
 
-            // Wait for the audio router to get everything wired up.
-            var sw = Stopwatch.StartNew();
-            while (!stitcher.IsActive && sw.ElapsedMilliseconds < TIMEOUT_MS)
-            {
-                Thread.Sleep(TimeSpan.FromMilliseconds(5));
-            }
-            sw.Stop();
-
-            // Give it another second to settle down.
-            Thread.Sleep(TimeSpan.FromSeconds(3));
+            WaitForStitcher();
 
             // Dial using a separate thread with DTMF
             DtmfDial(input);
@@ -421,24 +423,24 @@ namespace Maple
             // we add more.
             if (DtmfDialIsInProgress())
             {
-                DtmfThread.Join();
+                dtmfThread.Join();
             }
 
-            DtmfThread = new Thread(() =>
+            dtmfThread = new Thread(() =>
             {
                 // Send the DTMF codes through the open line.
                 dtmf.GenerateDtmfTones(input, stitcher);
             });
-            DtmfThread.Start();
+            dtmfThread.Start();
         }
         private bool DtmfDialIsInProgress()
         {
-            return DtmfThread != null && DtmfThread.IsAlive;
+            return dtmfThread != null && dtmfThread.IsAlive;
         }
 
         public void SendControl(bool hostready, bool offHook = false)
         {
-            if (IsRequestPending)
+            if (isRequestPending)
             {
                 Console.WriteLine("THERE IS A REQUEST PENDING! Waiting for it complete");
                 WaitForResponse();
@@ -466,7 +468,7 @@ namespace Maple
 
             try
             {
-                IsRequestPending = true;
+                isRequestPending = true;
                 stream.Write(buffer);
             }
             catch (IOException e)
