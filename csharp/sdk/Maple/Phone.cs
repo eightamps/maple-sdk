@@ -10,6 +10,18 @@ using System;
 
 namespace Maple
 {
+    public enum PhonyState
+    {
+        NotReady = 0,
+        FirstState = NotReady,
+        Ready,
+        OffHook,
+        Ringing,
+        LineNotFound,
+        LineInUse,
+        HostNotFound,
+    }
+
     enum RingState
     {
         Waiting,
@@ -48,6 +60,8 @@ namespace Maple
         public event Action<Phone> Disconnected = delegate { };
         public static readonly String PhoneCapture = "ASI Telephone";
         public static readonly String PhoneRender = "ASI Telephone";
+
+        public PhonyState PhoneState { get; private set; }
         public Version SoftwareVersion { get; private set; }
         public Version HardwareVersion { get { return hiddev.ReleaseNumber; } }
         public bool CommunicationFailure { get; private set; }
@@ -74,7 +88,6 @@ namespace Maple
                 if (value != lineIsAvailable)
                 {
                     lineIsAvailable = value;
-                    Console.WriteLine("LineIsAvailable changed: " + lineIsAvailable);
                     LineIsAvailableChanged(this, lineIsAvailable);
                 }
             }
@@ -90,9 +103,7 @@ namespace Maple
                 if (value != _OffHook)
                 {
                     _OffHook = value;
-                    Console.WriteLine("OffHook changed: " + _OffHook);
                     SyncStitcherToHookState();
-                    // Only take off hook if line is also available.
                     OffHookChanged(this, _OffHook);
                 }
             }
@@ -228,8 +239,6 @@ namespace Maple
 
         public void Dispose()
         {
-            Console.WriteLine("Maple DISPOSE with OffHook state: " + OffHook);
-
             this.inputReceiver.Received -= InputHandler;
 
             // Only attempt to notify the device if we haven't already
@@ -262,7 +271,6 @@ namespace Maple
             while (inputReceiver.TryRead(inputReportBuffer, 0, out report) &&
                 sw.ElapsedMilliseconds < TIMEOUT_MS)
             {
-                // Console.WriteLine("report: " + report.ToString());
                 // Parse the report if possible.
                 // This will return false if (for example) the report applies to a different DeviceItem.
                 if (inputParser.TryParseReport(inputReportBuffer, 0, report))
@@ -286,10 +294,10 @@ namespace Maple
                                 LineIsAvailable = Convert.ToBoolean(dataValue.GetLogicalValue());
                                 break;
                             case (uint)HidUsage.EightAmps.PhonyState:
-                                Console.WriteLine("phony enum state changed to: " + dataValue.GetLogicalValue());
+                                PhoneState = (PhonyState)dataValue.GetLogicalValue();
                                 break;
                             default:
-                                Console.WriteLine("Unhandled INPUT Event:" + usages);
+                                Console.WriteLine("Unhandled Phony Input Event:" + usages);
                                 break;
                         }
                     }
@@ -316,20 +324,10 @@ namespace Maple
          */
         public bool TakeOffHook()
         {
-            Console.WriteLine("Internal - Attempt to Take OffHook");
-            // Never take the phone OFF_HOOK unless LOOP detect indicates a valid line is attached
             if (LineIsAvailable)
             {
-                Console.WriteLine("Internal - Taking OffHook");
-                // Attempt to take it off hook now
                 SendControl(true, true);
-                Console.WriteLine("Waiting for OffHook Notification");
                 WaitForOffHook();
-                Console.WriteLine("OffHook Notification Received, and sound connected");
-            }
-            else
-            {
-                Console.WriteLine("Cannot take off hook without valid line detected.");
             }
 
             return OffHook;
@@ -355,7 +353,6 @@ namespace Maple
             if (!OffHook)
             {
                 var sw = Stopwatch.StartNew();
-                Console.WriteLine("Waiting for OffHook");
                 while (!_OffHook && sw.ElapsedMilliseconds < OFF_HOOK_TIMEOUT_MS)
                 {
                     // Wait for firmware confirmation that the line is Off Hook,
@@ -384,7 +381,6 @@ namespace Maple
         {
             if (isRequestPending)
             {
-                Console.WriteLine("Waiting for a response");
                 var sw = Stopwatch.StartNew();
                 while (isRequestPending && sw.ElapsedMilliseconds < USB_TIMEOUT_MS)
                 {
@@ -401,7 +397,6 @@ namespace Maple
         {
             if (!LineIsAvailable)
             {
-                Console.WriteLine("Cannot Dial without a valid line detected.");
                 return false;
             }
 
@@ -410,7 +405,6 @@ namespace Maple
 
             if (!OffHook)
             {
-                Console.WriteLine("Taking OffHook");
                 TakeOffHook();
             }
 
@@ -445,7 +439,6 @@ namespace Maple
         {
             if (isRequestPending)
             {
-                Console.WriteLine("THERE IS A REQUEST PENDING! Waiting for it complete");
                 WaitForResponse();
             }
 
@@ -461,7 +454,6 @@ namespace Maple
                         dataItem.WriteRaw(buf, bitOffset, 0, Convert.ToUInt32(hostready));
                         break;
                     case HidUsage.Telephony.ActivateHandsetAudio:
-                        Console.WriteLine("Sending offHook with: " + offHook);
                         dataItem.WriteRaw(buf, bitOffset, 0, Convert.ToUInt32(offHook));
                         break;
                     default:
