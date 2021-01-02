@@ -68,5 +68,6 @@ namespace HidUsage
         HaTerminalContactsCount = 0xFF8A0092,
         HaTerminalId = 0xFF8A0093,
         HaTerminalContactValue = 0xFF8A0094,
+        PhonyState = 0xFF8A00A0,
     }
 }

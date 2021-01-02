@@ -273,17 +273,20 @@ namespace Maple
                         // var previousDataValue = inputParser.GetPreviousValue(changedIndex);
                         var dataValue = inputParser.GetValue(changedIndex);
 
-                        var usages = (HidUsage.Telephony)dataValue.Usages.FirstOrDefault();
+                        var usages = dataValue.Usages.FirstOrDefault();
                         switch (usages)
                         {
-                            case HidUsage.Telephony.HookState:
+                            case (uint)HidUsage.Telephony.HookState:
                                 OffHook = Convert.ToBoolean(dataValue.GetLogicalValue());
                                 break;
-                            case HidUsage.Telephony.RingState:
+                            case (uint)HidUsage.Telephony.RingState:
                                 IsRinging = Convert.ToBoolean(dataValue.GetLogicalValue());
                                 break;
-                            case HidUsage.Telephony.LineIsAvailable:
+                            case (uint)HidUsage.Telephony.LineIsAvailable:
                                 LineIsAvailable = Convert.ToBoolean(dataValue.GetLogicalValue());
+                                break;
+                            case (uint)HidUsage.EightAmps.PhonyState:
+                                Console.WriteLine("phony enum state changed to: " + dataValue.GetLogicalValue());
                                 break;
                             default:
                                 Console.WriteLine("Unhandled INPUT Event:" + usages);
