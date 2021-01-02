@@ -23,6 +23,8 @@ namespace Maple
             var oreports = deviceItem.OutputReports;
             var ireports = deviceItem.InputReports;
 
+            /*
+             * NOTE(lbayes): Commented out this code pending further investigation.
             if (false)
             {
                 this.verReport = freports.First(r => r.GetAllUsages().Contains((uint)HidUsage.GenericDevice.SoftwareVersion));
@@ -32,13 +34,14 @@ namespace Maple
             }
             else
             {
+            */
                 this.verReport = freports.First(r => r.GetAllUsages().Contains((uint)HidUsage.GenericDevice.Major));
                 // hardcoding as fallback
                 // could also consider sw version
                 reports.Add(HidUsage.EightAmps.HaGetCapabilitiesReport, freports.First(r => r.ReportID == 1));
                 reports.Add(HidUsage.EightAmps.HaGetTerminalCapabilitiesReport, freports.First(r => r.ReportID == 2));
                 reports.Add(HidUsage.EightAmps.HaSetTerminalStateReport, oreports.First(r => r.ReportID == 1));
-            }
+            /* } */
 
             // read SW version
             var buffer = verReport.CreateBuffer();

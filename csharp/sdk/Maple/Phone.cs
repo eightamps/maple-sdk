@@ -466,7 +466,7 @@ namespace Maple
                 isRequestPending = true;
                 stream.Write(buffer);
             }
-            catch (IOException e)
+            catch (IOException)
             {
                 this.CommunicationFailure = true;
                 Disconnected(this);
