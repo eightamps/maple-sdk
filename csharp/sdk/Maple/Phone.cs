@@ -345,6 +345,7 @@ namespace Maple
 
             SendControl(true, false);
             WaitForResponse();
+            stitcher.Stop();
             return !OffHook;
         }
 
