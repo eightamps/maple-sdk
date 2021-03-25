@@ -110,11 +110,39 @@ namespace Maple
             }
 
             // Dispose of everything.
+
+            this.StopPlaybackAndRecording();
             ToSpeakerChannel?.Dispose();
             FromPhoneLineChannel?.Dispose();
             FromMicChannel?.Dispose();
             ToPhoneLineChannel?.Dispose();
             IsActive = false;
+        }
+
+        /// <summary>
+        /// MLL: (3/25/2021) Method checks the audio devices capture/playback state and stops the capturing/playback if applicable.
+        /// </summary>
+        private void StopPlaybackAndRecording()
+        {
+            if (this.ToSpeakerChannel.PlaybackState == PlaybackState.Playing)
+            {
+                this.ToSpeakerChannel.Stop();
+            }
+
+            if (this.FromMicChannel.CaptureState == CaptureState.Capturing)
+            {
+                this.FromMicChannel.StopRecording();
+            }
+
+            if (this.ToPhoneLineChannel.PlaybackState == PlaybackState.Playing)
+            {
+                this.ToPhoneLineChannel.Stop();
+            }
+
+            if(this.FromPhoneLineChannel.CaptureState == CaptureState.Capturing)
+            {
+                this.FromPhoneLineChannel.StopRecording();
+            }
         }
 
         private int phoneLineDeviceNumber = -2;
