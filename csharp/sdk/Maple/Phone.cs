@@ -420,6 +420,7 @@ namespace Maple
         {
             // If we're already waiting for tones, let them finish before 
             // we add more.
+
             if (DtmfDialIsInProgress())
             {
                 dtmfThread.Join();

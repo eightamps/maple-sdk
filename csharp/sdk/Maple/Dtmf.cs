@@ -8,7 +8,7 @@ namespace Maple
 {
     class Dtmf
     {
-        private readonly TimeSpan DEFAULT_INITIAL_TIMEOUT_MS = TimeSpan.FromMilliseconds(2000);
+        private readonly TimeSpan DEFAULT_INITIAL_TIMEOUT_MS = TimeSpan.FromMilliseconds(1500);
         private readonly Double DEFAULT_GAIN = 0.7;
         private readonly TimeSpan DEFAULT_TONE_DURATION_MS = TimeSpan.FromMilliseconds(100);
         private readonly TimeSpan DEFAULT_TONE_PAUSE_DURATION_MS = TimeSpan.FromMilliseconds(100);
@@ -53,7 +53,6 @@ namespace Maple
         {
             var waveFormat = stitcher.FromMicChannel.WaveFormat;
             var channelCount = waveFormat.Channels;
-
             var one = new SignalGenerator(waveFormat.SampleRate, channelCount)
             {
                 Gain = DEFAULT_GAIN,
