@@ -70,14 +70,14 @@ namespace Maple
 
             // Configure the Line to Speaker connection.
             FromPhoneLineChannel = new WasapiCapture(FromPhoneLineDevice, DEFAULT_SYNC, DEFAULT_LATENCY);
-            FromPhoneLineChannel.DataAvailable += FromPhoneLineDataAvailable;
+            //FromPhoneLineChannel.DataAvailable += FromPhoneLineDataAvailable;
 
             ToSpeakerChannel = new WasapiOut(ToSpeakerDevice, DEFAULT_SHARE, DEFAULT_SYNC, DEFAULT_LATENCY);
             ToSpeakerBuffer = new BufferedWaveProvider(FromPhoneLineChannel.WaveFormat);
 
             // Configure the Mic to Line connection.
             FromMicChannel = new WasapiCapture(FromMicDevice, DEFAULT_SYNC, DEFAULT_LATENCY);
-            FromMicChannel.DataAvailable += FromMicDataAvailable;
+            //FromMicChannel.DataAvailable += FromMicDataAvailable;
 
             // LogWaveFormat("FromPhoneLine:    ", FromPhoneLineChannel.WaveFormat);
             // LogWaveFormat("FromMic:   ", FromMicChannel.WaveFormat);
@@ -90,13 +90,13 @@ namespace Maple
             ToPhoneLineMixer = new MixingWaveProvider32();
             ToPhoneLineMixer.AddInputStream(FromMicBuffer);
 
-            ToSpeakerChannel.Init(ToSpeakerBuffer);
+            //ToSpeakerChannel.Init(ToSpeakerBuffer);
             ToPhoneLineChannel.Init(ToPhoneLineMixer);
 
             // Start doing work now.
             FromPhoneLineChannel.StartRecording();
-            FromMicChannel.StartRecording();
-            ToSpeakerChannel.Play();
+            //FromMicChannel.StartRecording();
+            //ToSpeakerChannel.Play();
             ToPhoneLineChannel.Play();
 
             IsActive = true;
@@ -110,6 +110,9 @@ namespace Maple
             }
 
             // Dispose of everything.
+            FromPhoneLineChannel.DataAvailable -= FromPhoneLineDataAvailable;
+            FromMicChannel.DataAvailable -= FromMicDataAvailable;
+
             ToSpeakerChannel?.Dispose();
             FromPhoneLineChannel?.Dispose();
             FromMicChannel?.Dispose();
