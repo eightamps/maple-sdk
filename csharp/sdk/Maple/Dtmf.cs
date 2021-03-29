@@ -20,6 +20,8 @@ namespace Maple
 
         public void GenerateDtmfTones(String phoneNumbers, AudioStitcher stitcher)
         {
+            Thread.Sleep(1500);
+
             Console.WriteLine("Generate DTMF Tones for:" + phoneNumbers);
             // Strip any unsupported characters from the phoneNumbers string.
             string filteredInput = filterPhoneNumbers(phoneNumbers);
@@ -47,7 +49,6 @@ namespace Maple
         {
             var waveFormat = stitcher.FromMicChannel.WaveFormat;
             var channelCount = waveFormat.Channels;
-
             var one = new SignalGenerator(waveFormat.SampleRate, channelCount)
             {
                 Gain = DEFAULT_GAIN,
