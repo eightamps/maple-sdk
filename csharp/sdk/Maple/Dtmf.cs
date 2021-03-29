@@ -11,8 +11,9 @@ namespace Maple
         private readonly Double DEFAULT_GAIN = 0.6;
         private readonly TimeSpan DEFAULT_TONE_DURATION_MS = TimeSpan.FromMilliseconds(100);
         private readonly TimeSpan DEFAULT_TONE_PAUSE_DURATION_MS = TimeSpan.FromMilliseconds(100);
+        private readonly TimeSpan DEFAULT_COMMA_PAUSE_DURATION_MS = TimeSpan.FromMilliseconds(1500);
 
-        private Dictionary<char, Tuple<int, int>> DtmfLookup;
+        private Dictionary<char, Tuple<int, int, int>> DtmfLookup;
 
         public Dtmf()
         {
@@ -38,8 +39,11 @@ namespace Maple
             // Console.WriteLine("GenerateDtmf start");
             foreach (var tone in tones)
             {
-                GenerateDtmfTone(stitcher, duration, tone.Item1, tone.Item2);
-                Thread.Sleep(DEFAULT_TONE_PAUSE_DURATION_MS);
+                if (tone.Item1 != 0 && tone.Item2 != 0)
+                {
+                    GenerateDtmfTone(stitcher, duration, tone.Item1, tone.Item2);
+                }
+                Thread.Sleep(TimeSpan.FromMilliseconds(tone.Item3));
             }
         }
 
@@ -84,30 +88,33 @@ namespace Maple
             Thread.Sleep(TimeSpan.FromMilliseconds(60));
         }
 
-        private Dictionary<char, Tuple<int, int>> GetLookup()
+        private Dictionary<char, Tuple<int, int, int>> GetLookup()
         {
+            var stdMs = (int)DEFAULT_TONE_PAUSE_DURATION_MS.TotalMilliseconds;
+            var longMs = (int)DEFAULT_COMMA_PAUSE_DURATION_MS.TotalMilliseconds;
             if (DtmfLookup == null)
             {
-                DtmfLookup = new Dictionary<char, Tuple<int, int>>();
-                DtmfLookup.Add('1', Tuple.Create(697, 1209));
-                DtmfLookup.Add('2', Tuple.Create(697, 1336));
-                DtmfLookup.Add('3', Tuple.Create(697, 1477));
-                DtmfLookup.Add('A', Tuple.Create(697, 1633));
+                DtmfLookup = new Dictionary<char, Tuple<int, int, int>>();
+                DtmfLookup.Add('1', Tuple.Create(697, 1209, stdMs));
+                DtmfLookup.Add('2', Tuple.Create(697, 1336, stdMs));
+                DtmfLookup.Add('3', Tuple.Create(697, 1477, stdMs));
+                DtmfLookup.Add('A', Tuple.Create(697, 1633, stdMs));
 
-                DtmfLookup.Add('4', Tuple.Create(770, 1209));
-                DtmfLookup.Add('5', Tuple.Create(770, 1336));
-                DtmfLookup.Add('6', Tuple.Create(770, 1477));
-                DtmfLookup.Add('B', Tuple.Create(770, 1633));
+                DtmfLookup.Add('4', Tuple.Create(770, 1209, stdMs));
+                DtmfLookup.Add('5', Tuple.Create(770, 1336, stdMs));
+                DtmfLookup.Add('6', Tuple.Create(770, 1477, stdMs));
+                DtmfLookup.Add('B', Tuple.Create(770, 1633, stdMs));
 
-                DtmfLookup.Add('7', Tuple.Create(852, 1209));
-                DtmfLookup.Add('8', Tuple.Create(852, 1336));
-                DtmfLookup.Add('9', Tuple.Create(852, 1477));
-                DtmfLookup.Add('C', Tuple.Create(852, 1633));
+                DtmfLookup.Add('7', Tuple.Create(852, 1209, stdMs));
+                DtmfLookup.Add('8', Tuple.Create(852, 1336, stdMs));
+                DtmfLookup.Add('9', Tuple.Create(852, 1477, stdMs));
+                DtmfLookup.Add('C', Tuple.Create(852, 1633, stdMs));
 
-                DtmfLookup.Add('*', Tuple.Create(941, 1209));
-                DtmfLookup.Add('0', Tuple.Create(941, 1336));
-                DtmfLookup.Add('#', Tuple.Create(941, 1477));
-                DtmfLookup.Add('D', Tuple.Create(941, 1633));
+                DtmfLookup.Add('*', Tuple.Create(941, 1209, stdMs));
+                DtmfLookup.Add('0', Tuple.Create(941, 1336, stdMs));
+                DtmfLookup.Add('#', Tuple.Create(941, 1477, stdMs));
+                DtmfLookup.Add('D', Tuple.Create(941, 1633, stdMs));
+                DtmfLookup.Add(',', Tuple.Create(0, 0, longMs));
             }
 
             return DtmfLookup;
@@ -116,11 +123,11 @@ namespace Maple
         /**
          * Build a collection of tone Tuples from the provided string value.
          */
-        private Tuple<int, int>[] StringToDtmf(String value)
+        private Tuple<int, int, int>[] StringToDtmf(String value)
         {
             var lookup = GetLookup();
             var len = value.Length;
-            Tuple<int, int>[] tones = new Tuple<int, int>[len];
+            Tuple<int, int, int>[] tones = new Tuple<int, int, int>[len];
 
             var i = 0;
             foreach (var entry in value.ToCharArray())
@@ -137,7 +144,7 @@ namespace Maple
          */
         private string filterPhoneNumbers(String phoneNumbers)
         {
-            string whitelist = "0123456789ABCD*#";
+            string whitelist = "0123456789ABCD*#,";
             string filteredInput = "";
             foreach (char c in phoneNumbers)
             {
