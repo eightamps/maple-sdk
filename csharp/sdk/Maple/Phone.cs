@@ -414,6 +414,7 @@ namespace Maple
             DtmfDial(input);
             return true;
         }
+
         private void DtmfDial(string input)
         {
             // If we're already waiting for tones, let them finish before 
@@ -430,6 +431,7 @@ namespace Maple
             });
             dtmfThread.Start();
         }
+
         private bool DtmfDialIsInProgress()
         {
             return dtmfThread != null && dtmfThread.IsAlive;

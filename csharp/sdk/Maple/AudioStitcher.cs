@@ -12,7 +12,7 @@ namespace Maple
         public const int DEFAULT_OUT_SAMPLE_RATE = 44100;
         public const int DEFAULT_OUT_CH = 1;
 
-        public const int DEFAULT_IN_SAMPLE_RATE = 48000;
+        public const int DEFAULT_IN_SAMPLE_RATE = 44100;
         public const int DEFAULT_IN_CH = 1;
         public const AudioClientShareMode DEFAULT_SHARE = AudioClientShareMode.Shared;
 
@@ -109,36 +109,27 @@ namespace Maple
                 return;
             }
 
+            // Stop all channels.
+            FromPhoneLineChannel.StopRecording();
+            FromMicChannel.StopRecording();
+            ToSpeakerChannel.Stop();
+            ToPhoneLineChannel.Stop();
+
+            ToSpeakerBuffer.ClearBuffer();
+            FromMicBuffer.ClearBuffer();
+
             // Dispose of everything.
-            ToSpeakerChannel?.Dispose();
-            FromPhoneLineChannel?.Dispose();
-            FromMicChannel?.Dispose();
-            ToPhoneLineChannel?.Dispose();
+            FromPhoneLineChannel.Dispose();
+            FromMicChannel.Dispose();
+            ToSpeakerChannel.Dispose();
+            ToPhoneLineChannel.Dispose();
+
+            FromPhoneLineDevice.Dispose();
+            ToPhoneLineDevice.Dispose();
+            ToSpeakerDevice.Dispose();
+            FromMicDevice.Dispose();
+
             IsActive = false;
-        }
-
-        private int phoneLineDeviceNumber = -2;
-        public int ToPhoneLineDeviceNumber()
-        {
-            if (phoneLineDeviceNumber == -2)
-            {
-                var enumerator = new MMDeviceEnumerator().EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active);
-                var index = 0;
-                var foundIndex = -1;
-                foreach (var device in enumerator)
-                {
-                    Console.WriteLine("CHECKING index: " + index + " for: " + device.FriendlyName);
-                    if (device.FriendlyName == ToPhoneLineDevice.FriendlyName)
-                    {
-                        foundIndex = index;
-                    }
-                    index++;
-                }
-
-                phoneLineDeviceNumber = foundIndex;
-            }
-
-            return phoneLineDeviceNumber;
         }
 
         private void FromPhoneLineDataAvailable(object sender, WaveInEventArgs e)
@@ -171,35 +162,6 @@ namespace Maple
             }
         }
 
-        private int GetDeviceIndexFor(String name)
-        {
-            var enumerator = new MMDeviceEnumerator();
-            var index = 0;
-            foreach (var device in enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
-            {
-                if (device.FriendlyName.Contains(name))
-                {
-                    // Console.WriteLine("Found requested device at index: " + index);
-                    return index;
-                }
-                index++;
-            }
-            return -1;
-        }
-
-        private DirectSoundDeviceInfo GetDsoDeviceByName(String name = "")
-        {
-            foreach (var device in DirectSoundOut.Devices)
-            {
-                if (name == "" || device.Description.Contains(name)) 
-                {
-                    // Console.WriteLine("FOUND MATCH:" + name);
-                    return device;
-                }
-            }
-            return null;
-        }
-
         private MMDevice GetMMDeviceByName(String name, DataFlow direction)
         {
             using (var enumerator = new MMDeviceEnumerator())
@@ -220,10 +182,7 @@ namespace Maple
 
         public void Dispose()
         {
-            if (IsActive)
-            {
-                Stop();
-            }
+            Stop();
         }
     }
 }
