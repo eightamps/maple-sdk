@@ -12,7 +12,7 @@ namespace Maple
         public const int DEFAULT_OUT_SAMPLE_RATE = 44100;
         public const int DEFAULT_OUT_CH = 1;
 
-        public const int DEFAULT_IN_SAMPLE_RATE = 44100;
+        public const int DEFAULT_IN_SAMPLE_RATE = 48000;
         public const int DEFAULT_IN_CH = 1;
         public const AudioClientShareMode DEFAULT_SHARE = AudioClientShareMode.Shared;
 
