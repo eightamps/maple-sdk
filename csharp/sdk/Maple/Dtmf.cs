@@ -1,5 +1,6 @@
 ﻿using NAudio.Wave.SampleProviders;
 using NAudio.Wave;
+using NAudio.CoreAudioApi;
 using System.Collections.Generic;
 using System.Threading;
 using System;
@@ -8,14 +9,33 @@ namespace Maple
 {
     class Dtmf
     {
+        private const float DEFAULT_MIC_LEVEL = 0.7f;
         private readonly Double DEFAULT_GAIN = 0.6;
         private readonly TimeSpan DEFAULT_TONE_DURATION_MS = TimeSpan.FromMilliseconds(100);
         private readonly TimeSpan DEFAULT_TONE_PAUSE_DURATION_MS = TimeSpan.FromMilliseconds(100);
+        private readonly TimeSpan DEFAULT_TONE_EXIT_PAUSE_MS = TimeSpan.FromMilliseconds(300);
+        private float lastMicLevel;
 
         private Dictionary<char, Tuple<int, int>> DtmfLookup;
 
         public Dtmf()
         {
+        }
+
+        private void MuteMic()
+        {
+            var mic = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
+            lastMicLevel = mic.AudioEndpointVolume.MasterVolumeLevelScalar;
+            mic.AudioEndpointVolume.MasterVolumeLevelScalar = 0;
+            mic.Dispose();
+        }
+
+        private void UnMuteMic()
+        {
+            var mic = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
+            var level = lastMicLevel > 0.0 ? lastMicLevel : DEFAULT_MIC_LEVEL;
+            mic.AudioEndpointVolume.MasterVolumeLevelScalar = level;
+            mic.Dispose();
         }
 
         public void GenerateDtmfTones(String phoneNumbers, AudioStitcher stitcher)
@@ -34,6 +54,7 @@ namespace Maple
                 Console.WriteLine("GenerateTones with: " + phoneNumbers);
             }
 
+            MuteMic();
             // Get the device index from the PhoneOutput signal.
             var duration = DEFAULT_TONE_DURATION_MS;
             var tones = StringToDtmf(filteredInput);
@@ -43,6 +64,9 @@ namespace Maple
                 GenerateDtmfTone(stitcher, duration, tone.Item1, tone.Item2);
                 Thread.Sleep(DEFAULT_TONE_PAUSE_DURATION_MS);
             }
+
+            Thread.Sleep(DEFAULT_TONE_EXIT_PAUSE_MS);
+            UnMuteMic();
         }
 
         private void GenerateDtmfTone(AudioStitcher stitcher, TimeSpan duration, int freq1, int freq2)
