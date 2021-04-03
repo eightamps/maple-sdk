@@ -1,4 +1,5 @@
 ﻿using NAudio.CoreAudioApi;
+using NAudio.CoreAudioApi.Interfaces;
 using NAudio.Wave;
 using System;
 
@@ -57,6 +58,18 @@ namespace Maple
             Console.WriteLine(label + " ENC: " + waveFormat.Encoding + " SR: " + waveFormat.SampleRate + " CH: " + waveFormat.Channels);
         }
 
+        private void DisableDuckingFor(MMDevice device)
+        {
+            var sessionManager = device.AudioSessionManager;
+            var sessions = sessionManager.Sessions;
+            for (int i = 0; i < sessions.Count; i++)
+            {
+                var session = sessions[i];
+                session.SetDuckingPreference(true);
+                Console.WriteLine($"YOOOOOOOOOOOOOOOOOOOOOO {session.ToString()}");
+            }
+        }
+
         public void StartWasapi()
         {
             Console.WriteLine("----------------------------");
@@ -67,6 +80,9 @@ namespace Maple
 
             ToSpeakerDevice = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
             FromMicDevice = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
+
+            DisableDuckingFor(ToSpeakerDevice);
+            DisableDuckingFor(FromMicDevice);
 
             // Configure the Line to Speaker connection.
             FromPhoneLineChannel = new WasapiCapture(FromPhoneLineDevice, DEFAULT_SYNC, DEFAULT_LATENCY);

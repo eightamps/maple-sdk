@@ -22,13 +22,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NAudio" Version="1.10.0" />
+    <Compile Remove="Vendor DLLs\NAudio\netcoreapp3.0\**" />
+    <EmbeddedResource Remove="Vendor DLLs\NAudio\netcoreapp3.0\**" />
+    <None Remove="Vendor DLLs\NAudio\netcoreapp3.0\**" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="HidSharp">
       <HintPath>..\..\..\..\..\Vendor DLLs\HidSharp.dll</HintPath>
     </Reference>
+    <Reference Include="NAudio">
+      <HintPath>Vendor DLLs\NAudio\netstandard2.0\NAudio.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Vendor DLLs\NAudio\netstandard2.0\NAudio.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
