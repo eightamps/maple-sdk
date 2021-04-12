@@ -8,7 +8,8 @@ namespace Maple
 {
     class Dtmf
     {
-        private readonly Double DEFAULT_GAIN = 0.6;
+        private readonly TimeSpan DEFAULT_INITIAL_TIMEOUT_MS = TimeSpan.FromMilliseconds(2000);
+        private readonly Double DEFAULT_GAIN = 0.7;
         private readonly TimeSpan DEFAULT_TONE_DURATION_MS = TimeSpan.FromMilliseconds(100);
         private readonly TimeSpan DEFAULT_TONE_PAUSE_DURATION_MS = TimeSpan.FromMilliseconds(100);
         private readonly TimeSpan DEFAULT_COMMA_PAUSE_DURATION_MS = TimeSpan.FromMilliseconds(1500);
@@ -21,6 +22,7 @@ namespace Maple
 
         public void GenerateDtmfTones(String phoneNumbers, AudioStitcher stitcher)
         {
+            Thread.Sleep(DEFAULT_INITIAL_TIMEOUT_MS);
             Console.WriteLine("Generate DTMF Tones for:" + phoneNumbers);
             // Strip any unsupported characters from the phoneNumbers string.
             string filteredInput = filterPhoneNumbers(phoneNumbers);
