@@ -35,7 +35,7 @@ namespace Maple
         private const int TIMEOUT_MS = 500;
         private const int STITCHER_TIMEOUT_MS = 3000;
         private const int STITCHER_DELAY_MS = 1000;
-        private const long OFF_HOOK_TIMEOUT_MS = 1000;
+        private const long OFF_HOOK_TIMEOUT_MS = 5000;
 
         private readonly AudioStitcher stitcher;
         private readonly Dtmf dtmf;
@@ -357,7 +357,7 @@ namespace Maple
                 {
                     // Wait for firmware confirmation that the line is Off Hook,
                     // or timeout expired.
-                    Thread.Sleep(TimeSpan.FromMilliseconds(100));
+                    Thread.Sleep(TimeSpan.FromMilliseconds(1));
                 }
                 sw.Stop();
             }
@@ -366,15 +366,16 @@ namespace Maple
         private void WaitForStitcher()
         {
             // Wait for the audio router to get everything wired up.
+            // Wait for the audio router to get everything wired up.
             var sw = Stopwatch.StartNew();
             while (!stitcher.IsActive && sw.ElapsedMilliseconds < STITCHER_TIMEOUT_MS)
             {
-                Thread.Sleep(TimeSpan.FromMilliseconds(5));
+                Thread.Sleep(TimeSpan.FromMilliseconds(1));
             }
             sw.Stop();
 
             // Wait another few seconds for everything to be ready.
-            Thread.Sleep(TimeSpan.FromMilliseconds(STITCHER_DELAY_MS));
+            // Thread.Sleep(TimeSpan.FromMilliseconds(STITCHER_DELAY_MS));
         }
 
         private void WaitForResponse()
@@ -384,7 +385,7 @@ namespace Maple
                 var sw = Stopwatch.StartNew();
                 while (isRequestPending && sw.ElapsedMilliseconds < USB_TIMEOUT_MS)
                 {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(10));
+                    Thread.Sleep(TimeSpan.FromMilliseconds(1));
                 }
                 sw.Stop();
 
