@@ -52,21 +52,20 @@ namespace Maple
             StartWasapi();
         }
 
-        private void LogWaveFormat(String label, WaveFormat waveFormat)
-        {
-            Console.WriteLine(label + " ENC: " + waveFormat.Encoding + " SR: " + waveFormat.SampleRate + " CH: " + waveFormat.Channels);
-        }
-
         public void StartWasapi()
         {
             Console.WriteLine("----------------------------");
             Console.WriteLine("Wasapi AudioStitcher.Start()");
+
             // Get each of the 4 audio devices by name and data flow.
             FromPhoneLineDevice = GetMMDeviceByName(RxName, DataFlow.Capture);
             ToPhoneLineDevice = GetMMDeviceByName(TxName, DataFlow.Render);
 
             ToSpeakerDevice = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Communications);
             FromMicDevice = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
+
+            var duckingStatus = ToSpeakerDevice.AudioSessionManager.AudioSessionControl.SetDuckingPreference(true);
+            Console.WriteLine($"Audio Ducking opt-out return status (zero == success): {duckingStatus}");
 
             // Configure the Line to Speaker connection.
             FromPhoneLineChannel = new WasapiCapture(FromPhoneLineDevice, DEFAULT_SYNC, DEFAULT_LATENCY);
