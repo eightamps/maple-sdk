@@ -1,5 +1,6 @@
 obj
 bin
+cmake-build-*
 *csproj.user
 Properties
 __pycache__
