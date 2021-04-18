@@ -49,6 +49,8 @@ PhonyStatus phony_init(Phony *phony) {
 }
 
 PhonyStatus phony_info(Phony *phony) {
+  // TODO(lbayes): Add these fields to the Phony struct and apply these
+  //  values to those fields.
   int res;
   // unsigned char buf[65];
   wchar_t wstr[MAX_STR];
