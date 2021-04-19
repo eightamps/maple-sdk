@@ -1,5 +1,6 @@
-#include <phony.h>
-#include <stitcher.h>
+#include "dtmf.h"
+#include "phony.h"
+#include "stitcher.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -28,7 +29,22 @@ int phony_show_info(void) {
 
 int stitcher_exercise(void) {
   StitcherContext *c = stitcher_new();
-  int status = stitcher_start(c);
+  int status = stitcher_init(c);
+  if (status != EXIT_SUCCESS) return status;
+
+  // TODO(lbayes): We should instead get the sample_rate directly from the
+  //  mic and use that to configure the speaker and DTMF tones.
+  struct SoundIoSampleRateRange *range = c->to_speaker->sample_rates;
+  int sample_rate = 48000; // Picked 48kHz because that's what the stream
+                           // defaulted to on my computer.
+  if (range->min > 48000 && range->max < 48000) {
+    return EPERM; // Operation not permitted
+  }
+
+  DtmfContext *dtmf_context = dtmf_new("510", sample_rate);
+  c->to_speaker_stream->userdata = (void *)dtmf_context;
+  status = stitcher_start(c, dtmf_soundio_callback);
+  dtmf_free(dtmf_context);
   stitcher_free(c);
   return status;
 }

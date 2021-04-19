@@ -6,10 +6,34 @@ set(CMAKE_C_STANDARD 11)
 include_directories(src)
 include_directories(test)
 
-add_library(maple-dev STATIC src/phony.h src/phony.c src/stitcher.c src/stitcher.h src/dtmf.c src/dtmf.h)
-add_executable(maple src/main.c src/phony.h src/phony.c src/stitcher.c src/stitcher.h src/dtmf.c src/dtmf.h)
-add_executable(maple-test test/test_main.c src/phony.h src/phony.c
-        test/phony_test.h test/phony_test.c src/stitcher.c src/stitcher.h src/dtmf.c src/dtmf.h)
+add_library(maple-dev STATIC
+        src/phony.h
+        src/phony.c
+        src/stitcher.h
+        src/stitcher.c
+        src/dtmf.h
+        src/dtmf.c
+        )
+add_executable(maple
+        src/main.c
+        src/phony.h
+        src/phony.c
+        src/stitcher.h
+        src/stitcher.c
+        src/dtmf.h
+        src/dtmf.c
+        )
+add_executable(maple-test
+        test/test_main.c
+        src/phony.h
+        src/phony.c
+        test/phony_test.h
+        test/phony_test.c
+        src/stitcher.h
+        src/stitcher.c
+        src/dtmf.h
+        src/dtmf.c
+        )
 
 # Link the hidapi library
 target_link_libraries(maple hidapi-libusb)
