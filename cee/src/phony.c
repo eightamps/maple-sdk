@@ -11,9 +11,8 @@
 #define MAX_STR 255
 
 
-int phony_free(PhonyContext *phony) {
+void phony_free(PhonyContext *phony) {
   free(phony);
-  return EXIT_SUCCESS;
 }
 
 PhonyContext *phony_new(uint16_t vid, uint16_t pid) {

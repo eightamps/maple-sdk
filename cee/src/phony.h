@@ -44,8 +44,8 @@ int phony_info(PhonyContext *phony);
 /**
  * Close down and free the provided telephone connection.
  * @param phony
- * @return int Status code
+ * @return void
  */
-int phony_free(PhonyContext *phony);
+void phony_free(PhonyContext *phony);
 
 #endif //MAPLE_PHONY_H
