@@ -9,6 +9,7 @@
 
 
 typedef struct StitcherContext {
+  bool is_active;
   struct SoundIo *soundio;
   struct SoundIoDevice *to_speaker;
 }StitcherContext;
