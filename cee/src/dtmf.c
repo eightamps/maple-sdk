@@ -19,22 +19,22 @@ typedef struct DtmfToneInfo {
 }DtmfToneInfo;
 
 static DtmfToneInfo DtmfTones[] = {
-    {'0', 1336, 941},
-    {'1', 1209, 697},
-    {'2', 1336, 697},
-    {'3', 1477, 697},
-    {'4', 1209, 770},
-    {'5', 1336, 770},
-    {'6', 1477, 770},
-    {'7', 1209, 852},
-    {'8', 1336, 852},
-    {'9', 1477, 852},
+    {'0', 1336, 941}, // underscore-ish?
+    {'1', 1209, 697}, // recording icon?
+    {'2', 1336, 697}, // abcd
+    {'3', 1477, 697}, // def
+    {'4', 1209, 770}, // ghi
+    {'5', 1336, 770}, // jkl
+    {'6', 1477, 770}, // mno
+    {'7', 1209, 852}, // pqrs
+    {'8', 1336, 852}, // tuv
+    {'9', 1477, 852}, // wxyz
+    {'*', 1209, 941}, // plus sign?
+    {'#', 1477, 941}, // up arrow?
     {'A', 1633, 697},
     {'B', 1633, 770},
     {'C', 1633, 852},
     {'D', 1633, 941},
-    {'*', 1209, 941},
-    {'#', 1477, 941}
 };
 
 static const int dtmf_tones_count = sizeof(DtmfTones) / sizeof(DtmfToneInfo);
@@ -91,8 +91,10 @@ DtmfContext *dtmf_new(char *values, int sample_rate) {
     float sample_value = 0;
     int k;
 
+    int sample_limit = (sample_rate > context->samples_count) ?
+        context->samples_count : sample_rate;
     // Add first tone_info at 1/2 volume
-    for (k = 0; k < sample_rate; k++) {
+    for (k = 0; k < sample_limit; k++) {
       context->samples[k] = sinf(sample_value) * 0.5;
       sample_value += increment;
     }
@@ -100,7 +102,7 @@ DtmfContext *dtmf_new(char *values, int sample_rate) {
     // Add second tone_info at 1/2 volume
     increment = (2.0f * M_PI) / ((float)sample_rate / tone_info->tone2);
     sample_value = 0;
-    for (k = 0; k < sample_rate; k++) {
+    for (k = 0; k < sample_limit; k++) {
       context->samples[k] += sinf(sample_value) * 0.5;
       sample_value += increment;
     }

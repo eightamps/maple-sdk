@@ -3,6 +3,7 @@
 #include "stitcher.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #define MAPLE_VID 0x335e
 #define MAPLE_PID 0x8a01
@@ -41,10 +42,11 @@ int stitcher_exercise(void) {
     return EPERM; // Operation not permitted
   }
 
-  DtmfContext *dtmf_context = dtmf_new("510", sample_rate);
+  DtmfContext *dtmf_context = dtmf_new("5", sample_rate);
   c->to_speaker_stream->userdata = (void *)dtmf_context;
   status = stitcher_start(c, dtmf_soundio_callback);
   dtmf_free(dtmf_context);
+
   stitcher_free(c);
   return status;
 }

@@ -250,7 +250,7 @@ void *dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
       if (frame_index < samples_count) {
         sample = dtmf_samples[frame + dtmf_context->samples_index];
       } else {
-        sample = 0;
+        sample = 0.0f;
       }
       for (int channel = 0; channel < layout->channel_count; channel++) {
         float *ptr = (float *)(areas[channel].ptr + areas[channel].step *
@@ -263,7 +263,11 @@ void *dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
         fmodf(seconds_offset + seconds_per_frame * frame_count, 1.0f);
     frames_left -= frame_count;
 
-    dtmf_context->samples_index = dtmf_context->samples_index + frame;
+    if (samples_index + frame > samples_count) {
+      dtmf_context->samples_index = samples_count - 1;
+    } else {
+      dtmf_context->samples_index = dtmf_context->samples_index + frame;
+    }
 
     if (err = soundio_outstream_end_write(out_stream)) {
       fprintf(stderr, "%s\n", soundio_strerror(err));
