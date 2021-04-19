@@ -4,7 +4,7 @@
 #define MAPLE_VID 0x335e
 #define MAPLE_PID 0x8a01
 
-PhonyStatus execute_phony(void) {
+PhonyStatus phony_show_info(void) {
   // printf("Attempting to allocate Phony\n");
   Phony *phony = phony_new(MAPLE_VID, MAPLE_PID);
   if (phony == NULL) {
@@ -30,5 +30,5 @@ PhonyStatus execute_phony(void) {
 }
 
 int main() {
-  return execute_phony();
+  return phony_show_info();
 }
