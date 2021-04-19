@@ -36,12 +36,7 @@ int phony_init(PhonyContext *phony) {
   if (res != EXIT_SUCCESS) return res;
 
   phony->device = hid_open(phony->vid, phony->pid, NULL);
-  if (phony->device == NULL) {
-    // printf("ERROR: Failed to connect to device width vid: 0x%x and pid: 0x%x\n",
-           // phony->vid,
-           // phony->pid);
-    return ECONNREFUSED;
-  }
+  if (phony->device == NULL) return ECONNREFUSED;
 
   return EXIT_SUCCESS;
 }
