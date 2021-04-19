@@ -28,7 +28,7 @@ int phony_show_info(void) {
 
 int stitcher_exercise(void) {
   StitcherContext *c = stitcher_new();
-
+  stitcher_init(c);
   stitcher_free(c);
   return EXIT_SUCCESS;
 }
