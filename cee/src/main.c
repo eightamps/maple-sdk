@@ -1,7 +1,6 @@
 #include "dtmf.h"
 #include "phony.h"
 #include "stitcher.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 

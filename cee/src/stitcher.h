@@ -32,7 +32,7 @@ void stitcher_free(StitcherContext *c);
  * @param frame_count_max
  * @return void
  */
-void *dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
-    int frame_count_min, int frame_count_max);
+void dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
+                           __attribute__((unused)) int frame_count_min, int frame_count_max);
 
 #endif // MAPLE_STITCHER_H

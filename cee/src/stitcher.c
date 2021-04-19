@@ -10,8 +10,8 @@
 #include <errno.h>
 #include <math.h>
 
-static const float PI = 3.1415926535f;
-static const int DTMF_TONE_SECONDS = 1;
+// static const float PI = 3.1415926535f;
+// static const int DTMF_TONE_SECONDS = 1;
 
 /*
 static void dtmf_callback(struct SoundIoOutStream *out_stream,
@@ -209,12 +209,12 @@ void stitcher_free(StitcherContext *c) {
   free(c);
 }
 
-void *dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
-                            int frame_count_min, int frame_count_max) {
+void dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
+                           __attribute__((unused)) int frame_count_min, int frame_count_max) {
   DtmfContext *dtmf_context = (DtmfContext *)out_stream->userdata;
   float seconds_offset = 0.0f;
   const struct SoundIoChannelLayout *layout = &out_stream->layout;
-  float float_sample_rate = out_stream->sample_rate;
+  float float_sample_rate = (float)out_stream->sample_rate;
   float seconds_per_frame = 1.0f / float_sample_rate;
   struct SoundIoChannelArea *areas;
 
@@ -243,7 +243,7 @@ void *dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
       // frame_limit = (frame_count + samples_index)
     // }
 
-    int frame = 0;
+    int frame;
     for (frame = 0; frame < frame_count; frame++) {
       int frame_index = frame + samples_index;
       float sample;
@@ -260,7 +260,7 @@ void *dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
     }
 
     seconds_offset =
-        fmodf(seconds_offset + seconds_per_frame * frame_count, 1.0f);
+        fmodf(seconds_offset + seconds_per_frame * (float)frame_count, 1.0f);
     frames_left -= frame_count;
 
     if (samples_index + frame > samples_count) {
@@ -269,7 +269,8 @@ void *dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
       dtmf_context->samples_index = dtmf_context->samples_index + frame;
     }
 
-    if (err = soundio_outstream_end_write(out_stream)) {
+    err = soundio_outstream_end_write(out_stream);
+    if (err != EXIT_SUCCESS) {
       fprintf(stderr, "%s\n", soundio_strerror(err));
       exit(err);
     }

@@ -6,6 +6,9 @@ set(CMAKE_C_STANDARD 11)
 include_directories(src)
 include_directories(test)
 
+# Not sure this is doing anything
+# add_library(libsoundio-dev STATIC IMPORTED)
+
 add_library(maple-dev STATIC
         src/phony.h
         src/phony.c
