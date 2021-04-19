@@ -1,28 +1,31 @@
 #include <stdio.h>
 #include <phony.h>
 
+#define MAPLE_VID 0x335e
+#define MAPLE_PID 0x8a01
+
 PhonyStatus execute_phony(void) {
-  printf("Attempting to allocate Phony\n");
-  Phony *phony = phony_new(0x01, 0x02);
+  // printf("Attempting to allocate Phony\n");
+  Phony *phony = phony_new(MAPLE_VID, MAPLE_PID);
   if (phony == NULL) {
     return PhonyStatusFailureToAlloc;
   }
 
   PhonyStatus status;
 
-  printf("Attempting to initialize Phony device\n");
+  // printf("Attempting to initialize Phony device\n");
   status = phony_init(phony);
   if (status != PhonyStatusSuccess) {
     return status;
   }
 
-  printf("Attempting to gather Phony device info\n");
+  // printf("Attempting to gather Phony device info\n");
   status = phony_info(phony);
   if (status != PhonyStatusSuccess) {
     return status;
   }
 
-  printf("Attempting to free Phony allocation\n");
+  // printf("Attempting to free Phony allocation\n");
   return phony_free(phony);
 }
 

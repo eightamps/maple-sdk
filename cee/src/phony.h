@@ -16,6 +16,7 @@ typedef enum {
   PhonyStatusFailureToAlloc = 1,
   PhonyStatusFailureHidInit,
   PhonyStatusFailureDeviceConnect,
+  PhonyStatusFailureCommunication,
 }PhonyStatus;
 
 /**
