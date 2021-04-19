@@ -36,7 +36,7 @@ add_executable(maple-test
         src/stitcher.c
         src/dtmf.h
         src/dtmf.c
-        )
+        test/dtmf_test.c test/dtmf_test.h)
 
 # Link the hidapi library
 target_link_libraries(maple hidapi-libusb)

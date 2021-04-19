@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 static const float DTMF_ENTRY_MS = 250.0f;
 static const float DTMF_SILENCE_MS = 200.0f;

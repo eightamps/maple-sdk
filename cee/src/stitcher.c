@@ -146,7 +146,7 @@ int stitcher_init(StitcherContext *c) {
 
   // Get the default output device samples_index
   int index = soundio_default_output_device_index(sio);
-  if (index < 0) return ENXIO; // No such device or address.
+  if (index < EXIT_SUCCESS) return ENXIO; // No such device or address.
 
   // Get the default output device
   struct SoundIoDevice *device = soundio_get_output_device(sio, index);
