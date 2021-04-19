@@ -7,55 +7,45 @@
 
 #include <stdint.h>
 #include <hidapi/hidapi.h>
-
-/**
- * Telephone connection API return status.
- */
-typedef enum {
-  PhonyStatusSuccess = 0,
-  PhonyStatusFailureToAlloc = 1,
-  PhonyStatusFailureHidInit,
-  PhonyStatusFailureDeviceConnect,
-  PhonyStatusFailureCommunication,
-}PhonyStatus;
+#include <errno.h>
 
 /**
  * Represents a telephone connection.
  */
-typedef struct Phony {
+typedef struct PhonyContext {
   int vid;
   int pid;
   hid_device *device;
-}Phony;
+}PhonyContext;
 
 /**
  * Create a new container for a telephone connection that is associated with
  * the provided USB-IF Vendor ID and Product ID.
  * @param vid
  * @param pid
- * @return Phony instance
+ * @return PhonyContext instance
  */
-Phony *phony_new(uint16_t vid, uint16_t pid);
+PhonyContext *phony_new(uint16_t vid, uint16_t pid);
 
 /**
  * Initialize a recently created telephone connection.
  * @param phony
- * @return PhonyStatus
+ * @return int Status code
  */
-PhonyStatus phony_init(Phony *phony);
+int phony_init(PhonyContext *phony);
 
 /**
- * Populate the provided Phony object with device and manufacturer details.
+ * Populate the provided PhonyContext object with device and manufacturer details.
  * @param phony
- * @return PhonyStatus
+ * @return int Status code
  */
-PhonyStatus phony_info(Phony *phony);
+int phony_info(PhonyContext *phony);
 
 /**
  * Close down and free the provided telephone connection.
  * @param phony
- * @return PhonyStatus
+ * @return int Status code
  */
-PhonyStatus phony_free(Phony *phony);
+int phony_free(PhonyContext *phony);
 
 #endif //MAPLE_PHONY_H
