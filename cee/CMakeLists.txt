@@ -6,49 +6,49 @@ set(CMAKE_C_STANDARD 11)
 include_directories(src)
 include_directories(test)
 
-# Not sure this is doing anything
-# add_library(libsoundio-dev STATIC IMPORTED)
+set(AppSources
+        src/phony.h
+        src/phony.c
+        src/stitcher.h
+        src/stitcher.c
+        src/dtmf.h
+        src/dtmf.c
+        )
 
-add_library(maple-dev STATIC
-        src/phony.h
-        src/phony.c
-        src/stitcher.h
-        src/stitcher.c
-        src/dtmf.h
-        src/dtmf.c
+set(GtkSources
+        src/gtk/application.h
+        src/gtk/application.c
         )
-add_executable(maple
-        src/main.c
-        src/phony.h
-        src/phony.c
-        src/stitcher.h
-        src/stitcher.c
-        src/dtmf.h
-        src/dtmf.c
-        )
-add_executable(maple-test
-        test/test_main.c
-        src/phony.h
-        src/phony.c
+
+set(TestSources
         test/phony_test.h
         test/phony_test.c
-        src/stitcher.h
-        src/stitcher.c
-        src/dtmf.h
-        src/dtmf.c
-        test/dtmf_test.c test/dtmf_test.h)
+        test/dtmf_test.c
+        test/dtmf_test.h
+        )
 
-# Link the hidapi library
-target_link_libraries(maple hidapi-libusb)
-target_link_libraries(maple-dev hidapi-libusb)
-target_link_libraries(maple-test hidapi-libusb)
+link_libraries(hidapi-libusb
+        soundio
+        m
+        )
 
-# Link the soundio cross-platform audio library
-target_link_libraries(maple soundio)
-target_link_libraries(maple-dev soundio)
-target_link_libraries(maple-test soundio)
+add_library(maple-dev STATIC ${AppSources})
+add_executable(maple src/main.c ${AppSources})
+add_executable(maple-test test/test_main.c
+        ${AppSources}
+        ${GtkSources}
+        ${TestSources}
+        )
+add_executable(maple-gtk src/main_gtk.c
+        ${AppSources}
+        ${GtkSources}
+        )
 
-# Link the libc Math library (m)
-target_link_libraries(maple m)
-target_link_libraries(maple-dev m)
-target_link_libraries(maple-test m)
+# Configure GTK+-3.0
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+include_directories(${GTK3_INCLUDE_DIRS})
+link_directories(${GTK3_LIBRARY_DIRS})
+add_definitions(${GTK3_CFLAGS_OTHER})
+target_link_libraries(maple-gtk ${GTK3_LIBRARIES})
+target_link_libraries(maple-test ${GTK3_LIBRARIES})
