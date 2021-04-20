@@ -57,7 +57,6 @@ static const float expected_samples_one[25] = {
 char *test_dtmf_new_state(void) {
   DtmfContext *c = dtmf_new("1", 100);
   int count = c->samples_count;
-
   muAssert(c->sample_rate == 100, "Expected sample_rate");
   muAssert(c->samples_index == 0, "Expected samples_index");
   muAssert(count == 25, "Expected samples_count at 25");
@@ -73,6 +72,21 @@ char *test_dtmf_new_state(void) {
 char *test_dtmf_no_value(void) {
   DtmfContext *c = dtmf_new(NULL, 100);
   muAssert(c == NULL, "Expected null result");
+  dtmf_free(c);
+  return NULL;
+}
+
+char *test_dtmf_longer_value(void) {
+  DtmfContext *c = dtmf_new("5104590393", 100);
+
+  muAssert(c != NULL, "Expected non-null result");
+  muAssert(c->samples_count == 430, "Expected samples_count");
+  // TODO(lbayes): Multiple characters aren't performing as expected.
+  //  Uncomment the following to see an odd display of values
+  // for (int i = 0; i < c->samples_count; i++) {
+    // printf("YYY: %d %f\n", i, c->samples[i]);
+  // }
+  // muAssert(c->samples[400], 0.500f, "Expected sample entry");
   dtmf_free(c);
   return NULL;
 }
