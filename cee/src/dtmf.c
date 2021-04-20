@@ -53,9 +53,10 @@ DtmfContext *dtmf_new(char *values, int sample_rate) {
     return NULL;
   }
 
-  int value_count = strlen(values);
-  float seconds_of_sound = (float)(DTMF_ENTRY_MS * value_count) / 1000;
-  float seconds_of_silence = (float)(DTMF_SILENCE_MS * (value_count - 1)) /
+  size_t value_count = strlen(values);
+  float seconds_of_sound = (float)(DTMF_ENTRY_MS * (float)value_count) / 1000;
+  float seconds_of_silence = (float)(DTMF_SILENCE_MS * (float)(value_count -
+      1)) /
                                   1000;
   size_t struct_size = sizeof(DtmfContext);
   // size_t struct_size = (sizeof(double) * 6); // 3x int fields + 2x pointers
@@ -74,17 +75,18 @@ DtmfContext *dtmf_new(char *values, int sample_rate) {
   // Copy provided values into context container.
   strcpy(context->values, values);
 
-  size_t samples_count = sample_rate * (seconds_of_sound + seconds_of_silence);
+  size_t samples_count = (size_t)((float)sample_rate * (seconds_of_sound +
+      seconds_of_silence));
   size_t samples_memory_size = sizeof(float) * samples_count;
   context->samples = malloc(samples_memory_size);
-  context->samples_count = samples_count;
+  context->samples_count = (int)samples_count;
   if (context->samples == NULL) {
     fprintf(stderr, "ERROR: DTMF failed to allocate samples\n");
     return NULL;
   }
 
   for (int i = 0; i < value_count; i++) {
-    int char_code = values[i];
+    int char_code = (int)values[i];
 
     DtmfToneInfo *tone_info = get_tone_info(char_code);
     if (tone_info == NULL) {
@@ -93,7 +95,8 @@ DtmfContext *dtmf_new(char *values, int sample_rate) {
       return NULL;
     }
 
-    float increment = (2.0f * M_PI) / ((float)sample_rate / tone_info->tone1);
+    float increment = (2.0f * (float)M_PI) / ((float)sample_rate /
+        (float)tone_info->tone1);
     float sample_value = 0;
     int k;
 
@@ -101,15 +104,16 @@ DtmfContext *dtmf_new(char *values, int sample_rate) {
         context->samples_count : sample_rate;
     // Add first tone_info at 1/2 volume
     for (k = 0; k < sample_limit; k++) {
-      context->samples[k] = sinf(sample_value) * 0.5;
+      context->samples[k] = (float)sinf(sample_value) * 0.5f;
       sample_value += increment;
     }
 
     // Add second tone_info at 1/2 volume
-    increment = (2.0f * M_PI) / ((float)sample_rate / tone_info->tone2);
+    increment = (float)((2.0f * M_PI) / ((float)sample_rate /
+        (float)tone_info->tone2));
     sample_value = 0;
     for (k = 0; k < sample_limit; k++) {
-      context->samples[k] += sinf(sample_value) * 0.5;
+      context->samples[k] += (float)sinf(sample_value) * 0.5f;
       sample_value += increment;
     }
   }
