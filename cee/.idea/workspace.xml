@@ -17,7 +17,7 @@
   <component name="ChangeListManager">
     <list default="true" id="d04ad5b3-8937-4f5b-9867-f282c4415891" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/test_main.c" beforeDir="false" afterPath="$PROJECT_DIR$/test/test_main.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/dtmf_test.c" beforeDir="false" afterPath="$PROJECT_DIR$/test/dtmf_test.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,19 +116,11 @@
       <workItem from="1618839565035" duration="25209000" />
       <workItem from="1618932603630" duration="266000" />
       <workItem from="1618932880250" duration="64000" />
-      <workItem from="1618932952095" duration="4635000" />
+      <workItem from="1618932952095" duration="5160000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="XDebuggerManager">
-    <watches-manager>
-      <configuration name="CMakeRunConfiguration">
-        <watch expression="dtmf_context-&gt;samples_index" language="ObjectiveC" />
-        <watch expression="dtmf_context-&gt;samples_count" language="ObjectiveC" />
-      </configuration>
-    </watches-manager>
   </component>
 </project>

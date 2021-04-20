@@ -65,17 +65,24 @@ char *test_dtmf_new_state(void) {
 
   kiss_fft_cfg fft = kiss_fft_alloc(1024, 0, NULL, NULL);
   muAssert(fft != NULL, "Expected FFT configuration object");
-  kiss_fft_cpx fft_in[1024];
-  kiss_fft_cpx fft_out[1024];
+  kiss_fft_cpx fft_in[count];
+  kiss_fft_cpx fft_out[count / 2 + 1];
 
-  for (int i = 0; i < c->samples_count; i++) {
+  for (int i = 0; i < count + 1; i++) {
     fft_in[i].r = c->samples[i];
-    fft_in[i].i = c->samples[i];
+    fft_in[i].i = 0.0f;
   }
 
+  /*
   kiss_fft(fft, fft_in, fft_out);
+  free(fft);
 
-  printf("FINISHED FFT with: %f\n", fft_out[1]);
+  for (int i = 0; i < count; i++) {
+    printf(" in[%02d] r=%+f,  out[%02d] r=%+f,  i=%+f M[%02d]=%+f\n",
+           i, fft_in[i].r, i, fft_out[i].r, fft_out[i].i, i,
+           sqrt((fft_out[i].r * fft_out[i].r) + (fft_out[i].i * fft_out[i].i)));
+  }
+   */
 
   /*
   for (int i = 0; i < count; i++) {
