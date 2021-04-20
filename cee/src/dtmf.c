@@ -49,20 +49,27 @@ static DtmfToneInfo *get_tone_info(int char_code) {
 }
 
 DtmfContext *dtmf_new(char *values, int sample_rate) {
+  if (values == NULL || strcmp(values, "") == 0) {
+    return NULL;
+  }
+
   int value_count = strlen(values);
   float seconds_of_sound = (float)(DTMF_ENTRY_MS * value_count) / 1000;
   float seconds_of_silence = (float)(DTMF_SILENCE_MS * (value_count - 1)) /
                                   1000;
-  size_t struct_size = (sizeof(int) * 5); // 3x int fields + 2x pointers
+  size_t struct_size = sizeof(DtmfContext);
+  // size_t struct_size = (sizeof(double) * 6); // 3x int fields + 2x pointers
   DtmfContext *context = malloc(struct_size);
   context->sample_rate = sample_rate;
   context->samples_index = 0;
 
   size_t values_size = sizeof(char) * (strlen(values) + 1);
-  context->values = malloc(values_size);
-  if (context->values == NULL) {
-    fprintf(stderr, "ERROR: DTMF failed to allocate values\n");
-    return NULL;
+  if (values_size > 0) {
+    context->values = malloc(values_size);
+    if (context->values == NULL) {
+      fprintf(stderr, "ERROR: DTMF failed to allocate values\n");
+      return NULL;
+    }
   }
   // Copy provided values into context container.
   strcpy(context->values, values);
@@ -110,8 +117,14 @@ DtmfContext *dtmf_new(char *values, int sample_rate) {
   return context;
 }
 
-void dtmf_free(DtmfContext *context) {
-  free(context->values);
-  free(context->samples);
-  free(context);
+void dtmf_free(DtmfContext *c) {
+  if (c != NULL) {
+    if (c->samples != NULL) {
+      free(c->samples);
+    }
+    if (c->values != NULL) {
+      free(c->values);
+    }
+    free(c);
+  }
 }

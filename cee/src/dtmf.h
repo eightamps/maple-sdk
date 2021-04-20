@@ -17,6 +17,6 @@ typedef struct DtmfContext {
 }DtmfContext;
 
 DtmfContext *dtmf_new(char *values, int sample_rate);
-void dtmf_free(DtmfContext *context);
+void dtmf_free(DtmfContext *c);
 
 #endif // MAPLE_DTMF_H
