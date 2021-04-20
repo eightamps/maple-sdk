@@ -5,6 +5,7 @@ set(CMAKE_C_STANDARD 11)
 
 include_directories(src)
 include_directories(test)
+include_directories(vendor/kissfft)
 
 set(AppSources
         src/phony.h
@@ -25,7 +26,13 @@ set(TestSources
         test/phony_test.c
         test/dtmf_test.c
         test/dtmf_test.h
+        test/kissfft_test.c test/kissfft_test.h)
+
+set(VendorLibs
+        ${PROJECT_BINARY_DIR}/../vendor/kissfft/libkissfft-float.so
         )
+
+# link_directories(${CMAKE_BINARY_DIR}}/vendor/kissfft)
 
 link_libraries(hidapi-libusb
         soundio
@@ -33,7 +40,7 @@ link_libraries(hidapi-libusb
         )
 
 add_library(maple-dev STATIC ${AppSources})
-add_executable(maple src/main.c ${AppSources})
+add_executable(maple src/main.c ${AppSources} ${VendorLibs})
 add_executable(maple-test test/test_main.c
         ${AppSources}
         ${GtkSources}
@@ -50,5 +57,6 @@ pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
 include_directories(${GTK3_INCLUDE_DIRS})
 link_directories(${GTK3_LIBRARY_DIRS})
 add_definitions(${GTK3_CFLAGS_OTHER})
+
 target_link_libraries(maple-gtk ${GTK3_LIBRARIES})
-target_link_libraries(maple-test ${GTK3_LIBRARIES})
+target_link_libraries(maple-test ${GTK3_LIBRARIES} ${VendorLibs})

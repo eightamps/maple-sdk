@@ -4,6 +4,8 @@
 
 #include "dtmf.h"
 #include "dtmf_test.h"
+#include "kiss_fft.h"
+
 #include <minunit.h>
 #include <stdio.h>
 #include <string.h>
@@ -60,12 +62,31 @@ char *test_dtmf_new_state(void) {
   muAssert(c->samples_index == 0, "Expected samples_index");
   muAssert(count == 25, "Expected samples_count at 25");
   muAssert(strcmp(c->values, "1") == 0, "Expected values");
+
+  kiss_fft_cfg fft = kiss_fft_alloc(1024, 0, NULL, NULL);
+  muAssert(fft != NULL, "Expected FFT configuration object");
+  kiss_fft_cpx fft_in[1024];
+  kiss_fft_cpx fft_out[1024];
+
+  for (int i = 0; i < c->samples_count; i++) {
+    fft_in[i].r = c->samples[i];
+    fft_in[i].i = c->samples[i];
+  }
+
+  kiss_fft(fft, fft_in, fft_out);
+
+  printf("FINISHED FFT with: %f\n", fft_out[1]);
+
+  /*
   for (int i = 0; i < count; i++) {
     // printf("sample %d a: %f vs b: %f\n", i, c->samples[i],
            // expected_samples_one[i]);
     muAssert(float_compare(c->samples[i], expected_samples_one[i]) == 0,
         "Expected sample");
   }
+   */
+
+  kiss_fft_free(fft);
   dtmf_free(c);
   return NULL;
 }
