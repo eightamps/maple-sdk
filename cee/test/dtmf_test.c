@@ -57,12 +57,12 @@ static const float expected_samples_one[25] = {
 char *test_dtmf_new_state(void) {
   DtmfContext *c = dtmf_new("1", 100);
   muAssert(c->sample_rate == 100, "Expected sample_rate");
+  muAssert(c->samples_index == 0, "Expected samples_index");
   muAssert(c->samples_count == 25, "Expected samples_count at .25");
   muAssert(strcmp(c->values, "1") == 0, "Expected values");
   for (int i = 0; i < c->samples_count; i++) {
     muAssert(float_compare(c->samples[i], expected_samples_one[i]) == 0,
         "Expected sample");
   }
-
   return NULL;
 }
