@@ -6,7 +6,6 @@
 #include "dtmf_test.h"
 #include <minunit.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
 
 /**
@@ -16,8 +15,8 @@
  * @return 0 for equals and 1 for not equals
  */
 int float_compare(float af, float bf) {
-  int ai = (int)(af * 100000.0f);
-  int bi = (int)(bf * 100000.0f);
+  int ai = (int)(af * 1000.0f);
+  int bi = (int)(bf * 1000.0f);
   // printf("af: %f == bf: %f\n", af, bf);
   if (ai != bi) {
     printf("float_compare failed with ai: %d == bi: %d\n", ai, bi);
@@ -32,7 +31,7 @@ static const float expected_samples_one[25] = {
   0.268352f,
   0.228147f,
   0.042991f,
-  -0.249991f,
+  -0.250005f,
   -0.576754f,
   -0.848776f,
   -0.990155f,
@@ -42,10 +41,10 @@ static const float expected_samples_one[25] = {
   -0.144423f,
   0.119412f,
   0.258141f,
-  0.250017f,
+  0.249909f,
   0.121400f,
   -0.062317f,
-  -0.217975f,
+  -0.218109,
   -0.271456f,
   -0.181674f,
   0.045767f,
@@ -62,6 +61,8 @@ char *test_dtmf_new_state(void) {
   muAssert(count == 25, "Expected samples_count at 25");
   muAssert(strcmp(c->values, "1") == 0, "Expected values");
   for (int i = 0; i < count; i++) {
+    // printf("sample %d a: %f vs b: %f\n", i, c->samples[i],
+           // expected_samples_one[i]);
     muAssert(float_compare(c->samples[i], expected_samples_one[i]) == 0,
         "Expected sample");
   }
