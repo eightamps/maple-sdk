@@ -7,9 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
-static const float DTMF_ENTRY_MS = 250.0f;
-static const float DTMF_SILENCE_MS = 200.0f;
+#define MS_PER_ENTRY 250
+#define MS_PER_SPACE 100
+#define TWO_PI (float)2 * (float)M_PI
 
 typedef struct DtmfToneInfo {
   const int char_code;
@@ -48,86 +50,91 @@ static DtmfToneInfo *get_tone_info(int char_code) {
   return NULL;
 }
 
-DtmfContext *dtmf_new(char *values, int sample_rate) {
-  if (values == NULL || strcmp(values, "") == 0) {
+struct DtmfContext *dtmf_new(char *values, int sample_rate) {
+  if (values == NULL || strlen(values) < 1) {
+    fprintf(stderr, "ERROR: Must provide entries\n");
     return NULL;
   }
 
-  size_t value_count = strlen(values);
-  float seconds_of_sound = (float)(DTMF_ENTRY_MS * (float)value_count) / 1000;
-  float seconds_of_silence = (float)(DTMF_SILENCE_MS * (float)(value_count -
-      1)) /
-                                  1000;
-  size_t struct_size = sizeof(DtmfContext);
-  // size_t struct_size = (sizeof(double) * 6); // 3x int fields + 2x pointers
-  DtmfContext *context = malloc(struct_size);
-  context->sample_rate = sample_rate;
-  context->samples_index = 0;
+  int values_count = strlen(values);
+  DtmfContext *c = malloc(sizeof(DtmfContext));
+  c->sample_rate = sample_rate;
+  c->entries = malloc(values_count + 1);
+  strcpy(c->entries, values);
+  c->entry_ms = MS_PER_ENTRY;
+  c->padding_ms = MS_PER_SPACE;
+  c->entry_sample_count = 0;
+  c->padding_sample_count = 0;
+  c->sample_count = 0;
+  c->duration_ms = 0;
+  c->is_complete = false;
+  c->sample_index = 0;
+  return c;
+}
 
-  size_t values_size = sizeof(char) * (strlen(values) + 1);
-  if (values_size > 0) {
-    context->values = malloc(values_size);
-    if (context->values == NULL) {
-      fprintf(stderr, "ERROR: DTMF failed to allocate values\n");
-      return NULL;
-    }
-  }
-  // Copy provided values into context container.
-  strcpy(context->values, values);
+static void configure_dtmf(DtmfContext *c) {
+  int values_count = (int)strlen(c->entries);
+  c->duration_ms = values_count * c->entry_ms +
+      (values_count - 1) * c->padding_ms;
 
-  size_t samples_count = (size_t)((float)sample_rate * (seconds_of_sound +
-      seconds_of_silence));
-  size_t samples_memory_size = sizeof(float) * samples_count;
-  context->samples = malloc(samples_memory_size);
-  context->samples_count = (int)samples_count;
-  if (context->samples == NULL) {
-    fprintf(stderr, "ERROR: DTMF failed to allocate samples\n");
-    return NULL;
-  }
+  float sample_rate = (float)c->sample_rate;
+  float duration_ms = (float)c->duration_ms;
 
-  for (int i = 0; i < value_count; i++) {
-    int char_code = (int)values[i];
+  c->sample_count = (int)(sample_rate * (duration_ms * 0.001f));
+  c->entry_sample_count = (int)(sample_rate * ((float)c->entry_ms * 0.001f));
+  c->padding_sample_count = (int)(sample_rate *
+      ((float)c->padding_ms * 0.001f));
+}
 
-    DtmfToneInfo *tone_info = get_tone_info(char_code);
-    if (tone_info == NULL) {
-      fprintf(stderr, "ERROR: Cannot get tone_info info for %c", char_code);
-      // TODO(lbayes): Return an error code instead!
-      return NULL;
-    }
+static float get_sample_for(float freq_1, float freq_2, float sample_rate,
+    int sample_index) {
+  // Apply the first tone
+  float incr1 = TWO_PI / (sample_rate / freq_1);
+  float sample = (sinf(incr1 * sample_index) * 0.5f);
 
-    float increment = (2.0f * (float)M_PI) / ((float)sample_rate /
-        (float)tone_info->tone1);
-    float sample_value = 0;
-    int k;
+  // Apply the second tone
+  float incr2 = TWO_PI / (sample_rate / freq_2);
+  sample += (sinf(incr2 * sample_index) * 0.5f);
 
-    int sample_limit = (sample_rate > context->samples_count) ?
-        context->samples_count : sample_rate;
-    // Add first tone_info at 1/2 volume
-    for (k = 0; k < sample_limit; k++) {
-      context->samples[k] = (float)sinf(sample_value) * 0.5f;
-      sample_value += increment;
-    }
+  return sample;
+}
 
-    // Add second tone_info at 1/2 volume
-    increment = (float)((2.0f * M_PI) / ((float)sample_rate /
-        (float)tone_info->tone2));
-    sample_value = 0;
-    for (k = 0; k < sample_limit; k++) {
-      context->samples[k] += (float)sinf(sample_value) * 0.5f;
-      sample_value += increment;
-    }
+float dtmf_next_sample(DtmfContext *c) {
+  if (c->duration_ms == 0) {
+    configure_dtmf(c);
   }
 
-  return context;
+  // We've exceeded our window, return empty samples.
+  // TODO(lbayes): Should return something else to end signal.
+  if (c->sample_index >= c->sample_count) {
+    c->is_complete = true;
+    return 0.0f;
+  }
+
+  int entry_index = c->sample_index / (c->entry_sample_count +
+      c->padding_sample_count);
+  int entry_location = c->sample_index % (c->entry_sample_count +
+      c->padding_sample_count);
+
+  // We're inside of a padding block
+  if (entry_location > c->entry_sample_count) {
+    return 0.0f;
+  }
+
+  // We're inside of an entry, get the DTMF signal sample
+  int entry = c->entries[entry_index];
+  DtmfToneInfo *tones = get_tone_info(entry);
+  float sample = get_sample_for(tones->tone1, tones->tone2, c->sample_rate,
+      c->sample_index);
+
+  c->sample_index++;
+  return sample;
 }
 
 void dtmf_free(DtmfContext *c) {
   if (c != NULL) {
-    if (c->samples != NULL) {
-      free(c->samples);
-    }
-    if (c->values != NULL) {
-      free(c->values);
+    if (c->entries != NULL) {
+      free(c->entries);
     }
     free(c);
   }

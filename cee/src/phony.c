@@ -43,7 +43,7 @@ int phony_init(PhonyContext *phony) {
 
 int phony_info(PhonyContext *phony) {
   // TODO(lbayes): Add these fields to the PhonyContext struct and apply these
-  //  values to those fields.
+  //  entries to those fields.
   int res;
   wchar_t str[MAX_STR];
   // unsigned char buf[65];

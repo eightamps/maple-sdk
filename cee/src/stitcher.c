@@ -212,12 +212,37 @@ void stitcher_free(StitcherContext *c) {
 void dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
                            __attribute__((unused)) int frame_count_min, int frame_count_max) {
   DtmfContext *dtmf_context = (DtmfContext *)out_stream->userdata;
-  float seconds_offset = 0.0f;
+  // float seconds_offset = 0.0f;
   const struct SoundIoChannelLayout *layout = &out_stream->layout;
   float float_sample_rate = (float)out_stream->sample_rate;
-  float seconds_per_frame = 1.0f / float_sample_rate;
+  // float seconds_per_frame = 1.0f / float_sample_rate;
   struct SoundIoChannelArea *areas;
 
+  int err;
+  if ((err =
+           soundio_outstream_begin_write(out_stream, &areas, &frame_count_max))) {
+    fprintf(stderr, "ERROR: %s\n", soundio_strerror(err));
+    exit(err);
+  }
+
+  float sample;
+  for (int i = 0; i < frame_count_max; i++) {
+    sample = dtmf_next_sample(dtmf_context);
+    for (int channel = 0; channel < layout->channel_count; channel++) {
+      float *ptr = (float *)(areas[channel].ptr + areas[channel].step * i);
+      *ptr = sample;
+    }
+
+    err = soundio_outstream_end_write(out_stream);
+    if (err != EXIT_SUCCESS) {
+      fprintf(stderr, "%s\n", soundio_strerror(err));
+      // exit(err);
+    }
+  }
+
+  printf("OUTSIDE, EXITING NOW\n");
+
+  /*
   float *dtmf_samples = dtmf_context->samples;
   int frames_left = frame_count_max;
   int err;
@@ -275,4 +300,5 @@ void dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
       exit(err);
     }
   }
+   */
 }

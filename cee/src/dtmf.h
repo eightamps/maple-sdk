@@ -8,15 +8,48 @@
 #ifndef MAPLE_DTMF_H
 #define MAPLE_DTMF_H
 
+#include <stdbool.h>
+
 typedef struct DtmfContext {
+  int duration_ms;
+  int entry_ms;
+  int entry_sample_count;
+  int padding_ms;
+  int padding_sample_count;
+  int sample_count;
+  int sample_index;
   int sample_rate;
-  int samples_index;
-  int samples_count;
-  char *values;
-  float *samples;
+  bool is_complete;
+  char *entries;
 }DtmfContext;
 
+/**
+ * Create a new DTMF context object.
+ *
+ * This is the entry point to generate dual tone modulated frequencies with
+ * this library.
+ *
+ * @param values: A char array of PSTN "numbers" (e.g., "727555555#"
+ * @param sample_rate: The sample rate in Hz (e.g., 44100)
+ * @return DtmfContext*: A context object for getting samples.
+ */
 DtmfContext *dtmf_new(char *values, int sample_rate);
+
+/**
+ * Get the next DTMF sample for the configured context.
+ *
+ * Calling this function will increment an internal iterator and return the
+ * current (float) sample value.
+ *
+ * @param DtmfContext*: The context for samples.
+ * @return float: The current sample value.
+ */
+float dtmf_next_sample(DtmfContext *c);
+
+/**
+ * Free the provided context object.
+ * @param DtmfContext*
+ */
 void dtmf_free(DtmfContext *c);
 
 #endif // MAPLE_DTMF_H
