@@ -7,7 +7,7 @@
 #define muSuiteStart() char *message = NULL
 
 #define muAssert(test, message) if (!(test)) {\
-    log_err(message); return message; }
+    log_err_unit(message); return message; }
 
 #define muRunTest(test) message = test(); tests_run++; if (message) return message;
 
