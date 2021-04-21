@@ -118,6 +118,7 @@ float dtmf_next_sample(DtmfContext *c) {
 
   // We're inside of a padding block
   if (entry_location > c->entry_sample_count) {
+    c->sample_index++;
     return 0.0f;
   }
 

@@ -41,10 +41,10 @@ int stitcher_exercise(void) {
     return EPERM; // Operation not permitted
   }
 
-  DtmfContext *dtmf_context = dtmf_new("123", sample_rate);
+  DtmfContext *dtmf_context = dtmf_new("5107271234", sample_rate);
   c->to_speaker_stream->userdata = (void *)dtmf_context;
   status = stitcher_start(c, dtmf_soundio_callback);
-  //dtmf_free(dtmf_context);
+  dtmf_free(dtmf_context);
 
   stitcher_free(c);
   return status;
