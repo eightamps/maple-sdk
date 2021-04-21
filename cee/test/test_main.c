@@ -2,10 +2,17 @@
 #include "phony_test.h"
 #include "dtmf_test.h"
 #include "kissfft_test.h"
+#include "stitcher_test.h"
 
 char *allTests(void) {
   // Begin the test suite
   muSuiteStart();
+
+  // Stitcher tests
+  muRunTest(test_stitcher_new);
+  muRunTest(test_stitcher_init);
+
+  /*
   // FFT tests
   muRunTest(test_fft_empty);
   muRunTest(test_fft_ones);
@@ -26,6 +33,8 @@ char *allTests(void) {
 
   // Phony tests
   muRunTest(test_phony_callable);
+   */
+
   return NULL;
 }
 

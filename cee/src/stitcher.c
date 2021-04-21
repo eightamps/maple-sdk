@@ -2,44 +2,65 @@
 // Created by lukebayes on 4/19/21.
 //
 
-#include "stitcher.h"
 #include "dtmf.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <soundio/soundio.h>
+#include "log.h"
+#include "stitcher.h"
 #include <errno.h>
-
+#include <soundio/soundio.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 StitcherContext *stitcher_new(void) {
-  StitcherContext *c = malloc(sizeof(StitcherContext));
-  if (c == NULL) return NULL;
+  StitcherContext *c = NULL;
+  c = malloc(sizeof(StitcherContext));
+  if (c == NULL) {
+    log_err("stitcher_new unable to allocate memory");
+    return NULL;
+  }
+  c->is_active = false;
+  c->sample_rate = 0;
+  c->soundio = NULL;
+  c->to_speaker = NULL;
+  c->to_speaker_stream = NULL;
+  return c;
 }
 
 int stitcher_init(StitcherContext *c) {
   if (c->to_speaker != NULL) {
-    fprintf(stderr, "ERROR: stitcher_init called with already-initialized "
-                    "context");
+    log_err("stitcher_init called with already-initialized context");
     return EINVAL; // Invalid Argument
   }
 
   // Create the soundio client
   struct SoundIo *sio = soundio_create();
-  if (sio == NULL) return ENOMEM;
+  if (sio == NULL) {
+    log_err("stitcher_init unable to allocate for soundio");
+    return ENOMEM;
+  }
   c->soundio = sio;
 
   // Connect the soundio client
   int conn_status = soundio_connect(sio);
-  if (conn_status != EXIT_SUCCESS) return conn_status;
+  if (conn_status != EXIT_SUCCESS) {
+    log_err("stitcher_init unable to connect to soundio");
+    return conn_status;
+  }
   soundio_flush_events(sio);
 
   // Get the default output device samples_index
   int index = soundio_default_output_device_index(sio);
-  if (index < EXIT_SUCCESS) return ENXIO; // No such device or address.
+  if (index < EXIT_SUCCESS) {
+    log_err("stitcher_init unable to get default output device index");
+    return ENXIO; // No such device or address.
+  }
 
   // Get the default output device
   struct SoundIoDevice *device = soundio_get_output_device(sio, index);
-  if (device == NULL) return ENOMEM;
-  fprintf(stderr, "Output device: %s\n", device->name);
+  if (device == NULL) {
+    log_err("stitcher_init unable to get default output device");
+    return ENOMEM;
+  }
+  log_info("stitcher_init default output device: %s", device->name)
   c->to_speaker = device;
 
   struct SoundIoOutStream *to_speaker_stream = soundio_outstream_create(c->to_speaker);
@@ -51,35 +72,48 @@ int stitcher_init(StitcherContext *c) {
 
 int stitcher_start(StitcherContext *c, StitcherCallback *cb) {
   if (cb == NULL) {
+    log_err("stitcher_start cannot start with a NULL callback");
     return EINVAL; // Invalid Argument
   }
 
   if (c->soundio == NULL) {
     int init_status = stitcher_init(c);
-    if (init_status != EXIT_SUCCESS) return init_status;
+    if (init_status != EXIT_SUCCESS) {
+      log_err("stitcher_start failed to automatically initialize");
+      return init_status;
+    }
   }
 
   struct SoundIoOutStream *out_stream = c->to_speaker_stream;
   if (out_stream == NULL) {
+    log_err("stitcher_start unable to get to_speaker stream");
     return EINVAL; // Invalid Argument
   }
 
   out_stream->write_callback = cb;
 
   int out_status = soundio_outstream_open(out_stream);
-  if (out_status != EXIT_SUCCESS) return out_status;
+  if (out_status != EXIT_SUCCESS) {
+    log_err("stitcher_start unable to open output stream");
+    return out_status;
+  }
 
   if (out_stream->layout_error) {
-    fprintf(stderr, "unable to set channel layout: %s\n", soundio_strerror
-        (out_stream->layout_error));
+    log_err("stitcher_start unable to set channel layout: %s",
+        soundio_strerror(out_stream->layout_error));
   }
 
   int out_start_status = soundio_outstream_start(out_stream);
-  if (out_start_status != EXIT_SUCCESS) return out_start_status;
+  if (out_start_status != EXIT_SUCCESS) {
+    log_err("stitcher_start unable to start output stream");
+    return out_start_status;
+  }
 
   c->is_active = true;
   soundio_wait_events(c->soundio);
   c->is_active = false;
+
+  log_info("stitcher_start success");
   return EXIT_SUCCESS;
 }
 
@@ -100,18 +134,20 @@ void stitcher_free(StitcherContext *c) {
 void dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
                            __attribute__((unused)) int frame_count_min, int frame_count_max) {
   DtmfContext *dtmf_context = (DtmfContext *)out_stream->userdata;
+  int err;
+  struct SoundIoChannelArea *areas;
+
   if (dtmf_context->is_complete) {
     return;
   }
 
   const struct SoundIoChannelLayout *layout = &out_stream->layout;
-  struct SoundIoChannelArea *areas;
 
-  int err;
-  if ((err =
-           soundio_outstream_begin_write(out_stream, &areas, &frame_count_max))) {
-    fprintf(stderr, "ERROR: %s\n", soundio_strerror(err));
-    exit(err);
+  if ((err = soundio_outstream_begin_write(out_stream, &areas,
+      &frame_count_max))) {
+    log_err("dtmf_soundio_callback unable to begin_write with: %s",
+      soundio_strerror(err));
+    return;
   }
 
   float sample;
@@ -126,7 +162,7 @@ void dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
 
   err = soundio_outstream_end_write(out_stream);
   if (err != EXIT_SUCCESS) {
-    fprintf(stderr, "%s\n", soundio_strerror(err));
-    // exit(err);
+    log_err("dtmf_soundio_callback unable to end_write with %s",
+        soundio_strerror(err));
   }
 }

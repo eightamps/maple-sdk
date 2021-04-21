@@ -26,7 +26,7 @@ set(TestSources
         test/phony_test.c
         test/dtmf_test.c
         test/dtmf_test.h
-        test/kissfft_test.c test/kissfft_test.h)
+        test/kissfft_test.c test/kissfft_test.h test/stitcher_test.c test/stitcher_test.h)
 
 set(VendorLibs
         ${PROJECT_BINARY_DIR}/../vendor/kissfft/libkissfft-float.so
