@@ -11,7 +11,7 @@
 
 #define MS_PER_ENTRY 250
 #define MS_PER_SPACE 100
-#define TWO_PI (float)2 * (float)M_PI
+#define TWO_PI ((float)2 * (float)M_PI)
 
 typedef struct DtmfToneInfo {
   const int char_code;
@@ -56,7 +56,7 @@ struct DtmfContext *dtmf_new(char *values, int sample_rate) {
     return NULL;
   }
 
-  int values_count = strlen(values);
+  int values_count = (int)strlen(values);
   DtmfContext *c = malloc(sizeof(DtmfContext));
   c->sample_rate = sample_rate;
   c->entries = malloc(values_count + 1);
@@ -87,7 +87,7 @@ static void configure_dtmf(DtmfContext *c) {
 }
 
 static float get_sample_for(float freq_1, float freq_2, float sample_rate,
-    int sample_index) {
+    float sample_index) {
   // Apply the first tone
   float incr1 = TWO_PI / (sample_rate / freq_1);
   float sample = (sinf(incr1 * sample_index) * 0.5f);
@@ -123,10 +123,13 @@ float dtmf_next_sample(DtmfContext *c) {
   }
 
   // We're inside of an entry, get the DTMF signal sample
-  int entry = c->entries[entry_index];
+  int entry = (int)c->entries[entry_index];
   DtmfToneInfo *tones = get_tone_info(entry);
-  float sample = get_sample_for(tones->tone1, tones->tone2, c->sample_rate,
-      c->sample_index);
+  float sample = get_sample_for(
+      (float)tones->tone1,
+      (float)tones->tone2,
+      (float)c->sample_rate,
+      (float)c->sample_index);
 
   c->sample_index++;
   return sample;
