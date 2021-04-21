@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define DEFAULT_TELEPHONE_DEVICE_NAME "ASI Telephone"
+
 StitcherContext *stitcher_new(void) {
   StitcherContext *c = NULL;
   c = malloc(sizeof(StitcherContext));
@@ -103,8 +105,12 @@ static int init_from_device(StitcherContext *c, StitcherInDevice *sin,
     }
     // Get the default input device
     device = soundio_get_input_device(c->soundio, index);
+    if (strstr(device->name, DEFAULT_TELEPHONE_DEVICE_NAME) != NULL) {
+      log_err("ASI Telephone must not be a default device");
+      return ENXIO;
+    }
   } else {
-    device = get_input_device_matching(c, "ASI Telephone");
+    device = get_input_device_matching(c, DEFAULT_TELEPHONE_DEVICE_NAME);
   }
 
   if (device == NULL) {
@@ -112,8 +118,9 @@ static int init_from_device(StitcherContext *c, StitcherInDevice *sin,
     return ENXIO; // No such device or address;
   }
 
-  log_info("init_from_device found: %s", device->name);
   sin->device = device;
+  strcpy(sin->device->name, device->name);
+  log_info("stitcher_init from_device: %s", sin->device->name);
 
   struct SoundIoInStream *stream = soundio_instream_create(device);
   stream->format = SoundIoFormatFloat32NE;
@@ -133,8 +140,12 @@ static int init_to_device(StitcherContext *c, StitcherOutDevice *sout,
       return ENXIO; // No such device or address.
     }
     device = soundio_get_output_device(c->soundio, index);
+    if (strstr(device->name, DEFAULT_TELEPHONE_DEVICE_NAME) != NULL) {
+      log_err("ASI Telephone must not be a default device");
+      return ENXIO;
+    }
   } else {
-    device = get_output_device_matching(c, "ASI Telephone");
+    device = get_output_device_matching(c, DEFAULT_TELEPHONE_DEVICE_NAME);
   }
 
   if (device == NULL) {
@@ -142,8 +153,9 @@ static int init_to_device(StitcherContext *c, StitcherOutDevice *sout,
     return ENXIO; // No such device or address;
   }
 
-  log_info("stitcher_init output device: %s", device->name);
   sout->device = device;
+  strcpy(sout->device->name, device->name);
+  log_info("stitcher_init to_device: %s", sout->device->name);
 
   struct SoundIoOutStream *stream = soundio_outstream_create(device);
   stream->format = SoundIoFormatFloat32NE;
@@ -317,8 +329,8 @@ void dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
 
   const struct SoundIoChannelLayout *layout = &out_stream->layout;
 
-  if ((err = soundio_outstream_begin_write(out_stream, &areas,
-      &frame_count_max))) {
+  err = soundio_outstream_begin_write(out_stream, &areas, &frame_count_max);
+  if (err != EXIT_SUCCESS) {
     log_err("dtmf_soundio_callback unable to begin_write with: %s",
       soundio_strerror(err));
     return;

@@ -34,5 +34,6 @@ char *test_stitcher_new(void) {
 char *test_stitcher_init(void) {
   StitcherContext *c = stitcher_new();
   stitcher_init(c);
+  stitcher_free(c);
   return NULL;
 }
