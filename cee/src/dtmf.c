@@ -3,7 +3,6 @@
 //
 
 #include "dtmf.h"
-#include "log.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,7 +52,7 @@ static DtmfToneInfo *get_tone_info(int char_code) {
 
 struct DtmfContext *dtmf_new(char *values, int sample_rate) {
   if (values == NULL || strlen(values) < 1) {
-    log_error("Must provide entries");
+    fprintf(stderr, "ERROR: Must provide entries\n");
     return NULL;
   }
 

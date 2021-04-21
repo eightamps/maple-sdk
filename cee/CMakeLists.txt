@@ -14,7 +14,7 @@ set(AppSources
         src/stitcher.c
         src/dtmf.h
         src/dtmf.c
-        src/log.c src/log.h)
+        )
 
 set(GtkSources
         src/gtk/application.h
