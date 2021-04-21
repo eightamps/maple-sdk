@@ -1,9 +1,12 @@
+#include "log.h"
 #include "minunit.h"
 #include "phony_test.h"
 #include "dtmf_test.h"
 #include "kissfft_test.h"
 
 char *allTests(void) {
+  set_log_level(LogLevelNone);
+
   // Begin the test suite
   muSuiteStart();
   // FFT tests
