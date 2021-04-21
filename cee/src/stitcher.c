@@ -20,13 +20,26 @@ StitcherContext *stitcher_new(void) {
   c->is_active = false;
   c->sample_rate = 0;
   c->soundio = NULL;
-  c->to_speaker = NULL;
+
+  c->from_phone_device = NULL;
+  c->to_speaker_device = NULL;
+  c->from_mic_device = NULL;
+  c->to_phone_device = NULL;
+
+  c->from_phone_stream = NULL;
   c->to_speaker_stream = NULL;
+  c->from_mic_stream = NULL;
+  c->to_phone_stream = NULL;
+
+  c->to_speaker_name = NULL;
+  c->from_mic_name = NULL;
+  c->to_phone_name = NULL;
+  c->from_phone_name = NULL;
   return c;
 }
 
 int stitcher_init(StitcherContext *c) {
-  if (c->to_speaker != NULL) {
+  if (c->to_speaker_device != NULL) {
     log_err("stitcher_init called with already-initialized context");
     return EINVAL; // Invalid Argument
   }
@@ -61,9 +74,9 @@ int stitcher_init(StitcherContext *c) {
     return ENOMEM;
   }
   log_info("stitcher_init default output device: %s", device->name)
-  c->to_speaker = device;
+  c->to_speaker_device = device;
 
-  struct SoundIoOutStream *to_speaker_stream = soundio_outstream_create(c->to_speaker);
+  struct SoundIoOutStream *to_speaker_stream = soundio_outstream_create(c->to_speaker_device);
   to_speaker_stream->format = SoundIoFormatFloat32NE;
   c->to_speaker_stream = to_speaker_stream;
 
@@ -86,7 +99,7 @@ int stitcher_start(StitcherContext *c, StitcherCallback *cb) {
 
   struct SoundIoOutStream *out_stream = c->to_speaker_stream;
   if (out_stream == NULL) {
-    log_err("stitcher_start unable to get to_speaker stream");
+    log_err("stitcher_start unable to get to_speaker_device stream");
     return EINVAL; // Invalid Argument
   }
 
@@ -120,8 +133,8 @@ int stitcher_start(StitcherContext *c, StitcherCallback *cb) {
 void stitcher_free(StitcherContext *c) {
   if (c == NULL) return;
 
-  if (c->to_speaker != NULL) {
-    soundio_device_unref(c->to_speaker);
+  if (c->to_speaker_device != NULL) {
+    soundio_device_unref(c->to_speaker_device);
   }
 
   if (c->soundio != NULL) {

@@ -12,15 +12,27 @@ char *test_stitcher_new(void) {
   muAssert(c->is_active == false, "Expected non-active");
   muAssert(c->sample_rate == 0, "Expected default sample rate");
   muAssert(c->soundio == NULL, "Expected NULL soundio");
-  muAssert(c->to_speaker == NULL, "Expected NULL to_speaker");
-  muAssert(c->to_speaker_stream == NULL, "Expected NULL to_speaker_stream");
+
+  muAssert(c->from_phone->device == NULL, "Expected NULL from_phone->device");
+  muAssert(c->to_speaker->device == NULL, "Expected NULL to_speaker->device");
+  muAssert(c->from_mic->device == NULL, "Expected NULL from_mic->device");
+  muAssert(c->to_phone->device == NULL, "Expected NULL to_phone->device");
+
+  muAssert(c->from_phone->stream == NULL, "Expected NULL from_phone->stream");
+  muAssert(c->to_speaker->stream == NULL, "Expected NULL to_speaker->stream");
+  muAssert(c->from_mic->stream == NULL, "Expected NULL from_mic->stream");
+  muAssert(c->to_phone->stream == NULL, "Expected NULL to_phone->stream");
+
+  muAssert(c->to_speaker->name == NULL, "Expected NULL to_speaker->name");
+  muAssert(c->from_mic->name == NULL, "Expected NULL from_mic->name");
+  muAssert(c->to_phone->name == NULL, "Expected NULL to_phone->name");
+  muAssert(c->from_phone->name == NULL, "Expected NULL from_phone->name");
   stitcher_free(c);
   return NULL;
 }
 
 char *test_stitcher_init(void) {
-  // StitcherContext *c = stitcher_new();
-  // stitcher_init(c);
-  // muAssert(1, "SDF");
+  StitcherContext *c = stitcher_new();
+  stitcher_init(c);
   return NULL;
 }

@@ -34,7 +34,7 @@ int stitcher_exercise(void) {
 
   // TODO(lbayes): We should instead get the sample_rate directly from the
   //  mic and use that to configure the speaker and DTMF tones.
-  struct SoundIoSampleRateRange *range = c->to_speaker->sample_rates;
+  struct SoundIoSampleRateRange *range = c->to_speaker_device->sample_rates;
   int sample_rate = 48000; // Picked 48kHz because that's what the stream
                            // defaulted to on my computer.
   if (range->min > 48000 && range->max < 48000) {

@@ -7,12 +7,30 @@
 
 #include <soundio/soundio.h>
 
+typedef struct StitcherOutDevice {
+  char *name;
+  struct SoundIoDevice *device;
+  struct SoundIoOutStream *stream;
+}StitcherOutDevice;
+
+typedef struct StitcherInDevice {
+  char *name;
+  struct SoundIoDevice *device;
+  struct SoundIoInStream *stream;
+}StitcherInDevice;
+
 typedef struct StitcherContext {
   bool is_active;
   int sample_rate;
   struct SoundIo *soundio;
-  struct SoundIoDevice *to_speaker;
-  struct SoundIoOutStream *to_speaker_stream;
+
+  // Out devices
+  struct StitcherOutDevice *to_phone;
+  struct StitcherOutDevice *to_speaker;
+
+  // In Devices
+  struct StitcherInDevice *from_phone;
+  struct StitcherInDevice *from_mic;
 }StitcherContext;
 
 typedef void (StitcherCallback)(struct SoundIoOutStream *out_stream,
