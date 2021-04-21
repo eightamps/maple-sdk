@@ -63,39 +63,12 @@ StitcherContext *stitcher_new(void) {
   return c;
 }
 
-static int init_to_speaker(StitcherContext *c) {
-  // Get the default output device samples_index
-  int index = soundio_default_output_device_index(c->soundio);
-  if (index < EXIT_SUCCESS) {
-    log_err("stitcher_init unable to get default output device index");
-    return ENXIO; // No such device or address.
-  }
-
-  // Get the default output device
-  struct SoundIoDevice *device = soundio_get_output_device(c->soundio, index);
-  if (device == NULL) {
-    log_err("stitcher_init unable to get default output device");
-    return ENOMEM;
-  }
-  log_info("stitcher_init default output device: %s", device->name);
-  c->to_speaker->device = device;
-
-  struct SoundIoOutStream *stream = soundio_outstream_create(
-      c->to_speaker->device);
-  stream->format = SoundIoFormatFloat32NE;
-  c->to_speaker->stream = stream;
-
-  return EXIT_SUCCESS;
-}
-
 static struct SoundIoDevice *get_input_device_matching(StitcherContext *c,
     char *matcher) {
-  printf("FIND INPUT DEVICE WITH: %s\n", matcher);
   int count = soundio_input_device_count(c->soundio);
   for (int i = 0; i < count; i++) {
     struct SoundIoDevice *d = soundio_get_input_device(c->soundio, i);
     if (strstr(d->name, matcher) != NULL) {
-      printf("FOUND: %s\n", d->name);
       return d;
     }
   }
@@ -105,12 +78,10 @@ static struct SoundIoDevice *get_input_device_matching(StitcherContext *c,
 
 static struct SoundIoDevice *get_output_device_matching(StitcherContext *c,
     char *matcher) {
-  printf("FIND OUTPUT DEVICE WITH: %s\n", matcher);
   int count = soundio_output_device_count(c->soundio);
   for (int i = 0; i < count; i++) {
     struct SoundIoDevice *d = soundio_get_output_device(c->soundio, i);
     if (strstr(d->name, matcher) != NULL) {
-      printf("FOUND: %s\n", d->name);
       return d;
     }
   }
@@ -118,61 +89,65 @@ static struct SoundIoDevice *get_output_device_matching(StitcherContext *c,
   return NULL;
 }
 
-static int init_from_phone(StitcherContext *c) {
-  // Get the phone output device samples_index
-  struct SoundIoDevice *device = get_input_device_matching(c, "ASI Telephone");
+static int init_from_device(StitcherContext *c, StitcherInDevice *sin,
+    bool is_default) {
+  // Get the output device samples_index
+  struct SoundIoDevice *device;
+
+  if (is_default) {
+    // Get the default input device samples_index
+    int index = soundio_default_input_device_index(c->soundio);
+    if (index < EXIT_SUCCESS) {
+      log_err("stitcher_init unable to get default input device index");
+      return ENXIO; // No such device or address.
+    }
+    // Get the default input device
+    device = soundio_get_input_device(c->soundio, index);
+  } else {
+    device = get_input_device_matching(c, "ASI Telephone");
+  }
+
   if (device == NULL) {
+    log_err("Unable to initialize expected audio device");
     return ENXIO; // No such device or address;
   }
 
-  log_info("stitcher_init phone input device: %s", device->name);
-  c->from_phone->device = device;
+  log_info("init_from_device found: %s", device->name);
+  sin->device = device;
 
   struct SoundIoInStream *stream = soundio_instream_create(device);
   stream->format = SoundIoFormatFloat32NE;
-  c->from_phone->stream = stream;
+  sin->stream = stream;
 
   return EXIT_SUCCESS;
 }
 
-static int init_to_phone(StitcherContext *c) {
-  // Get the phone output device samples_index
-  struct SoundIoDevice *device = get_output_device_matching(c, "ASI Telephone");
+static int init_to_device(StitcherContext *c, StitcherOutDevice *sout,
+    bool is_default) {
+  // Get the output device samples_index
+  struct SoundIoDevice *device;
+  if (is_default) {
+    int index = soundio_default_output_device_index(c->soundio);
+    if (index < EXIT_SUCCESS) {
+      log_err("stitcher_init unable to get default output device index");
+      return ENXIO; // No such device or address.
+    }
+    device = soundio_get_output_device(c->soundio, index);
+  } else {
+    device = get_output_device_matching(c, "ASI Telephone");
+  }
+
   if (device == NULL) {
+    log_err("Unable to initialize expected audio device");
     return ENXIO; // No such device or address;
   }
 
-  log_info("stitcher_init phone output device: %s", device->name);
-  c->to_phone->device = device;
+  log_info("stitcher_init output device: %s", device->name);
+  sout->device = device;
 
   struct SoundIoOutStream *stream = soundio_outstream_create(device);
   stream->format = SoundIoFormatFloat32NE;
-  c->to_phone->stream = stream;
-
-  return EXIT_SUCCESS;
-}
-
-static int init_from_mic(StitcherContext *c) {
-  // Get the default input device samples_index
-  int index = soundio_default_input_device_index(c->soundio);
-  if (index < EXIT_SUCCESS) {
-    log_err("stitcher_init unable to get default input device index");
-    return ENXIO; // No such device or address.
-  }
-
-  // Get the default input device
-  struct SoundIoDevice *device = soundio_get_input_device(c->soundio, index);
-  if (device == NULL) {
-    log_err("stitcher_init unable to get default input device");
-    return ENOMEM;
-  }
-  log_info("stitcher_init default input device: %s", device->name);
-  c->from_mic->device = device;
-
-  struct SoundIoInStream *stream = soundio_instream_create(
-      c->from_mic->device);
-  stream->format = SoundIoFormatFloat32NE;
-  c->from_mic->stream = stream;
+  sout->stream = stream;
 
   return EXIT_SUCCESS;
 }
@@ -185,6 +160,7 @@ static int init_soundio(StitcherContext *c) {
     return ENOMEM;
   }
 
+  // Assign to context so that it can be freed later.
   c->soundio = sio;
 
   // Connect the soundio client
@@ -206,22 +182,22 @@ int stitcher_init(StitcherContext *c) {
     return status;
   }
 
-  status = init_to_speaker(c);
+  status = init_from_device(c, c->from_phone, false);
   if (status != EXIT_SUCCESS) {
     return status;
   }
 
-  status = init_from_mic(c);
+  status = init_to_device(c, c->to_phone, false);
   if (status != EXIT_SUCCESS) {
     return status;
   }
 
-  status = init_from_phone(c);
+  status = init_from_device(c, c->from_mic, true);
   if (status != EXIT_SUCCESS) {
     return status;
   }
 
-  status = init_to_phone(c);
+  status = init_to_device(c, c->to_speaker, true);
   if (status != EXIT_SUCCESS) {
     return status;
   }
