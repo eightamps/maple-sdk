@@ -18,7 +18,6 @@ StitcherContext *stitcher_new(void) {
     return NULL;
   }
   c->is_active = false;
-  c->sample_rate = 0;
   c->soundio = NULL;
 
   c->to_phone = malloc(sizeof(StitcherOutDevice));
@@ -64,32 +63,16 @@ StitcherContext *stitcher_new(void) {
   return c;
 }
 
-int stitcher_init(StitcherContext *c) {
-  // Create the soundio client
-  struct SoundIo *sio = soundio_create();
-  if (sio == NULL) {
-    log_err("stitcher_init unable to allocate for soundio");
-    return ENOMEM;
-  }
-  c->soundio = sio;
-
-  // Connect the soundio client
-  int conn_status = soundio_connect(sio);
-  if (conn_status != EXIT_SUCCESS) {
-    log_err("stitcher_init unable to connect to soundio");
-    return conn_status;
-  }
-  soundio_flush_events(sio);
-
+static int init_to_speaker(StitcherContext *c) {
   // Get the default output device samples_index
-  int index = soundio_default_output_device_index(sio);
+  int index = soundio_default_output_device_index(c->soundio);
   if (index < EXIT_SUCCESS) {
     log_err("stitcher_init unable to get default output device index");
     return ENXIO; // No such device or address.
   }
 
   // Get the default output device
-  struct SoundIoDevice *device = soundio_get_output_device(sio, index);
+  struct SoundIoDevice *device = soundio_get_output_device(c->soundio, index);
   if (device == NULL) {
     log_err("stitcher_init unable to get default output device");
     return ENOMEM;
@@ -101,6 +84,147 @@ int stitcher_init(StitcherContext *c) {
       c->to_speaker->device);
   stream->format = SoundIoFormatFloat32NE;
   c->to_speaker->stream = stream;
+
+  return EXIT_SUCCESS;
+}
+
+static struct SoundIoDevice *get_input_device_matching(StitcherContext *c,
+    char *matcher) {
+  printf("FIND INPUT DEVICE WITH: %s\n", matcher);
+  int count = soundio_input_device_count(c->soundio);
+  for (int i = 0; i < count; i++) {
+    struct SoundIoDevice *d = soundio_get_input_device(c->soundio, i);
+    if (strstr(d->name, matcher) != NULL) {
+      printf("FOUND: %s\n", d->name);
+      return d;
+    }
+  }
+
+  return NULL;
+}
+
+static struct SoundIoDevice *get_output_device_matching(StitcherContext *c,
+    char *matcher) {
+  printf("FIND OUTPUT DEVICE WITH: %s\n", matcher);
+  int count = soundio_output_device_count(c->soundio);
+  for (int i = 0; i < count; i++) {
+    struct SoundIoDevice *d = soundio_get_output_device(c->soundio, i);
+    if (strstr(d->name, matcher) != NULL) {
+      printf("FOUND: %s\n", d->name);
+      return d;
+    }
+  }
+
+  return NULL;
+}
+
+static int init_from_phone(StitcherContext *c) {
+  // Get the phone output device samples_index
+  struct SoundIoDevice *device = get_input_device_matching(c, "ASI Telephone");
+  if (device == NULL) {
+    return ENXIO; // No such device or address;
+  }
+
+  log_info("stitcher_init phone input device: %s", device->name);
+  c->from_phone->device = device;
+
+  struct SoundIoInStream *stream = soundio_instream_create(device);
+  stream->format = SoundIoFormatFloat32NE;
+  c->from_phone->stream = stream;
+
+  return EXIT_SUCCESS;
+}
+
+static int init_to_phone(StitcherContext *c) {
+  // Get the phone output device samples_index
+  struct SoundIoDevice *device = get_output_device_matching(c, "ASI Telephone");
+  if (device == NULL) {
+    return ENXIO; // No such device or address;
+  }
+
+  log_info("stitcher_init phone output device: %s", device->name);
+  c->to_phone->device = device;
+
+  struct SoundIoOutStream *stream = soundio_outstream_create(device);
+  stream->format = SoundIoFormatFloat32NE;
+  c->to_phone->stream = stream;
+
+  return EXIT_SUCCESS;
+}
+
+static int init_from_mic(StitcherContext *c) {
+  // Get the default input device samples_index
+  int index = soundio_default_input_device_index(c->soundio);
+  if (index < EXIT_SUCCESS) {
+    log_err("stitcher_init unable to get default input device index");
+    return ENXIO; // No such device or address.
+  }
+
+  // Get the default input device
+  struct SoundIoDevice *device = soundio_get_input_device(c->soundio, index);
+  if (device == NULL) {
+    log_err("stitcher_init unable to get default input device");
+    return ENOMEM;
+  }
+  log_info("stitcher_init default input device: %s", device->name);
+  c->from_mic->device = device;
+
+  struct SoundIoInStream *stream = soundio_instream_create(
+      c->from_mic->device);
+  stream->format = SoundIoFormatFloat32NE;
+  c->from_mic->stream = stream;
+
+  return EXIT_SUCCESS;
+}
+
+static int init_soundio(StitcherContext *c) {
+  // Create the soundio client
+  struct SoundIo *sio = soundio_create();
+  if (sio == NULL) {
+    log_err("stitcher_init unable to allocate for soundio");
+    return ENOMEM;
+  }
+
+  c->soundio = sio;
+
+  // Connect the soundio client
+  int status = soundio_connect(sio);
+  if (status != EXIT_SUCCESS) {
+    log_err("stitcher_init unable to connect to soundio");
+    return status;
+  }
+
+  soundio_flush_events(sio);
+  return EXIT_SUCCESS;
+}
+
+int stitcher_init(StitcherContext *c) {
+  int status;
+
+  status = init_soundio(c);
+  if (status != EXIT_SUCCESS) {
+    return status;
+  }
+
+  status = init_to_speaker(c);
+  if (status != EXIT_SUCCESS) {
+    return status;
+  }
+
+  status = init_from_mic(c);
+  if (status != EXIT_SUCCESS) {
+    return status;
+  }
+
+  status = init_from_phone(c);
+  if (status != EXIT_SUCCESS) {
+    return status;
+  }
+
+  status = init_to_phone(c);
+  if (status != EXIT_SUCCESS) {
+    return status;
+  }
 
   return EXIT_SUCCESS;
 }
@@ -167,13 +291,12 @@ static void out_device_free(StitcherOutDevice *d) {
 
 static void in_device_free(StitcherInDevice *d) {
   if (d != NULL) {
-    if (d->device != NULL) {
-      soundio_device_unref(d->device);
-    }
     if (d->stream != NULL) {
       free(d->stream);
     }
-
+    if (d->device != NULL) {
+      soundio_device_unref(d->device);
+    }
     free(d);
   }
 }
@@ -228,7 +351,6 @@ void dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
   float sample;
   for (int i = 0; i < frame_count_max; i++) {
     sample = dtmf_next_sample(dtmf_context);
-    // printf("%d - %f\n", i, sample);
     for (int channel = 0; channel < layout->channel_count; channel++) {
       float *ptr = (float *) (areas[channel].ptr + areas[channel].step * i);
       *ptr = sample;

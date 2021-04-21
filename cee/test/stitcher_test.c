@@ -10,7 +10,6 @@ char *test_stitcher_new(void) {
   StitcherContext *c = stitcher_new();
   muAssert(c != NULL, "Expected context object");
   muAssert(c->is_active == false, "Expected non-active");
-  muAssert(c->sample_rate == 0, "Expected default sample rate");
   muAssert(c->soundio == NULL, "Expected NULL soundio");
 
   muAssert(c->from_phone->device == NULL, "Expected NULL from_phone->device");

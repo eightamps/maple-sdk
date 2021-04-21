@@ -21,7 +21,6 @@ typedef struct StitcherInDevice {
 
 typedef struct StitcherContext {
   bool is_active;
-  int sample_rate;
   struct SoundIo *soundio;
 
   // Out devices

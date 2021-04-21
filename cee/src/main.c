@@ -29,8 +29,15 @@ int phony_show_info(void) {
 
 int stitcher_exercise(void) {
   StitcherContext *c = stitcher_new();
+  if (c == NULL) {
+    // Failed to allocate stitcher
+    return ENOMEM;
+  }
+
   int status = stitcher_init(c);
-  if (status != EXIT_SUCCESS) return status;
+  if (status != EXIT_SUCCESS) {
+    return status;
+  }
 
   // TODO(lbayes): We should instead get the sample_rate directly from the
   //  mic and use that to configure the speaker and DTMF tones.
