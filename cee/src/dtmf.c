@@ -3,7 +3,7 @@
 //
 
 #include "dtmf.h"
-#include "debug.h"
+#include "log.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

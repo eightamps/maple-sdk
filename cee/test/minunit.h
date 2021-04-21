@@ -2,12 +2,12 @@
 #define _minunit_h
 #include <stdio.h>
 #include <stdlib.h>
-#include <debug.h>
+#include <log.h>
 
 #define muSuiteStart() char *message = NULL
 
 #define muAssert(test, message) if (!(test)) {\
-    log_err_unit(message); return message; }
+    log_err_minunit(message); return message; }
 
 #define muRunTest(test) message = test(); tests_run++; if (message) return message;
 
