@@ -16,7 +16,7 @@
 #include <errno.h>
 #include <string.h>
 
-#ifndef TEST_MODE
+#ifdef TEST_MODE
 #define debug(M, ...)
 #define log_err(M, ...)
 #define log_warn(M, ...)

@@ -12,7 +12,6 @@ char *allTests(void) {
   muRunTest(test_stitcher_new);
   muRunTest(test_stitcher_init);
 
-  /*
   // FFT tests
   muRunTest(test_fft_empty);
   muRunTest(test_fft_ones);
@@ -33,7 +32,6 @@ char *allTests(void) {
 
   // Phony tests
   muRunTest(test_phony_callable);
-   */
 
   return NULL;
 }

@@ -27,6 +27,7 @@ char *test_stitcher_new(void) {
   muAssert(c->from_mic->name == NULL, "Expected NULL from_mic->name");
   muAssert(c->to_phone->name == NULL, "Expected NULL to_phone->name");
   muAssert(c->from_phone->name == NULL, "Expected NULL from_phone->name");
+
   stitcher_free(c);
   return NULL;
 }

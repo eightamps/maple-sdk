@@ -21,29 +21,50 @@ StitcherContext *stitcher_new(void) {
   c->sample_rate = 0;
   c->soundio = NULL;
 
-  c->from_phone_device = NULL;
-  c->to_speaker_device = NULL;
-  c->from_mic_device = NULL;
-  c->to_phone_device = NULL;
+  c->to_phone = malloc(sizeof(StitcherOutDevice));
+  if (c->to_phone == NULL) {
+    log_err("stitcher unable to allocate to_phone");
+    stitcher_free(c);
+    return NULL;
+  }
+  c->to_phone->name = NULL;
+  c->to_phone->device = NULL;
+  c->to_phone->stream = NULL;
 
-  c->from_phone_stream = NULL;
-  c->to_speaker_stream = NULL;
-  c->from_mic_stream = NULL;
-  c->to_phone_stream = NULL;
+  c->to_speaker = malloc(sizeof(StitcherOutDevice));
+  if (c->to_speaker == NULL) {
+    log_err("stitcher unable to allocate to_speaker");
+    stitcher_free(c);
+    return NULL;
+  }
+  c->to_speaker->name = NULL;
+  c->to_speaker->device = NULL;
+  c->to_speaker->stream = NULL;
 
-  c->to_speaker_name = NULL;
-  c->from_mic_name = NULL;
-  c->to_phone_name = NULL;
-  c->from_phone_name = NULL;
+  c->from_phone = malloc(sizeof(StitcherInDevice));
+  if (c->from_phone == NULL) {
+    log_err("stitcher unable to allocate from_phone");
+    stitcher_free(c);
+    return NULL;
+  }
+  c->from_phone->name = NULL;
+  c->from_phone->device = NULL;
+  c->from_phone->stream = NULL;
+
+  c->from_mic = malloc(sizeof(StitcherInDevice));
+  if (c->from_mic == NULL) {
+    log_err("stitcher unable to allocate from_mic");
+    stitcher_free(c);
+    return NULL;
+  }
+  c->from_mic->name = NULL;
+  c->from_mic->device = NULL;
+  c->from_mic->stream = NULL;
+
   return c;
 }
 
 int stitcher_init(StitcherContext *c) {
-  if (c->to_speaker_device != NULL) {
-    log_err("stitcher_init called with already-initialized context");
-    return EINVAL; // Invalid Argument
-  }
-
   // Create the soundio client
   struct SoundIo *sio = soundio_create();
   if (sio == NULL) {
@@ -73,12 +94,13 @@ int stitcher_init(StitcherContext *c) {
     log_err("stitcher_init unable to get default output device");
     return ENOMEM;
   }
-  log_info("stitcher_init default output device: %s", device->name)
-  c->to_speaker_device = device;
+  log_info("stitcher_init default output device: %s", device->name);
+  c->to_speaker->device = device;
 
-  struct SoundIoOutStream *to_speaker_stream = soundio_outstream_create(c->to_speaker_device);
-  to_speaker_stream->format = SoundIoFormatFloat32NE;
-  c->to_speaker_stream = to_speaker_stream;
+  struct SoundIoOutStream *stream = soundio_outstream_create(
+      c->to_speaker->device);
+  stream->format = SoundIoFormatFloat32NE;
+  c->to_speaker->stream = stream;
 
   return EXIT_SUCCESS;
 }
@@ -97,9 +119,9 @@ int stitcher_start(StitcherContext *c, StitcherCallback *cb) {
     }
   }
 
-  struct SoundIoOutStream *out_stream = c->to_speaker_stream;
+  struct SoundIoOutStream *out_stream = c->to_speaker->stream;
   if (out_stream == NULL) {
-    log_err("stitcher_start unable to get to_speaker_device stream");
+    log_err("stitcher_start unable to get to_speaker->device->stream");
     return EINVAL; // Invalid Argument
   }
 
@@ -130,11 +152,51 @@ int stitcher_start(StitcherContext *c, StitcherCallback *cb) {
   return EXIT_SUCCESS;
 }
 
-void stitcher_free(StitcherContext *c) {
-  if (c == NULL) return;
+static void out_device_free(StitcherOutDevice *d) {
+  if (d != NULL) {
+    if (d->device != NULL) {
+      soundio_device_unref(d->device);
+    }
+    if (d->stream != NULL) {
+      free(d->stream);
+    }
 
-  if (c->to_speaker_device != NULL) {
-    soundio_device_unref(c->to_speaker_device);
+    free(d);
+  }
+}
+
+static void in_device_free(StitcherInDevice *d) {
+  if (d != NULL) {
+    if (d->device != NULL) {
+      soundio_device_unref(d->device);
+    }
+    if (d->stream != NULL) {
+      free(d->stream);
+    }
+
+    free(d);
+  }
+}
+
+void stitcher_free(StitcherContext *c) {
+  if (c == NULL) {
+    return;
+  }
+
+  if (c->to_phone != NULL) {
+    out_device_free(c->to_phone);
+  }
+
+  if (c->to_speaker != NULL) {
+    out_device_free(c->to_speaker);
+  }
+
+  if (c->from_phone != NULL) {
+    in_device_free(c->from_phone);
+  }
+
+  if (c->from_mic != NULL) {
+    in_device_free(c->from_mic);
   }
 
   if (c->soundio != NULL) {
