@@ -5,14 +5,20 @@
 #include <gtk/gtk.h>
 #include <stddef.h>
 #include "application.h"
-#include "features.h"
+#include "phone_view.h"
+// #include "features.h"
 
 static void activate(GtkApplication *native_app, gpointer user_data) {
   GtkWidget *window = gtk_application_window_new(native_app);
   Application *app = (Application *)user_data;
   gtk_window_set_title(GTK_WINDOW(window), app->title);
-  gtk_window_set_default_size(GTK_WINDOW(window), 1024, 768);
+  gtk_window_set_default_size(GTK_WINDOW(window), 600, 800);
   // configure_terminal(GTK_WINDOW(window));
+
+  // Add the phone view
+  PhoneViewContext *p = phone_view_new();
+  gtk_container_add(GTK_CONTAINER(window), p->widget);
+
   gtk_widget_show_all(window);
 }
 

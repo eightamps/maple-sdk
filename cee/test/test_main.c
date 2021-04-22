@@ -1,7 +1,8 @@
-#include "minunit.h"
-#include "phony_test.h"
 #include "dtmf_test.h"
 #include "kissfft_test.h"
+#include "minunit.h"
+#include "phone_view_test.h"
+#include "phony_test.h"
 #include "stitcher_test.h"
 
 char *allTests(void) {
@@ -32,6 +33,9 @@ char *allTests(void) {
 
   // Phony tests
   muRunTest(test_phony_callable);
+
+  // PhoneView tests
+  muRunTest(test_phone_view_new);
 
   return NULL;
 }

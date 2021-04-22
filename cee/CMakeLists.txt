@@ -19,6 +19,8 @@ set(AppSources
 set(GtkSources
         src/gtk/application.h
         src/gtk/application.c
+        src/gtk/phone_view.c
+        src/gtk/phone_view.h
         )
 
 set(TestSources
@@ -26,7 +28,12 @@ set(TestSources
         test/phony_test.c
         test/dtmf_test.c
         test/dtmf_test.h
-        test/kissfft_test.c test/kissfft_test.h test/stitcher_test.c test/stitcher_test.h)
+        test/kissfft_test.c
+        test/kissfft_test.h
+        test/stitcher_test.c
+        test/stitcher_test.h
+        test/phone_view_test.c
+        test/phone_view_test.h)
 
 set(VendorLibs
         ${PROJECT_BINARY_DIR}/../vendor/kissfft/libkissfft-float.so
