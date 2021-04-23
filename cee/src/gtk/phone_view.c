@@ -6,6 +6,36 @@
 #include "log.h"
 #include <stdlib.h>
 
+static void update(PhoneViewContext *c) {
+  gtk_widget_queue_draw(c->phone_number_view);
+}
+
+static void button_clicked(GtkWidget *widget, gpointer data) {
+  GtkButton *btn = GTK_BUTTON(widget);
+  PhoneViewContext *c = (PhoneViewContext *)data;
+  GtkEntry *entry = c->phone_number_view;
+
+  const gchar *label = gtk_button_get_label(btn);
+  printf("button label: %s\n", label);
+
+  GtkEntryBuffer *b = gtk_entry_get_buffer(entry);
+  char *text = gtk_entry_get_text(entry);
+  if (text == NULL) {
+    printf("inside null\n");
+    text = "";
+  }
+  if (label != NULL) {
+    printf("YOO: %s\n", text);
+    printf("YOO: %s\n", label);
+  }
+
+  strcat(text, label);
+  printf("updated: %s\n", text);
+  gtk_entry_set_text(entry, text);
+
+  update(c);
+}
+
 struct PhoneViewContext *phone_view_new(void) {
   size_t size = sizeof(PhoneViewContext);
   PhoneViewContext *c = malloc(size);
@@ -67,6 +97,21 @@ struct PhoneViewContext *phone_view_new(void) {
 
   gtk_box_pack_start(row_5, entry, gtk_true(), gtk_true(), padding);
   gtk_box_pack_start(row_5, dial_btn, gtk_true(), gtk_true(), padding);
+
+  g_signal_connect(btn_1, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_2, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_3, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_4, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_5, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_6, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_7, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_8, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_9, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_0, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_star, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_hash, "clicked", G_CALLBACK(button_clicked), c);
+
+  c->phone_number_view = entry;
 
   /*
   gtk_grid_attach(grid, dial_btn, 0, 4, 1, 1);

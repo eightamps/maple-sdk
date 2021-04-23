@@ -8,11 +8,14 @@
 #include "phone_view.h"
 // #include "features.h"
 
+#define APP_WIDTH 300
+#define APP_HEIGHT 400
+
 static void activate(GtkApplication *native_app, gpointer user_data) {
   GtkWidget *window = gtk_application_window_new(native_app);
   Application *app = (Application *)user_data;
   gtk_window_set_title(GTK_WINDOW(window), app->title);
-  gtk_window_set_default_size(GTK_WINDOW(window), 600, 800);
+  gtk_window_set_default_size(GTK_WINDOW(window), APP_WIDTH, APP_HEIGHT);
   // configure_terminal(GTK_WINDOW(window));
 
   // Add the phone view

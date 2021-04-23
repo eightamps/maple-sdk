@@ -9,6 +9,7 @@
 
 typedef struct PhoneViewContext {
   GtkWidget *widget;
+  GtkEntry *phone_number_view;
 }PhoneViewContext;
 
 struct PhoneViewContext *phone_view_new(void);
