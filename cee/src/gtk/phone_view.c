@@ -3,6 +3,7 @@
 //
 
 #include "phone_view.h"
+#include "phony.h"
 #include "log.h"
 #include <stdlib.h>
 
@@ -10,33 +11,26 @@ static void update(PhoneViewContext *c) {
   gtk_widget_queue_draw(c->phone_number_view);
 }
 
-static void button_clicked(GtkWidget *widget, gpointer data) {
+static void num_clicked(GtkWidget *widget, gpointer data) {
   GtkButton *btn = GTK_BUTTON(widget);
   PhoneViewContext *c = (PhoneViewContext *)data;
   GtkEntry *entry = c->phone_number_view;
 
   const gchar *label = gtk_button_get_label(btn);
-  printf("button label: %s\n", label);
-
   GtkEntryBuffer *b = gtk_entry_get_buffer(entry);
-  char *text = gtk_entry_get_text(entry);
-  if (text == NULL) {
-    printf("inside null\n");
-    text = "";
-  }
-  if (label != NULL) {
-    printf("YOO: %s\n", text);
-    printf("YOO: %s\n", label);
-  }
-
-  strcat(text, label);
-  printf("updated: %s\n", text);
-  gtk_entry_set_text(entry, text);
+  size_t b_size = gtk_entry_buffer_get_length(b);
+  gtk_entry_buffer_insert_text(b, b_size, label, 1);
 
   update(c);
 }
 
-struct PhoneViewContext *phone_view_new(void) {
+static void dial_clicked(GtkWidget *widget, gpointer data) {
+  PhoneViewContext *c = (PhoneViewContext *)data;
+  GtkEntryBuffer *b = gtk_entry_get_buffer(c->phone_number_view);
+  phony_dial(c->phony, gtk_entry_buffer_get_text(b));
+}
+
+struct PhoneViewContext *phone_view_new(PhonyContext *model) {
   size_t size = sizeof(PhoneViewContext);
   PhoneViewContext *c = malloc(size);
   if (c == NULL) {
@@ -98,19 +92,20 @@ struct PhoneViewContext *phone_view_new(void) {
   gtk_box_pack_start(row_5, entry, gtk_true(), gtk_true(), padding);
   gtk_box_pack_start(row_5, dial_btn, gtk_true(), gtk_true(), padding);
 
-  g_signal_connect(btn_1, "clicked", G_CALLBACK(button_clicked), c);
-  g_signal_connect(btn_2, "clicked", G_CALLBACK(button_clicked), c);
-  g_signal_connect(btn_3, "clicked", G_CALLBACK(button_clicked), c);
-  g_signal_connect(btn_4, "clicked", G_CALLBACK(button_clicked), c);
-  g_signal_connect(btn_5, "clicked", G_CALLBACK(button_clicked), c);
-  g_signal_connect(btn_6, "clicked", G_CALLBACK(button_clicked), c);
-  g_signal_connect(btn_7, "clicked", G_CALLBACK(button_clicked), c);
-  g_signal_connect(btn_8, "clicked", G_CALLBACK(button_clicked), c);
-  g_signal_connect(btn_9, "clicked", G_CALLBACK(button_clicked), c);
-  g_signal_connect(btn_0, "clicked", G_CALLBACK(button_clicked), c);
-  g_signal_connect(btn_star, "clicked", G_CALLBACK(button_clicked), c);
-  g_signal_connect(btn_hash, "clicked", G_CALLBACK(button_clicked), c);
+  g_signal_connect(btn_1, "clicked", G_CALLBACK(num_clicked), c);
+  g_signal_connect(btn_2, "clicked", G_CALLBACK(num_clicked), c);
+  g_signal_connect(btn_3, "clicked", G_CALLBACK(num_clicked), c);
+  g_signal_connect(btn_4, "clicked", G_CALLBACK(num_clicked), c);
+  g_signal_connect(btn_5, "clicked", G_CALLBACK(num_clicked), c);
+  g_signal_connect(btn_6, "clicked", G_CALLBACK(num_clicked), c);
+  g_signal_connect(btn_7, "clicked", G_CALLBACK(num_clicked), c);
+  g_signal_connect(btn_8, "clicked", G_CALLBACK(num_clicked), c);
+  g_signal_connect(btn_9, "clicked", G_CALLBACK(num_clicked), c);
+  g_signal_connect(btn_0, "clicked", G_CALLBACK(num_clicked), c);
+  g_signal_connect(btn_star, "clicked", G_CALLBACK(num_clicked), c);
+  g_signal_connect(btn_hash, "clicked", G_CALLBACK(num_clicked), c);
 
+  g_signal_connect(dial_btn, "clicked", G_CALLBACK(dial_clicked), c);
   c->phone_number_view = entry;
 
   /*

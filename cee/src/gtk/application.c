@@ -5,8 +5,8 @@
 #include <gtk/gtk.h>
 #include <stddef.h>
 #include "application.h"
+#include "phony.h"
 #include "phone_view.h"
-// #include "features.h"
 
 #define APP_WIDTH 300
 #define APP_HEIGHT 400
@@ -18,8 +18,11 @@ static void activate(GtkApplication *native_app, gpointer user_data) {
   gtk_window_set_default_size(GTK_WINDOW(window), APP_WIDTH, APP_HEIGHT);
   // configure_terminal(GTK_WINDOW(window));
 
+  // Create the PhonyContext and related view component
+  PhonyContext *pc = phony_new();
+  PhoneViewContext *p = phone_view_new(pc);
+
   // Add the phone view
-  PhoneViewContext *p = phone_view_new();
   gtk_container_add(GTK_CONTAINER(window), p->widget);
 
   gtk_widget_show_all(window);

@@ -3,19 +3,20 @@
 //
 
 #include "phony.h"
+#include <errno.h>
 #include <hidapi/hidapi.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 
 #define MAX_STR 255
 
 
-void phony_free(PhonyContext *phony) {
-  free(phony);
+PhonyContext *phony_new(void) {
+  return phony_new_with_vid_and_pid(EIGHT_AMPS_VID, MAPLE_V3_PID);
 }
 
-PhonyContext *phony_new(uint16_t vid, uint16_t pid) {
+PhonyContext *phony_new_with_vid_and_pid(uint16_t vid, uint16_t pid) {
   // printf("Attempting to allocate PhonyContext client\n");
   PhonyContext *ref = malloc(sizeof(PhonyContext));
   if (ref == NULL) {
@@ -39,6 +40,10 @@ int phony_init(PhonyContext *phony) {
   if (phony->device == NULL) return ECONNREFUSED;
 
   return EXIT_SUCCESS;
+}
+
+int phony_dial(PhonyContext *phony, const char *numbers) {
+  printf("Attempting to dial [%s]\n", numbers);
 }
 
 int phony_info(PhonyContext *phony) {
@@ -68,4 +73,8 @@ int phony_info(PhonyContext *phony) {
   // wprintf(L"Indexed String 1 status: %d, value: %s\n", res, str);
 
   return EXIT_SUCCESS;
+}
+
+void phony_free(PhonyContext *phony) {
+  free(phony);
 }

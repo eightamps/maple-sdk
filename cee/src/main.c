@@ -9,7 +9,7 @@
 
 int phony_show_info(void) {
   // printf("Attempting to allocate PhonyContext\n");
-  PhonyContext *c = phony_new(MAPLE_VID, MAPLE_PID);
+  PhonyContext *c = phony_new(EIGHT_AMPS_VID, MAPLE_V3_PID);
   if (c == NULL) return ENOMEDIUM;
 
   int status;
