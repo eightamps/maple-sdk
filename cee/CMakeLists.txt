@@ -14,7 +14,7 @@ set(AppSources
         src/stitcher.c
         src/dtmf.h
         src/dtmf.c
-        )
+        src/libusb_helper.c src/libusb_helper.h)
 
 set(GtkSources
         src/gtk/application.h
@@ -41,7 +41,9 @@ set(VendorLibs
 
 # link_directories(${CMAKE_BINARY_DIR}}/vendor/kissfft)
 
-link_libraries(hidapi-libusb
+link_libraries(
+        usb-1.0
+        hidapi-libusb
         soundio
         m
         )

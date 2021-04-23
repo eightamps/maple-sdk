@@ -1,15 +1,13 @@
 #include "dtmf.h"
 #include "phony.h"
 #include "stitcher.h"
+#include "libusb_helper.h"
 #include <stdlib.h>
 #include <unistd.h>
 
-#define MAPLE_VID 0x335e
-#define MAPLE_PID 0x8a01
-
 int phony_show_info(void) {
   // printf("Attempting to allocate PhonyContext\n");
-  PhonyContext *c = phony_new(EIGHT_AMPS_VID, MAPLE_V3_PID);
+  PhonyContext *c = phony_new_with_vid_and_pid(EIGHT_AMPS_VID, MAPLE_V3_PID);
   if (c == NULL) return ENOMEDIUM;
 
   int status;
@@ -43,7 +41,7 @@ int stitcher_exercise(void) {
   //  mic and use that to configure the speaker and DTMF tones.
   struct SoundIoSampleRateRange *range = c->to_speaker->device->sample_rates;
   int sample_rate = 48000; // Picked 48kHz because that's what the stream
-                           // defaulted to on my computer.
+  // defaulted to on my computer.
   if (range->min > 48000 && range->max < 48000) {
     return EPERM; // Operation not permitted
   }
@@ -59,5 +57,7 @@ int stitcher_exercise(void) {
 
 int main() {
   // return phony_show_info();
-  return stitcher_exercise();
+  // return stitcher_exercise();
+  return libusb_help_me();
+  // return hid_help_me();
 }

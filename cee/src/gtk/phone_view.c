@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 static void update(PhoneViewContext *c) {
-  gtk_widget_queue_draw(c->phone_number_view);
+  gtk_widget_queue_draw(GTK_WIDGET(c->phone_number_view));
 }
 
 static void num_clicked(GtkWidget *widget, gpointer data) {
@@ -28,6 +28,11 @@ static void dial_clicked(GtkWidget *widget, gpointer data) {
   PhoneViewContext *c = (PhoneViewContext *)data;
   GtkEntryBuffer *b = gtk_entry_get_buffer(c->phone_number_view);
   phony_dial(c->phony, gtk_entry_buffer_get_text(b));
+}
+
+static void hangup_clicked(GtkWidget *widget, gpointer data) {
+  PhoneViewContext *c = (PhoneViewContext *)data;
+  phony_hang_up(c->phony);
 }
 
 struct PhoneViewContext *phone_view_new(PhonyContext *model) {
@@ -88,9 +93,13 @@ struct PhoneViewContext *phone_view_new(PhonyContext *model) {
 
   GtkEntry *entry = GTK_ENTRY(gtk_entry_new());
   GtkButton *dial_btn = GTK_BUTTON(gtk_button_new_with_label("Dial"));
+  GtkButton *hangup_btn = GTK_BUTTON(gtk_button_new_with_label("Hang Up"));
 
-  gtk_box_pack_start(row_5, entry, gtk_true(), gtk_true(), padding);
-  gtk_box_pack_start(row_5, dial_btn, gtk_true(), gtk_true(), padding);
+  gtk_box_pack_start(row_5, GTK_WIDGET(entry), gtk_true(), gtk_true(), padding);
+  gtk_box_pack_start(row_5, GTK_WIDGET(dial_btn), gtk_true(), gtk_true(),
+                                      padding);
+  gtk_box_pack_start(row_5, GTK_WIDGET(hangup_btn), gtk_true(), gtk_true(),
+                     padding);
 
   g_signal_connect(btn_1, "clicked", G_CALLBACK(num_clicked), c);
   g_signal_connect(btn_2, "clicked", G_CALLBACK(num_clicked), c);
@@ -106,6 +115,7 @@ struct PhoneViewContext *phone_view_new(PhonyContext *model) {
   g_signal_connect(btn_hash, "clicked", G_CALLBACK(num_clicked), c);
 
   g_signal_connect(dial_btn, "clicked", G_CALLBACK(dial_clicked), c);
+  g_signal_connect(hangup_btn, "clicked", G_CALLBACK(hangup_clicked), c);
   c->phone_number_view = entry;
 
   /*

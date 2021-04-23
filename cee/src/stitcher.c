@@ -9,25 +9,31 @@
 #include <soundio/soundio.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define DEFAULT_TELEPHONE_DEVICE_NAME "ASI Telephone"
 
 StitcherContext *stitcher_new(void) {
   StitcherContext *c = NULL;
-  c = malloc(sizeof(StitcherContext));
+  size_t size = sizeof(StitcherContext);
+  c = malloc(size);
   if (c == NULL) {
     log_err("stitcher_new unable to allocate memory");
     return NULL;
   }
+  // memset(c, 0x0, size);
   c->is_active = false;
   c->soundio = NULL;
 
-  c->to_phone = malloc(sizeof(StitcherOutDevice));
+  size = sizeof(StitcherOutDevice);
+  c->to_phone = malloc(size);
   if (c->to_phone == NULL) {
     log_err("stitcher unable to allocate to_phone");
     stitcher_free(c);
     return NULL;
   }
+  // memset(c->to_phone, 0x0, size);
+
   c->to_phone->name = NULL;
   c->to_phone->device = NULL;
   c->to_phone->stream = NULL;

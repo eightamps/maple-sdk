@@ -1,0 +1,698 @@
+# NOTES
+
+
+# USB HID
+USB HID Interface for Maple STM32 (including Phony interface)
+
+VendorID: `0x335e` ProductID: `0x8a01`
+
+Got the bus ID 1 and device ID 31 from WireShark using the VID and PID of 
+the known device.
+
+Ran usbhid-dump as follows:
+```bash
+$ usbhid-dump -a 1:31
+```
+
+Got 3x raw byte arrays on the terminal (see below)
+
+Then I found this online [USB Descriptor & Request Parser](
+http://eleccelerator.com/usbdescreqparser/), which output the following parsed reports:
+
+[How to read and author HID reports and report descriptors](
+https://eleccelerator.com/tutorial-about-usb-hid-report-descriptors/)
+
+**001:031:003 DESCRIPTOR**
+```bash
+001:031:003:DESCRIPTOR         1619034369.124585
+06 8A FF 0B 03 00 8A FF A1 01 85 01 09 83 A1 02
+09 93 75 08 95 01 15 00 25 FF 92 82 00 09 94 75
+02 95 10 15 FF 25 01 92 C6 00 C0 85 01 09 80 A1
+02 09 90 09 91 75 08 95 02 15 00 25 FF B2 03 00
+C0 85 02 09 81 A1 02 09 93 09 92 75 08 95 02 15
+00 25 FF B2 02 00 C0 85 03 05 06 09 2A A1 02 09
+2D 09 2E 09 2F 95 03 75 08 15 00 25 FF B2 03 00
+C0 C0
+```
+**001:031:003 DESCRIPTOR (PARSED)**
+```bash
+0x06, 0x8A, 0xFF,  // Usage Page (Vendor Defined 0xFF8A)
+0x0B, 0x03, 0x00, 0x8A, 0xFF,  // Usage (0x0-75FFFD)
+0xA1, 0x01,        // Collection (Application)
+0x85, 0x01,        //   Report ID (1)
+0x09, 0x83,        //   Usage (0x83)
+0xA1, 0x02,        //   Collection (Logical)
+0x09, 0x93,        //     Usage (0x93)
+0x75, 0x08,        //     Report Size (8)
+0x95, 0x01,        //     Report Count (1)
+0x15, 0x00,        //     Logical Minimum (0)
+0x25, 0xFF,        //     Logical Maximum (-1)
+0x92, 0x82, 0x00,  //     Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Volatile,Bit Field)
+0x09, 0x94,        //     Usage (0x94)
+0x75, 0x02,        //     Report Size (2)
+0x95, 0x10,        //     Report Count (16)
+0x15, 0xFF,        //     Logical Minimum (-1)
+0x25, 0x01,        //     Logical Maximum (1)
+0x92, 0xC6, 0x00,  //     Output (Data,Var,Rel,No Wrap,Linear,Preferred State,Null State,Volatile,Bit Field)
+0xC0,              //   End Collection
+0x85, 0x01,        //   Report ID (1)
+0x09, 0x80,        //   Usage (0x80)
+0xA1, 0x02,        //   Collection (Logical)
+0x09, 0x90,        //     Usage (0x90)
+0x09, 0x91,        //     Usage (0x91)
+0x75, 0x08,        //     Report Size (8)
+0x95, 0x02,        //     Report Count (2)
+0x15, 0x00,        //     Logical Minimum (0)
+0x25, 0xFF,        //     Logical Maximum (-1)
+0xB2, 0x03, 0x00,  //     Feature (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile,Bit Field)
+0xC0,              //   End Collection
+0x85, 0x02,        //   Report ID (2)
+0x09, 0x81,        //   Usage (0x81)
+0xA1, 0x02,        //   Collection (Logical)
+0x09, 0x93,        //     Usage (0x93)
+0x09, 0x92,        //     Usage (0x92)
+0x75, 0x08,        //     Report Size (8)
+0x95, 0x02,        //     Report Count (2)
+0x15, 0x00,        //     Logical Minimum (0)
+0x25, 0xFF,        //     Logical Maximum (-1)
+0xB2, 0x02, 0x00,  //     Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile,Bit Field)
+0xC0,              //   End Collection
+0x85, 0x03,        //   Report ID (3)
+0x05, 0x06,        //   Usage Page (Generic Dev Ctrls)
+0x09, 0x2A,        //   Usage (0x2A)
+0xA1, 0x02,        //   Collection (Logical)
+0x09, 0x2D,        //     Usage (0x2D)
+0x09, 0x2E,        //     Usage (0x2E)
+0x09, 0x2F,        //     Usage (0x2F)
+0x95, 0x03,        //     Report Count (3)
+0x75, 0x08,        //     Report Size (8)
+0x15, 0x00,        //     Logical Minimum (0)
+0x25, 0xFF,        //     Logical Maximum (-1)
+0xB2, 0x03, 0x00,  //     Feature (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile,Bit Field)
+0xC0,              //   End Collection
+0xC0,              // End Collection
+
+// 114 bytes
+```
+**001:031:002 DESCRIPTOR** Phony
+```bash
+001:031:002:DESCRIPTOR         1619034369.127568
+05 0B 0A 4B 01 A1 01 09 F0 09 2D 09 2D 09 20 09
+29 15 00 25 01 75 01 95 05 81 02 75 03 95 01 81
+01 06 8A FF 09 A0 15 00 25 06 75 08 95 01 81 02
+05 0B 09 F1 09 F3 15 00 25 01 75 01 95 02 92 02
+00 75 06 95 01 92 01 00 05 06 09 2A A1 02 09 2D
+09 2E 09 2F 95 03 75 08 15 00 25 FF B2 03 00 C0
+C0
+```
+**001:031:002 DESCRIPTOR (PARSED)** Phony
+```bash
+0x05, 0x0B,        // Usage Page (Telephony)
+0x0A, 0x4B, 0x01,  // Usage (0x014B)
+0xA1, 0x01,        // Collection (Application)
+0x09, 0xF0,        //   Usage (0xF0)
+0x09, 0x2D,        //   Usage (Ring Enable)
+0x09, 0x2D,        //   Usage (Ring Enable)
+0x09, 0x20,        //   Usage (Hook Switch)
+0x09, 0x29,        //   Usage (Alternate Function)
+0x15, 0x00,        //   Logical Minimum (0)
+0x25, 0x01,        //   Logical Maximum (1)
+0x75, 0x01,        //   Report Size (1)
+0x95, 0x05,        //   Report Count (5)
+0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+0x75, 0x03,        //   Report Size (3)
+0x95, 0x01,        //   Report Count (1)
+0x81, 0x01,        //   Input (Const,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
+0x06, 0x8A, 0xFF,  //   Usage Page (Vendor Defined 0xFF8A)
+0x09, 0xA0,        //   Usage (0xA0)
+0x15, 0x00,        //   Logical Minimum (0)
+0x25, 0x06,        //   Logical Maximum (6)
+0x75, 0x08,        //   Report Size (8)
+0x95, 0x01,        //   Report Count (1)
+0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+0x05, 0x0B,        //   Usage Page (Telephony)
+0x09, 0xF1,        //   Usage (0xF1)
+0x09, 0xF3,        //   Usage (0xF3)
+0x15, 0x00,        //   Logical Minimum (0)
+0x25, 0x01,        //   Logical Maximum (1)
+0x75, 0x01,        //   Report Size (1)
+0x95, 0x02,        //   Report Count (2)
+0x92, 0x02, 0x00,  //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile,Bit Field)
+0x75, 0x06,        //   Report Size (6)
+0x95, 0x01,        //   Report Count (1)
+0x92, 0x01, 0x00,  //   Output (Const,Array,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile,Bit Field)
+0x05, 0x06,        //   Usage Page (Generic Dev Ctrls)
+0x09, 0x2A,        //   Usage (0x2A)
+0xA1, 0x02,        //   Collection (Logical)
+0x09, 0x2D,        //     Usage (0x2D)
+0x09, 0x2E,        //     Usage (0x2E)
+0x09, 0x2F,        //     Usage (0x2F)
+0x95, 0x03,        //     Report Count (3)
+0x75, 0x08,        //     Report Size (8)
+0x15, 0x00,        //     Logical Minimum (0)
+0x25, 0xFF,        //     Logical Maximum (-1)
+0xB2, 0x03, 0x00,  //     Feature (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile,Bit Field)
+0xC0,              //   End Collection
+0xC0,              // End Collection
+
+// 97 bytes
+```
+**001:031:001 DESCRIPTOR** Switchy
+```bash
+001:031:001:DESCRIPTOR         1619034369.130552
+05 01 09 06 A1 01 05 07 85 01 19 E0 29 E7 15 00
+25 01 75 01 95 08 81 02 75 08 95 01 81 03 19 00
+29 65 15 00 25 65 75 08 95 06 81 00 C0 05 0C 09
+01 A1 01 85 02 1A 00 00 2A FF 0F 75 10 95 02 16
+00 00 26 FF 0F 81 00 C0 05 01 09 02 A1 01 85 03
+09 01 A1 00 05 09 19 01 29 03 15 00 25 01 75 01
+95 03 81 02 75 05 95 01 81 03 05 01 09 30 09 31
+09 38 15 81 25 7F 75 08 95 03 81 06 C0 C0 05 01
+09 05 A1 01 85 04 09 01 A1 00 09 30 09 31 09 33
+09 34 15 81 25 7F 75 08 95 04 81 06 05 09 19 01
+29 10 15 00 25 01 75 01 95 10 81 02 C0 C0 0B 01
+00 8A FF A1 01 06 8A FF 85 05 75 08 95 01 15 00
+25 03 09 20 B2 02 00 95 01 75 10 16 00 00 26 FF
+FF 05 0A 09 01 A1 02 06 8A FF 09 30 B2 02 00 C0
+05 0A 09 02 A1 02 06 8A FF 09 30 B2 02 00 C0 85
+06 05 06 09 2A A1 02 09 2D 09 2E 09 2F 95 03 75
+08 15 00 25 FF B2 03 00 C0 C0
+```
+**001:031:001 DESCRIPTOR PARSED** Switchy
+```bash
+0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
+0x09, 0x06,        // Usage (Keyboard)
+0xA1, 0x01,        // Collection (Application)
+0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
+0x85, 0x01,        //   Report ID (1)
+0x19, 0xE0,        //   Usage Minimum (0xE0)
+0x29, 0xE7,        //   Usage Maximum (0xE7)
+0x15, 0x00,        //   Logical Minimum (0)
+0x25, 0x01,        //   Logical Maximum (1)
+0x75, 0x01,        //   Report Size (1)
+0x95, 0x08,        //   Report Count (8)
+0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+0x75, 0x08,        //   Report Size (8)
+0x95, 0x01,        //   Report Count (1)
+0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+0x19, 0x00,        //   Usage Minimum (0x00)
+0x29, 0x65,        //   Usage Maximum (0x65)
+0x15, 0x00,        //   Logical Minimum (0)
+0x25, 0x65,        //   Logical Maximum (101)
+0x75, 0x08,        //   Report Size (8)
+0x95, 0x06,        //   Report Count (6)
+0x81, 0x00,        //   Input (Data,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
+0xC0,              // End Collection
+0x05, 0x0C,        // Usage Page (Consumer)
+0x09, 0x01,        // Usage (Consumer Control)
+0xA1, 0x01,        // Collection (Application)
+0x85, 0x02,        //   Report ID (2)
+0x1A, 0x00, 0x00,  //   Usage Minimum (Unassigned)
+0x2A, 0xFF, 0x0F,  //   Usage Maximum (0x0FFF)
+0x75, 0x10,        //   Report Size (16)
+0x95, 0x02,        //   Report Count (2)
+0x16, 0x00, 0x00,  //   Logical Minimum (0)
+0x26, 0xFF, 0x0F,  //   Logical Maximum (4095)
+0x81, 0x00,        //   Input (Data,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
+0xC0,              // End Collection
+0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
+0x09, 0x02,        // Usage (Mouse)
+0xA1, 0x01,        // Collection (Application)
+0x85, 0x03,        //   Report ID (3)
+0x09, 0x01,        //   Usage (Pointer)
+0xA1, 0x00,        //   Collection (Physical)
+0x05, 0x09,        //     Usage Page (Button)
+0x19, 0x01,        //     Usage Minimum (0x01)
+0x29, 0x03,        //     Usage Maximum (0x03)
+0x15, 0x00,        //     Logical Minimum (0)
+0x25, 0x01,        //     Logical Maximum (1)
+0x75, 0x01,        //     Report Size (1)
+0x95, 0x03,        //     Report Count (3)
+0x81, 0x02,        //     Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+0x75, 0x05,        //     Report Size (5)
+0x95, 0x01,        //     Report Count (1)
+0x81, 0x03,        //     Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+0x05, 0x01,        //     Usage Page (Generic Desktop Ctrls)
+0x09, 0x30,        //     Usage (X)
+0x09, 0x31,        //     Usage (Y)
+0x09, 0x38,        //     Usage (Wheel)
+0x15, 0x81,        //     Logical Minimum (-127)
+0x25, 0x7F,        //     Logical Maximum (127)
+0x75, 0x08,        //     Report Size (8)
+0x95, 0x03,        //     Report Count (3)
+0x81, 0x06,        //     Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+0xC0,              //   End Collection
+0xC0,              // End Collection
+0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
+0x09, 0x05,        // Usage (Game Pad)
+0xA1, 0x01,        // Collection (Application)
+0x85, 0x04,        //   Report ID (4)
+0x09, 0x01,        //   Usage (Pointer)
+0xA1, 0x00,        //   Collection (Physical)
+0x09, 0x30,        //     Usage (X)
+0x09, 0x31,        //     Usage (Y)
+0x09, 0x33,        //     Usage (Rx)
+0x09, 0x34,        //     Usage (Ry)
+0x15, 0x81,        //     Logical Minimum (-127)
+0x25, 0x7F,        //     Logical Maximum (127)
+0x75, 0x08,        //     Report Size (8)
+0x95, 0x04,        //     Report Count (4)
+0x81, 0x06,        //     Input (Data,Var,Rel,No Wrap,Linear,Preferred State,No Null Position)
+0x05, 0x09,        //     Usage Page (Button)
+0x19, 0x01,        //     Usage Minimum (0x01)
+0x29, 0x10,        //     Usage Maximum (0x10)
+0x15, 0x00,        //     Logical Minimum (0)
+0x25, 0x01,        //     Logical Maximum (1)
+0x75, 0x01,        //     Report Size (1)
+0x95, 0x10,        //     Report Count (16)
+0x81, 0x02,        //     Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+0xC0,              //   End Collection
+0xC0,              // End Collection
+0x0B, 0x01, 0x00, 0x8A, 0xFF,  // Usage (0x0-75FFFF)
+0xA1, 0x01,        // Collection (Application)
+0x06, 0x8A, 0xFF,  //   Usage Page (Vendor Defined 0xFF8A)
+0x85, 0x05,        //   Report ID (5)
+0x75, 0x08,        //   Report Size (8)
+0x95, 0x01,        //   Report Count (1)
+0x15, 0x00,        //   Logical Minimum (0)
+0x25, 0x03,        //   Logical Maximum (3)
+0x09, 0x20,        //   Usage (0x20)
+0xB2, 0x02, 0x00,  //   Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile,Bit Field)
+0x95, 0x01,        //   Report Count (1)
+0x75, 0x10,        //   Report Size (16)
+0x16, 0x00, 0x00,  //   Logical Minimum (0)
+0x26, 0xFF, 0xFF,  //   Logical Maximum (-1)
+0x05, 0x0A,        //   Usage Page (Ordinal)
+0x09, 0x01,        //   Usage (0x01)
+0xA1, 0x02,        //   Collection (Logical)
+0x06, 0x8A, 0xFF,  //     Usage Page (Vendor Defined 0xFF8A)
+0x09, 0x30,        //     Usage (0x30)
+0xB2, 0x02, 0x00,  //     Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile,Bit Field)
+0xC0,              //   End Collection
+0x05, 0x0A,        //   Usage Page (Ordinal)
+0x09, 0x02,        //   Usage (0x02)
+0xA1, 0x02,        //   Collection (Logical)
+0x06, 0x8A, 0xFF,  //     Usage Page (Vendor Defined 0xFF8A)
+0x09, 0x30,        //     Usage (0x30)
+0xB2, 0x02, 0x00,  //     Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile,Bit Field)
+0xC0,              //   End Collection
+0x85, 0x06,        //   Report ID (6)
+0x05, 0x06,        //   Usage Page (Generic Dev Ctrls)
+0x09, 0x2A,        //   Usage (0x2A)
+0xA1, 0x02,        //   Collection (Logical)
+0x09, 0x2D,        //     Usage (0x2D)
+0x09, 0x2E,        //     Usage (0x2E)
+0x09, 0x2F,        //     Usage (0x2F)
+0x95, 0x03,        //     Report Count (3)
+0x75, 0x08,        //     Report Size (8)
+0x15, 0x00,        //     Logical Minimum (0)
+0x25, 0xFF,        //     Logical Maximum (-1)
+0xB2, 0x03, 0x00,  //     Feature (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile,Bit Field)
+0xC0,              //   End Collection
+0xC0,              // End Collection
+
+// 266 bytes
+```
+Found this sample code [here](https://www.microchip.com/forums/m340898.aspx):
+```c
+
+ #include <errno.h> 
+ #include <string.h> 
+ #include <stdio.h> 
+ #include <stdlib.h> 
+ #include <libusb-1.0/libusb.h> 
+ 
+ #define VERSION "0.1.0"  
+ #define VENDOR_ID 0x0925  
+ #define PRODUCT_ID 0x7001 
+ 
+ // HID Class-Specific Requests values. See section 7.2 of the HID specifications 
+ #define HID_GET_REPORT                0x01 
+ #define HID_GET_IDLE                  0x02 
+ #define HID_GET_PROTOCOL              0x03 
+ #define HID_SET_REPORT                0x09 
+ #define HID_SET_IDLE                  0x0A 
+ #define HID_SET_PROTOCOL              0x0B 
+ #define HID_REPORT_TYPE_INPUT         0x01 
+ #define HID_REPORT_TYPE_OUTPUT        0x02 
+ #define HID_REPORT_TYPE_FEATURE       0x03 
+   
+ #define CTRL_IN        MAPLE_ENDPOINT_IN|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE 
+ #define CTRL_OUT    MAPLE_ENDPOINT_OUT|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE 
+ 
+ 
+ const static int len=2;   
+ const static int PACKET_IN_LEN=2; 
+ const static int INTERFACE=0; 
+ const static int ENDPOINT_INT_IN=0x81; /* endpoint 0x81 address for IN */ 
+ const static int ENDPOINT_INT_OUT=0x01; /* endpoint 1 address for OUT */ 
+ const static int TIMEOUT=5000; /* timeout in ms */  
+ 
+ void bad(const char *why) { 
+     fprintf(stderr,"Fatal error> %s\n",why); 
+     exit(17); 
+ } 
+   
+ static struct libusb_device_handle *devh = NULL;  
+   
+ static int find_device(void) 
+ { 
+     devh = libusb_open_device_with_vid_pid(NULL, VENDOR_ID, PRODUCT_ID); 
+     return devh ? 0 : -EIO; 
+ }  
+ 
+ 
+ static int test_control_transfer(void) 
+ { 
+        int r,i; 
+        char answer[len]; 
+        char question[len]; 
+        for (i=0;i<len; i++) question[i]=0x20+i; 
+ 
+     r = libusb_control_transfer(devh,CTRL_OUT,HID_SET_REPORT,(HID_REPORT_TYPE_FEATURE<<8)|0x00, 0,question, len,TIMEOUT); 
+     if (r < 0) { 
+         fprintf(stderr, "Control Out error %d\n", r); 
+         return r; 
+     } 
+     r = libusb_control_transfer(devh,CTRL_IN,HID_GET_REPORT,(HID_REPORT_TYPE_FEATURE<<8)|0x00,0, answer,len, TIMEOUT); 
+     if (r < 0) { 
+         fprintf(stderr, "Control IN error %d\n", r); 
+         return r; 
+     } 
+     for(i = 0;i < len; i++) { 
+         if(i%8 == 0) 
+             printf("\n"); 
+         printf("%02x, %02x; ",question[i],answer[i]); 
+     } 
+     printf("\n"); 
+ 
+     return 0; 
+ } 
+ 
+ static int test_control_transfer_in_out(void) 
+ { 
+        int r,i; 
+        char answer[PACKET_IN_LEN]; 
+        char question[PACKET_IN_LEN]; 
+        for (i=0;i<PACKET_IN_LEN; i++) question[i]=0x30+i; 
+        for (i=1;i<PACKET_IN_LEN; i++) answer[i]=0; 
+ 
+     r = libusb_control_transfer(devh,CTRL_OUT,HID_SET_REPORT,(HID_REPORT_TYPE_OUTPUT<<8)|0x00, 0,question, PACKET_IN_LEN,TIMEOUT); 
+     if (r < 0) { 
+         fprintf(stderr, "Control Out error %d\n", r); 
+         return r; 
+     } 
+     r = libusb_control_transfer(devh,CTRL_IN,HID_GET_REPORT,(HID_REPORT_TYPE_INPUT<<8)|0x00, 0, answer,PACKET_IN_LEN, TIMEOUT); 
+     if (r < 0) { 
+         fprintf(stderr, "Control IN error %d\n", r); 
+         return r; 
+     } 
+     for(i = 0;i < PACKET_IN_LEN; i++) { 
+         if(i%8 == 0) 
+             printf("\n"); 
+         printf("%02x, %02x; ",question[i],answer[i]); 
+     } 
+     printf("\n"); 
+ 
+     return 0; 
+ } 
+ 
+ 
+ static int interrupt_transfer(void) 
+ { 
+        int r,i; 
+     int transferred; 
+        char answer[PACKET_IN_LEN]; 
+        char question[PACKET_IN_LEN]; 
+        for (i=0;i<PACKET_IN_LEN; i++) question[i]=0x40+i; 
+ 
+     r = libusb_interrupt_transfer(devh, ENDPOINT_INT_OUT, question, PACKET_IN_LEN, 
+         &transferred,TIMEOUT); 
+     if (r < 0) { 
+         fprintf(stderr, "Interrupt write error %d\n", r); 
+         return r; 
+     } 
+     r = libusb_interrupt_transfer(devh, ENDPOINT_INT_IN, answer,PACKET_IN_LEN, 
+         &transferred, TIMEOUT); 
+     if (r < 0) { 
+         fprintf(stderr, "Interrupt read error %d\n", r); 
+         return r; 
+     } 
+     if (transferred < PACKET_IN_LEN) { 
+         fprintf(stderr, "Interrupt transfer short read (%d)\n", r); 
+         return -1; 
+     } 
+ 
+     for(i = 0;i < PACKET_IN_LEN; i++) { 
+         if(i%8 == 0) 
+             printf("\n"); 
+         printf("%02x, %02x; ",question[i],answer[i]); 
+     } 
+     printf("\n"); 
+ 
+     return 0; 
+ } 
+   
+ int main(void) 
+ { 
+     int r = 1; 
+ 
+     r = libusb_init(NULL); 
+     if (r < 0) { 
+         fprintf(stderr, "Failed to initialise libusb\n"); 
+         exit(1); 
+     } 
+ 
+     r = find_device(); 
+     if (r < 0) { 
+         fprintf(stderr, "Could not find/open LVR Generic HID device\n"); 
+         goto out; 
+     } 
+     printf("Successfully find the LVR Generic HID device\n"); 
+ 
+ #ifdef LINUX 
+      libusb_detach_kernel_driver(devh, 0);      
+ #endif 
+ 
+     r = libusb_set_configuration(devh, 1); 
+     if (r < 0) { 
+         fprintf(stderr, "libusb_set_configuration error %d\n", r); 
+         goto out; 
+     } 
+     printf("Successfully set usb configuration 1\n"); 
+     r = libusb_claim_interface(devh, 0); 
+     if (r < 0) { 
+         fprintf(stderr, "libusb_claim_interface error %d\n", r); 
+         goto out; 
+     } 
+     printf("Successfully claimed interface\n"); 
+ 
+     printf("Testing control transfer using loop back test of feature report"); 
+     test_control_transfer(); 
+ 
+     printf("Testing control transfer using loop back test of input/output report"); 
+     test_control_transfer_in_out(); 
+      
+     printf("Testing interrupt transfer using loop back test of input/output report"); 
+     interrupt_transfer(); 
+ 
+     printf("\n"); 
+   
+     libusb_release_interface(devh, 0); 
+ out: 
+ //    libusb_reset_device(devh); 
+     libusb_close(devh); 
+     libusb_exit(NULL); 
+     return r >= 0 ? r : -r;  
+ } 
+```
+
+The following is the output of running, `lsusb -v -d 335e:8a01`:
+```bash
+Bus 001 Device 049: ID 335e:8a01  
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.01
+  bDeviceClass            0 
+  bDeviceSubClass         0 
+  bDeviceProtocol         0 
+  bMaxPacketSize0        64
+  idVendor           0x335e 
+  idProduct          0x8a01 
+  bcdDevice            3.0b
+  iManufacturer          16 Eight Amps
+  iProduct               32 Maple
+  iSerial                 0 
+  bNumConfigurations      1
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength       0x0074
+    bNumInterfaces          4
+    bConfigurationValue     1
+    iConfiguration         64 Maple
+    bmAttributes         0xc0
+      Self Powered
+    MaxPower              100mA
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           0
+      bInterfaceClass       254 Application Specific Interface
+      bInterfaceSubClass      1 Device Firmware Update
+      bInterfaceProtocol      1 
+      iInterface              1 Maple Bootloader
+      Device Firmware Upgrade Interface Descriptor:
+        bLength                             9
+        bDescriptorType                    33
+        bmAttributes                        8
+          Will Detach
+          Manifestation Intolerant
+          Upload Unsupported
+          Download Unsupported
+        wDetachTimeout                   2000 milliseconds
+        wTransferSize                     256 bytes
+        bcdDFUVersion                   1.1a
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       0
+      bNumEndpoints           1
+      bInterfaceClass         3 Human Interface Device
+      bInterfaceSubClass      0 
+      bInterfaceProtocol      0 
+      iInterface              2 Switchy
+        HID Device Descriptor:
+          bLength                 9
+          bDescriptorType        33
+          bcdHID               1.11
+          bCountryCode            0 Not supported
+          bNumDescriptors         1
+          bDescriptorType        34 Report
+          wDescriptorLength     266
+         Report Descriptors: 
+           ** UNAVAILABLE **
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x82  EP 2 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0009  1x 9 bytes
+        bInterval               8
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        2
+      bAlternateSetting       0
+      bNumEndpoints           2
+      bInterfaceClass         3 Human Interface Device
+      bInterfaceSubClass      0 
+      bInterfaceProtocol      0 
+      iInterface              3 Telephone Controls
+        HID Device Descriptor:
+          bLength                 9
+          bDescriptorType        33
+          bcdHID               1.11
+          bCountryCode            0 Not supported
+          bNumDescriptors         1
+          bDescriptorType        34 Report
+          wDescriptorLength      97
+         Report Descriptors: 
+           ** UNAVAILABLE **
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0002  1x 2 bytes
+        bInterval               1
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x01  EP 1 OUT
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Datacant get debug descriptor: Resource temporarily unavailable
+
+        wMaxPacketSize     0x0001  1x 1 bytes
+        bInterval               1
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        3
+      bAlternateSetting       0
+      bNumEndpoints           2
+      bInterfaceClass         3 Human Interface Device
+      bInterfaceSubClass      0 
+      bInterfaceProtocol      0 
+      iInterface              4 Envy
+        HID Device Descriptor:
+          bLength                 9
+          bDescriptorType        33
+          bcdHID               1.11
+          bCountryCode            0 Not supported
+          bNumDescriptors         1
+          bDescriptorType        34 Report
+          wDescriptorLength     114
+         Report Descriptors: 
+           ** UNAVAILABLE **
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x83  EP 3 IN
+        
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0006  1x 6 bytes
+        bInterval             200
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x03  EP 3 OUT
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0006  1x 6 bytes
+        bInterval              10
+Binary Object Store Descriptor:
+  bLength                 5
+  bDescriptorType        15
+  wTotalLength       0x0028
+  bNumDeviceCaps          2
+  USB 2.0 Extension Device Capability:
+    bLength                 7
+    bDescriptorType        16
+    bDevCapabilityType      2
+    bmAttributes   0x00000000
+      (Missing must-be-set LPM bit!)
+  Platform Device Capability:
+    bLength                28
+    bDescriptorType        16
+    bDevCapabilityType      5
+    bReserved               0
+    PlatformCapabilityUUID    {d8dd60df-4589-4cc7-9cd2-659d9e648a9f}
+    CapabilityData[0]    0x00
+    CapabilityData[1]    0x00
+    CapabilityData[2]    0x03
+    CapabilityData[3]    0x06
+    CapabilityData[4]    0x2e
+    CapabilityData[5]    0x00
+    CapabilityData[6]    0x01
+    CapabilityData[7]    0x00
+Device Status:     0x0001
+  Self Powered
+```
