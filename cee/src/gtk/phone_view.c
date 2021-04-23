@@ -7,13 +7,15 @@
 #include "log.h"
 #include <stdlib.h>
 
+#define DEFAULT_8A_PHONE_NUMBER "7273392258"
+
 static void update(PhoneViewContext *c) {
   gtk_widget_queue_draw(GTK_WIDGET(c->phone_number_view));
 }
 
 static void num_clicked(GtkWidget *widget, gpointer data) {
   GtkButton *btn = GTK_BUTTON(widget);
-  PhoneViewContext *c = (PhoneViewContext *)data;
+  PhoneViewContext *c = data;
   GtkEntry *entry = c->phone_number_view;
 
   const gchar *label = gtk_button_get_label(btn);
@@ -25,24 +27,25 @@ static void num_clicked(GtkWidget *widget, gpointer data) {
 }
 
 static void dial_clicked(GtkWidget *widget, gpointer data) {
-  PhoneViewContext *c = (PhoneViewContext *)data;
+  PhoneViewContext *c = data;
   GtkEntryBuffer *b = gtk_entry_get_buffer(c->phone_number_view);
-  phony_dial(c->phony, gtk_entry_buffer_get_text(b));
+  phony_take_off_hook(c->phony);
+  // phony_dial(c->phony, gtk_entry_buffer_get_text(b));
 }
 
 static void hangup_clicked(GtkWidget *widget, gpointer data) {
-  PhoneViewContext *c = (PhoneViewContext *)data;
+  PhoneViewContext *c = data;
   phony_hang_up(c->phony);
 }
 
 struct PhoneViewContext *phone_view_new(PhonyContext *model) {
-  size_t size = sizeof(PhoneViewContext);
-  PhoneViewContext *c = malloc(size);
+  PhoneViewContext *c = calloc(1, sizeof(PhoneViewContext));
   if (c == NULL) {
     log_err("Failed to allocate PhoneViewContext");
     return NULL;
   }
-  memset(c, 0x0, size);
+
+  c->phony = model;
 
   int padding = 2;
 
@@ -117,6 +120,8 @@ struct PhoneViewContext *phone_view_new(PhonyContext *model) {
   g_signal_connect(dial_btn, "clicked", G_CALLBACK(dial_clicked), c);
   g_signal_connect(hangup_btn, "clicked", G_CALLBACK(hangup_clicked), c);
   c->phone_number_view = entry;
+
+  gtk_entry_set_text(entry, DEFAULT_8A_PHONE_NUMBER);
 
   /*
   gtk_grid_attach(grid, dial_btn, 0, 4, 1, 1);

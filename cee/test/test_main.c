@@ -2,6 +2,7 @@
 #include "kissfft_test.h"
 #include "minunit.h"
 #include "phone_view_test.h"
+#include "phony_hid_test.h"
 #include "phony_test.h"
 #include "stitcher_test.h"
 
@@ -39,6 +40,11 @@ char *allTests(void) {
   // TODO(lbayes): Running the following test throws errors in console, need
   //  to investigate instantiating GTK widgets without a window context.
   // muRunTest(test_phone_view_new);
+
+  // PhonyHid tests
+  muRunTest(test_phony_hid_state);
+  muRunTest(test_phony_hid_new);
+  muRunTest(test_phony_hid_open);
 
   return NULL;
 }

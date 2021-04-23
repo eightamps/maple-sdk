@@ -26,14 +26,17 @@ typedef struct DtmfContext {
 /**
  * Create a new DTMF context object.
  *
- * This is the entry point to generate dual tone modulated frequencies with
- * this library.
- *
- * @param values: A char array of PSTN "numbers" (e.g., "727555555#"
- * @param sample_rate: The sample rate in Hz (e.g., 44100)
  * @return DtmfContext*: A context object for getting samples.
  */
-DtmfContext *dtmf_new(char *values, int sample_rate);
+DtmfContext *dtmf_new(void);
+
+/**
+ * Generate tones for the provided values at the provided sample_rate.
+ * @param values: A char array of PSTN "numbers" (e.g., "727555555#"
+ * @param sample_rate: The sample rate in Hz (e.g., 44100)
+ * @return
+ */
+int dtmf_dial(DtmfContext *c, const char *values, int sample_rate);
 
 /**
  * Get the next DTMF sample for the configured context.

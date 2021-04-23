@@ -20,6 +20,10 @@ static void activate(GtkApplication *native_app, gpointer user_data) {
 
   // Create the PhonyContext and related view component
   PhonyContext *pc = phony_new();
+  int status = phony_open_maple(pc);
+  if (status != 0) {
+    exit(status);
+  }
   PhoneViewContext *p = phone_view_new(pc);
 
   // Add the phone view

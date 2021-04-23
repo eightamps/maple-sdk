@@ -17,8 +17,8 @@
 #define VENDOR_ID                     0x335e
 #define PRODUCT_ID                    0x8a01
 #define MAPLE_PHONE_INTERFACE         2
-#define MAPLE_ENDPOINT_IN             0x81
-#define MAPLE_ENDPOINT_OUT            0x01
+#define PHONY_ENDPOINT_IN 0x81
+#define PHONY_ENDPOINT_OUT 0x01
 #define ALT_INTERFACE_NUMBER          1
 #define DEVICE_CONFIGURATION          1
 
@@ -38,11 +38,11 @@
 
 #define LIBUSB_REQUEST_TYPE_CLASS     HID_REPORT_TYPE_FEATURE
 
-#define CTRL_IN MAPLE_ENDPOINT_IN
-#define CTRL_OUT MAPLE_ENDPOINT_OUT
+#define CTRL_IN PHONY_ENDPOINT_IN
+#define CTRL_OUT PHONY_ENDPOINT_OUT
 
-// #define CTRL_IN MAPLE_ENDPOINT_IN |LIBUSB_REQUEST_TYPE_CLASS|MAPLE_PHONE_INTERFACE
-// #define CTRL_OUT MAPLE_ENDPOINT_OUT |LIBUSB_REQUEST_TYPE_CLASS|MAPLE_PHONE_INTERFACE
+// #define CTRL_IN PHONY_ENDPOINT_IN |LIBUSB_REQUEST_TYPE_CLASS|MAPLE_PHONE_INTERFACE
+// #define CTRL_OUT PHONY_ENDPOINT_OUT |LIBUSB_REQUEST_TYPE_CLASS|MAPLE_PHONE_INTERFACE
 
 const static uint8_t PHONY_PACKET_IN_LEN = 3;
 const static uint8_t PHONY_PACKET_OUT_LEN = 3;
@@ -53,13 +53,13 @@ const static int TIMEOUT = 5000; /* timeout in ms */
 
 static int is_interface_claimed = false;
 
-static struct HidContext {
+static struct PhonyHidContext {
   libusb_context *lusb_context;
   libusb_device_handle *device_handle;
   libusb_device *device;
   struct libusb_config_descriptor *config_descriptor;
   struct libusb_device_descriptor *device_descriptor;
-}HidContext;
+}PhonyHidContext;
 
 void print_8_bits(uint8_t x) {
   // print_bits found here:
@@ -78,7 +78,7 @@ void print_16_bits(uint16_t x) {
 }
 
 
-static int find_device(struct HidContext *ctx, uint16_t vid,
+static int find_device(struct PhonyHidContext *ctx, uint16_t vid,
                        uint16_t pid) {
   int status = EXIT_SUCCESS;
   libusb_context *lusb_ctx = ctx->lusb_context;
@@ -111,7 +111,7 @@ static int find_device(struct HidContext *ctx, uint16_t vid,
   return LIBUSB_ERROR_NOT_FOUND;
 }
 
-static int get_config_descriptors(struct HidContext *ctx) {
+static int get_config_descriptors(struct PhonyHidContext *ctx) {
   int status = EXIT_SUCCESS;
   libusb_context *lusb_ctx = ctx->lusb_context;
   struct libusb_config_descriptor *config = {0};
@@ -168,7 +168,7 @@ static int get_config_descriptors(struct HidContext *ctx) {
   return status;
 }
 
-static int interrupt_out_transfer(struct HidContext *ctx, uint8_t addr,
+static int interrupt_transfer(struct PhonyHidContext *ctx, uint8_t addr,
     unsigned char *data, uint8_t len) {
   int r = EXIT_SUCCESS;
   int transferred = 0;
@@ -198,19 +198,19 @@ static int interrupt_out_transfer(struct HidContext *ctx, uint8_t addr,
 }
 
 
-static int interrupt_in_transfer(struct HidContext *ctx, uint8_t len) {
+static int interrupt_in_transfer(struct PhonyHidContext *ctx, uint8_t len) {
   /*
   unsigned char answer[PACKET_IN_LEN];
   memset(answer, 0x0, PACKET_IN_LEN);
 
-  r = libusb_interrupt_transfer(dev_h, MAPLE_ENDPOINT_IN, answer, PACKET_IN_LEN,
+  r = libusb_interrupt_transfer(dev_h, PHONY_ENDPOINT_IN, answer, PACKET_IN_LEN,
                                 &transferred, TIMEOUT);
   if (r < 0) {
     fprintf(stderr, "Interrupt read error %d %s\n", r, libusb_error_name(r));
     // return r;
   }
 
-  r = libusb_interrupt_transfer(dev_h, MAPLE_ENDPOINT_OUT, question, PACKET_IN_LEN,
+  r = libusb_interrupt_transfer(dev_h, PHONY_ENDPOINT_OUT, question, PACKET_IN_LEN,
                                 &transferred,TIMEOUT);
   if (r < 0) {
     fprintf(stderr, "Interrupt write error %d - %s\n", r, libusb_error_name(r));
@@ -221,40 +221,60 @@ static int interrupt_in_transfer(struct HidContext *ctx, uint8_t len) {
   return 0;
 }
 
-static int set_hostavail_report(struct HidContext *ctx) {
+static int set_hostavail(struct PhonyHidContext *ctx, int is_host_avail) {
+  printf(">> set_hostavail\n");
   uint8_t addr = PHONY_EP_OUT_ADDR;
   uint8_t len = 2 + 1; // 3 bytes + 1 address byte?
   unsigned char data[len];
   memset(data, 0x0, len);
-  data[2] = 0x1;
+  // TODO(lbayes): This is NOT correct, we need to bit shift here, otherwise
+  //  we're clobbering various other bits on the full byte.
+  data[2] = is_host_avail;
 
   // data[0] = addr; // first bit active indicates hostavail = true
   // data[1] = 0x1;
-  int r = interrupt_out_transfer(ctx, addr, data, len);
+  int r = interrupt_transfer(ctx, addr, data, len);
 
   return r;
 }
 
-static int set_offhook(struct HidContext *ctx) {
+
+static int get_phone_state(struct PhonyHidContext *ctx) {
+  printf(">> get_phone_state\n");
+  uint8_t addr = PHONY_EP_IN_ADDR;
+  uint8_t len = 2;
+  unsigned char data[len];
+  memset(data, 0x0, len);
+
+  // data[0] = addr; // first bit active indicates hostavail = true
+  // data[1] = 0x1;
+  int r = interrupt_transfer(ctx, addr, data, len);
+
+  // const char *state = phony_state_message(data[1]);
+  // printf("PHONY STATe: %s\n", state);
+  return r;
+}
+
+static int set_offhook(struct PhonyHidContext *ctx) {
   uint8_t addr = PHONY_EP_OUT_ADDR;
   uint8_t len = 2 + 1; // 3 bytes + 1 address byte?
   unsigned char data[len];
   memset(data, 0x0, len);
   data[2] = 0x3;
 
-  int r = interrupt_out_transfer(ctx, addr, data, len);
+  int r = interrupt_transfer(ctx, addr, data, len);
 
   return r;
 }
 
-static int set_onhook(struct HidContext *ctx) {
+static int set_onhook(struct PhonyHidContext *ctx) {
   uint8_t addr = PHONY_EP_OUT_ADDR;
   uint8_t len = 2 + 1; // 3 bytes + 1 address byte?
   unsigned char data[len];
   memset(data, 0x0, len);
   data[2] = 0x1;
 
-  int r = interrupt_out_transfer(ctx, addr, data, len);
+  int r = interrupt_transfer(ctx, addr, data, len);
 
   return r;
 }
@@ -265,7 +285,7 @@ typedef struct VersionReport {
   uint8_t rev;
 }VersionReport;
 
-static int get_version_report(struct HidContext *ctx) {
+static int get_version_report(struct PhonyHidContext *ctx) {
   VersionReport *ver = {0};
   uint8_t addr = PHONY_EP_OUT_ADDR;
   uint8_t len = 3 + 1; // 3 bytes + 1 address byte?
@@ -274,7 +294,7 @@ static int get_version_report(struct HidContext *ctx) {
 
   data[0] = addr; // first bit active indicates hostavail = true
   data[1] = 0x1;
-  int r = interrupt_out_transfer(ctx, addr, data, len);
+  int r = interrupt_transfer(ctx, addr, data, len);
 
   return r;
 }
@@ -345,7 +365,7 @@ static int test_control_transfer_in_out(void)
 }
 */
 
-static int auto_detach_kernel(struct HidContext *ctx, int enable) {
+static int auto_detach_kernel(struct PhonyHidContext *ctx, int enable) {
   libusb_device_handle *dev_h = ctx->device_handle;
 
   int r = libusb_set_auto_detach_kernel_driver(dev_h, enable);
@@ -392,7 +412,7 @@ static int set_configuration(libusb_device_handle *dev_h, int config) {
   return r;
 }
 
-static int claim_interface(struct HidContext *ctx, int interface) {
+static int claim_interface(struct PhonyHidContext *ctx, int interface) {
   libusb_device_handle *dev_h = ctx->device_handle;
   int r = libusb_claim_interface(dev_h, MAPLE_PHONE_INTERFACE);
   if (r < 0) {
@@ -428,13 +448,13 @@ int hid_help_me(void) {
 
   // r = hid_get_feature_report(handle, data, size);
   if (bytes_sent <= 0) {
-    fprintf(stderr, "hid_get_feature_report failed with: %d %s\n",
+    fprintf(stderr, "hid_get_feature_report failed with: %zu %s\n",
            bytes_sent, (char *)hid_error(handle));
 
     return r;
   }
 
-  printf("Successfully sent feature report with %d bytes sent\n", bytes_sent);
+  printf("Successfully sent feature report with %zu bytes sent\n", bytes_sent);
 
   for (int i = 0; i < size; i++) {
     printf("i: %d q: 0x%02x\n", i, data[i]);
@@ -454,8 +474,8 @@ out:
 int libusb_help_me(void) {
   int r = EXIT_SUCCESS;
 
-  size_t size = sizeof(HidContext);
-  struct HidContext *ctx = malloc(size);
+  size_t size = sizeof(PhonyHidContext);
+  struct PhonyHidContext *ctx = malloc(size);
   if (ctx == NULL) {
     fprintf(stderr, "Failed to allocate usb context\n");
     return ENOMEM;
@@ -492,24 +512,35 @@ int libusb_help_me(void) {
     goto out;
   }
 
-  r = set_hostavail_report(ctx);
+  // App features start here:
+  r = set_hostavail(ctx, 1);
   if (r < 0) {
     goto out;
   }
 
-  sleep(3);
+  r = get_phone_state(ctx);
+  if (r < 0) {
+    goto out;
+  }
 
   r = set_offhook(ctx);
   if (r < 0) {
     goto out;
   }
 
+  r = get_phone_state(ctx);
+  if (r < 0) {
+    goto out;
+  }
+
   sleep(3);
 
+  /*
   r = set_onhook(ctx);
   if (r < 0) {
     goto out;
   }
+  */
 
   /*
   r = get_version_report(ctx);
@@ -520,6 +551,11 @@ int libusb_help_me(void) {
 
   sleep(10);
 
+  // Remove the host from the firmware
+  r = set_hostavail(ctx, 0);
+  if (r < 0) {
+    goto out;
+  }
 
   out:
   printf("-------------------------------------\n");

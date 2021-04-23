@@ -7,6 +7,11 @@
 
 #include <soundio/soundio.h>
 
+typedef struct StitcherStreamContext {
+  struct StitcherContext *context;
+  struct SoundIoRingBuffer *buffer;
+}StitcherStreamContext;
+
 typedef struct StitcherOutDevice {
   char *name;
   struct SoundIoDevice *device;
@@ -30,6 +35,9 @@ typedef struct StitcherContext {
   // In Devices
   struct StitcherInDevice *from_phone;
   struct StitcherInDevice *from_mic;
+
+  struct SoundIoRingBuffer *to_phone_buff;
+  struct SoundIoRingBuffer *from_phone_buff;
 }StitcherContext;
 
 typedef void (StitcherCallback)(struct SoundIoOutStream *out_stream,
@@ -37,7 +45,8 @@ typedef void (StitcherCallback)(struct SoundIoOutStream *out_stream,
 
 StitcherContext *stitcher_new(void);
 int stitcher_init(StitcherContext *c);
-int stitcher_start(StitcherContext *c, StitcherCallback *cb);
+int stitcher_start(StitcherContext *c);
+int stitcher_stop(StitcherContext *c);
 void stitcher_free(StitcherContext *c);
 
 /**
@@ -49,7 +58,7 @@ void stitcher_free(StitcherContext *c);
  * @param frame_count_max
  * @return void
  */
-void dtmf_soundio_callback(struct SoundIoOutStream *out_stream,
-                           __attribute__((unused)) int frame_count_min, int frame_count_max);
+void stitcher_dtmf_callback(struct SoundIoOutStream *out_stream,
+     __attribute__((unused)) int frame_count_min, int frame_count_max);
 
 #endif // MAPLE_STITCHER_H

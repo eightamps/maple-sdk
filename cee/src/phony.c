@@ -2,152 +2,131 @@
 // Created by lukebayes on 4/17/21.
 //
 
+#include "dtmf.h"
 #include "phony.h"
+#include "phony_hid.h"
 #include <errno.h>
-#include <hidapi/hidapi.h>
-#include <libusb-1.0/libusb.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define MAX_STR 255
-
+#include <unistd.h>
 
 PhonyContext *phony_new(void) {
-  return phony_new_with_vid_and_pid(EIGHT_AMPS_VID, MAPLE_V3_PID);
-}
-
-PhonyContext *phony_new_with_vid_and_pid(uint16_t vid, uint16_t pid) {
-  // printf("Attempting to allocate PhonyContext client\n");
-  PhonyContext *ref = malloc(sizeof(PhonyContext));
-  if (ref == NULL) {
-    // printf("ERROR: PhonyContext unable to allocate\n");
-    // TODO(lbayes): Probably should not be calling exit() from within a
-    //  shared library.
-    exit(ENOMEM);
+  // Initialize Phony context
+  PhonyContext *c = calloc(1, sizeof(PhonyContext));
+  if (c == NULL) {
+    return NULL;
   }
-  ref->vid = vid;
-  ref->pid = pid;
 
-  return ref;
+  // Initialize Hid context
+  PhonyHidContext *hc = phony_hid_new();
+  if (hc == NULL) {
+    phony_free(c);
+    return NULL;
+  }
+  c->hid_context = hc;
+
+  // Initialize Stitcher context
+  StitcherContext *sc = stitcher_new();
+  if (sc == NULL) {
+    phony_free(c);
+    return NULL;
+  }
+  c->stitcher_context = sc;
+
+  DtmfContext *dc = dtmf_new();
+  if (dc == NULL) {
+    dtmf_free(dc);
+    return NULL;
+  }
+  c->dtmf_context = dc;
+
+  return c;
 }
 
-int phony_init(PhonyContext *c) {
-  int res = hid_init();
-  // printf("PhonyContext hid_init result: %d\n", res);
-  if (res != EXIT_SUCCESS) return res;
-
-  c->device = hid_open(c->vid, c->pid, NULL);
-  if (c->device == NULL) return ECONNREFUSED;
-
-  return EXIT_SUCCESS;
+int phony_open(PhonyContext *c, int vid, int pid) {
+  return phony_hid_open(c->hid_context, vid, pid);
 }
 
-int phony_take_off_hook(PhonyContext *phony) {
-  return -1;
+int phony_open_maple(PhonyContext *c) {
+  return phony_open(c, EIGHT_AMPS_VID, MAPLE_V3_PID);
 }
 
-int phony_hang_up(PhonyContext *phony) {
-  return -1;
+int phony_take_off_hook(PhonyContext *c) {
+  printf("phony_take_off_hook called\n");
+  return phony_hid_set_offhook(c->hid_context, 1);
+}
+
+int phony_hang_up(PhonyContext *c) {
+  printf("phony_hang_up called\n");
+  return phony_hid_set_offhook(c->hid_context, 0);
 }
 
 int phony_dial(PhonyContext *c, const char *numbers) {
   printf("phony_dial called with %s\n", numbers);
+  int status;
 
-  hid_device *device = c->device;
-  int report_id = 0x03;
-  int status = EXIT_SUCCESS;
+  StitcherContext *sc = c->stitcher_context;
+  if (numbers != NULL && numbers[0] != '\0') {
 
-  size_t data_size = 3;
-  unsigned char *data = malloc(data_size);
-  memset(data, 0x0, data_size);
-  data[0] = report_id;
-  data[1] = 0;
-  data[2] = 0x11;
+    // Take the phone off hook!
+    status = phony_take_off_hook(c);
+    if (status != EXIT_SUCCESS) {
+      fprintf(stderr, "failed to take off hook with: %d\n", status);
+    }
+    printf("Successfully completed phony_take_off_hook\n");
 
-  status = hid_write(device, data, data_size);
-  printf("GET Report 2 response: %d \n", status);
-  for (int i = 0; i < data_size; i++) {
-    printf("DATA: %d 0x%02x\n", i, data[i]);
+    sleep(1);
+
+    /*
+    // TODO(lbayes): We should instead get the sample_rate directly from the
+    //  mic and use that to configure the speaker and DTMF tones.
+    struct SoundIoSampleRateRange *range = sc->to_speaker->device->sample_rates;
+    int sample_rate = 48000; // Picked 48kHz because that's what the stream
+    // defaulted to on my computer.
+    if (range->min > 48000 && range->max < 48000) {
+      return EPERM; // Operation not permitted
+    }
+
+    // We have a potentially valid input string, send to DTMF for configuration.
+    // DtmfContext *dc = dtmf_new(numbers, sample_rate);
+    DtmfContext *dc = c->dtmf_context;
+    status = dtmf_dial(dc, numbers, sample_rate);
+    if (status < 0) {
+      fprintf(stderr, "phony_dial failed in dtmf_dial\n");
+      return status;
+    }
+
+    // Set up the DTMF stream for emission on the line...
+    sc->to_phone->stream->userdata = (void *)dc;
+     */
+
+    // Start audio stitcher
+    status = stitcher_start(sc);
+    if (status < 0) {
+      fprintf(stderr, "stitcher_start failed with %d\n", status);
+      free(c);
+    }
+    printf("Successfully started and exited stitcher\n");
+
+    phony_hang_up(c);
+    stitcher_stop(c->stitcher_context);
   }
 
-  /*
-  memset(data, 0x0, data_size);
-  data[0] = report_id;
-  data[1] = 0x00;
-  status = hid_get_feature_report(device, data, data_size);
-  printf("SEND Report 1 response: %d \n", status);
-  for (int i = 0; i < data_size; i++) {
-    printf("DATA: %d 0x%02x\n", i, data[i]);
-  }
-   */
-
-
-  /*
-  libusb_descr
-  size_t r_data_size = 8;
-  unsigned char *r_data = malloc(r_data_size);
-  memset(r_data, 0x0, r_data_size);
-
-  printf("About to read:\n");
-  status = hid_read(device, r_data, r_data_size);
-  if (status != EXIT_SUCCESS) {
-    printf("READ FAILED\n");
-  } else {
-    printf("READ SUCCEEDED\n");
-  }
-  printf("READ COMPLETE WITH: %02x\n",  r_data[0]);
-
-
-  size_t size = 18;
-  unsigned char *data = malloc(size);
-  memset(data, 0x0, size); // Clear the allocated region.
-
-  int status = hid_get_feature_report(c->device, data, 18);
-  printf("STATUS %d\n", status);
-  for (int i = 0; i < size; i++) {
-    printf("%04d 0x%02x\n", i, data[i]);
-  }
-   */
-  // hid_send_feature_report(c->device, data, size);
-
-  // struct PhonyInReport *in_report = (PhonyOutReport *)data;
-  // printf("YOOOOOOOOOOOOOOOOOOOOOO\n");
-  // printf("loop: %d\n", in_report->loop);
-  // printf("ring: %d\n", in_report->ring);
-  // printf("line_in_use: %d\n", in_report->line_in_use);
+  return 0;
 }
 
-int phony_info(PhonyContext *c) {
-  // TODO(lbayes): Add these fields to the PhonyContext struct and apply these
-  //  entries to those fields.
-  int res;
-  wchar_t str[MAX_STR];
-  // unsigned char buf[65];
-  hid_device *device = c->device;
-  res = hid_get_manufacturer_string(device, str, MAX_STR);
-  if (res != EXIT_SUCCESS) return ECOMM;
-  wprintf(L"Manufacturer String status: %d, value: %ls\n", res, str);
-
-  res = hid_get_product_string(device, str, MAX_STR);
-  if (res != EXIT_SUCCESS) return ECOMM;
-  wprintf(L"Product String status: %d, value: %ls\n", res, str);
-
-  // TODO(lbayes): I'm getting junk characters out of this API call. Ensure we
-  //  write a unique serial number to the firmware.
-  // res = hid_get_serial_number_string(device, str, MAX_STR);
-  // if (res != EXIT_SUCCESS) return ECOMM;
-  // wprintf(L"Serial Number status: %d, value: %ls\n", res, str);
-
-  // Not sure if this is safe on all HID devices yet.
-  // res = hid_get_indexed_string(device, 0, str, MAX_STR);
-  // if (res != EXIT_SUCCESS) return ECOMM;
-  // wprintf(L"Indexed String 1 status: %d, value: %s\n", res, str);
-
-  return EXIT_SUCCESS;
-}
-
-void phony_free(PhonyContext *phony) {
-  free(phony);
+void phony_free(PhonyContext *c) {
+  if (c != NULL) {
+    if (c->hid_context != NULL) {
+      phony_hid_free(c->hid_context);
+    }
+    if (c->stitcher_context != NULL) {
+      stitcher_free(c->stitcher_context);
+    }
+    if (c->dtmf_context != NULL) {
+      dtmf_free(c->dtmf_context);
+    }
+    free(c);
+  }
 }

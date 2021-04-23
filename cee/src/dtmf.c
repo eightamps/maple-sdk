@@ -51,25 +51,29 @@ static DtmfToneInfo *get_tone_info(int char_code) {
   return NULL;
 }
 
-struct DtmfContext *dtmf_new(char *values, int sample_rate) {
+int dtmf_dial(DtmfContext *c, const char *values, int sample_rate) {
   if (values == NULL || strlen(values) < 1) {
     log_err("dtmf_new values must not be empty");
-    return NULL;
+    return -EINVAL;
   }
 
   int values_count = (int)strlen(values);
-  DtmfContext *c = malloc(sizeof(DtmfContext));
   c->sample_rate = sample_rate;
   c->entries = malloc(values_count + 1);
   strcpy(c->entries, values);
+
+  return EXIT_SUCCESS;
+}
+
+struct DtmfContext *dtmf_new() {
+  DtmfContext *c = calloc(1, sizeof(DtmfContext));
+  if (c == NULL) {
+    fprintf(stderr, "dtmf_new cannot allocate\n");
+    return NULL;
+  }
   c->entry_ms = MS_PER_ENTRY;
   c->padding_ms = MS_PER_SPACE;
-  c->entry_sample_count = 0;
-  c->padding_sample_count = 0;
-  c->sample_count = 0;
-  c->duration_ms = 0;
-  c->is_complete = false;
-  c->sample_index = 0;
+
   return c;
 }
 
