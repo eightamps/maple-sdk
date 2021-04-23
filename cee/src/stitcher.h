@@ -6,6 +6,7 @@
 #define MAPLE_STITCHER_H
 
 #include <soundio/soundio.h>
+#include <pthread.h>
 
 typedef struct StitcherStreamContext {
   struct StitcherContext *context;
@@ -26,7 +27,12 @@ typedef struct StitcherInDevice {
 
 typedef struct StitcherContext {
   bool is_active;
+  bool should_exit;
+  pthread_t thread_id;
+  int thread_exit_status;
   struct SoundIo *soundio;
+  char *to_phone_device_name;
+  char *from_phone_device_name;
 
   // Out devices
   struct StitcherOutDevice *to_phone;
@@ -48,6 +54,7 @@ int stitcher_init(StitcherContext *c);
 int stitcher_start(StitcherContext *c);
 int stitcher_stop(StitcherContext *c);
 void stitcher_free(StitcherContext *c);
+int stitcher_join(StitcherContext *c);
 
 /**
  * This is a specific implementation of a Soundio device stream callback that

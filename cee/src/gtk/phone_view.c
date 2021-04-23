@@ -26,16 +26,35 @@ static void num_clicked(GtkWidget *widget, gpointer data) {
   update(c);
 }
 
+static void show_status(PhoneViewContext *c, int status) {
+  GtkTextView *m = c->message_view;
+  GtkTextBuffer *b = gtk_text_view_get_buffer(m);
+
+  if (status == EXIT_SUCCESS) {
+    gtk_text_buffer_set_text(b, "\n", 1);
+  } else {
+    char *content = malloc(256);
+    sprintf(content, "status: %d\n", status);
+    gtk_text_buffer_set_text(b, content, strlen(content));
+    free(content);
+  }
+}
+
 static void dial_clicked(GtkWidget *widget, gpointer data) {
   PhoneViewContext *c = data;
   GtkEntryBuffer *b = gtk_entry_get_buffer(c->phone_number_view);
-  phony_take_off_hook(c->phony);
-  // phony_dial(c->phony, gtk_entry_buffer_get_text(b));
+  char *text = gtk_entry_buffer_get_text(b);
+  printf("dial_clicked with: %s\n", text);
+
+  // int status = phony_dial(c->phony, text);
+  int status = phony_take_off_hook(c->phony);
+  show_status(c, status);
 }
 
 static void hangup_clicked(GtkWidget *widget, gpointer data) {
   PhoneViewContext *c = data;
-  phony_hang_up(c->phony);
+  int status = phony_hang_up(c->phony);
+  show_status(c, status);
 }
 
 struct PhoneViewContext *phone_view_new(PhonyContext *model) {
@@ -46,7 +65,6 @@ struct PhoneViewContext *phone_view_new(PhonyContext *model) {
   }
 
   c->phony = model;
-
   int padding = 2;
 
   GtkBox *box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
@@ -55,12 +73,14 @@ struct PhoneViewContext *phone_view_new(PhonyContext *model) {
   GtkBox *row_3 = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
   GtkBox *row_4 = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
   GtkBox *row_5 = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
+  GtkBox *row_6 = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
 
   gtk_box_pack_start(box, GTK_WIDGET(row_1), gtk_true(), gtk_true(), padding);
   gtk_box_pack_start(box, GTK_WIDGET(row_2), gtk_true(), gtk_true(), padding);
   gtk_box_pack_start(box, GTK_WIDGET(row_3), gtk_true(), gtk_true(), padding);
   gtk_box_pack_start(box, GTK_WIDGET(row_4), gtk_true(), gtk_true(), padding);
   gtk_box_pack_start(box, GTK_WIDGET(row_5), gtk_true(), gtk_true(), padding);
+  gtk_box_pack_start(box, GTK_WIDGET(row_6), gtk_true(), gtk_true(), padding);
 
   GtkWidget *btn_1 = gtk_button_new_with_label("1");
   GtkWidget *btn_2 = gtk_button_new_with_label("2");
@@ -103,6 +123,13 @@ struct PhoneViewContext *phone_view_new(PhonyContext *model) {
                                       padding);
   gtk_box_pack_start(row_5, GTK_WIDGET(hangup_btn), gtk_true(), gtk_true(),
                      padding);
+
+  GtkTextView *message_view = GTK_TEXT_VIEW(gtk_text_view_new());
+  gtk_text_view_set_editable(message_view, false);
+  gtk_text_view_set_monospace(message_view, true);
+  gtk_box_pack_start(row_6, GTK_WIDGET(message_view), gtk_true(), gtk_true(),
+                     padding);
+  c->message_view = message_view;
 
   g_signal_connect(btn_1, "clicked", G_CALLBACK(num_clicked), c);
   g_signal_connect(btn_2, "clicked", G_CALLBACK(num_clicked), c);

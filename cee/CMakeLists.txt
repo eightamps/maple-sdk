@@ -18,6 +18,8 @@ set(AppSources
         src/phony_hid.h
         src/stitcher.c
         src/stitcher.h
+        src/pthread_play.c
+        src/pthread_play.h
         )
 
 set(GtkSources
@@ -53,6 +55,7 @@ link_libraries(
         hidapi-libusb
         soundio
         m
+        pthread
         )
 
 add_library(maple-dev STATIC ${AppSources})

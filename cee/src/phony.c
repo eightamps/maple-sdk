@@ -44,12 +44,16 @@ PhonyContext *phony_new(void) {
   return c;
 }
 
-int phony_open(PhonyContext *c, int vid, int pid) {
-  return phony_hid_open(c->hid_context, vid, pid);
+int phony_open_device(PhonyContext *c, int vid, int pid) {
+  PhonyHidContext *hc = c->hid_context;
+  phony_hid_set_vendor_id(hc, vid);
+  phony_hid_set_product_id(hc, pid);
+  return phony_hid_open(hc);
 }
 
 int phony_open_maple(PhonyContext *c) {
-  return phony_open(c, EIGHT_AMPS_VID, MAPLE_V3_PID);
+  // Default VID/PID are already set in phony_hid.h
+  return phony_hid_open(c->hid_context);
 }
 
 int phony_take_off_hook(PhonyContext *c) {

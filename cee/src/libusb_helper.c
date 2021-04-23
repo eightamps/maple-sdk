@@ -250,7 +250,7 @@ static int get_phone_state(struct PhonyHidContext *ctx) {
   // data[1] = 0x1;
   int r = interrupt_transfer(ctx, addr, data, len);
 
-  // const char *state = phony_state_message(data[1]);
+  // const char *state = phony_hid_state_to_str(data[1]);
   // printf("PHONY STATe: %s\n", state);
   return r;
 }
@@ -490,7 +490,7 @@ int libusb_help_me(void) {
     goto out;
   }
 
-  r = find_device(ctx, VENDOR_ID, PRODUCT_ID);
+  r = find_device(ctx, EIGHT_AMPS_VID, MAPLE_V3_PID);
   if (r < 0) {
     fprintf(stderr, "Could not find/open the HID device\n");
     goto out;

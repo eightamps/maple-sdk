@@ -8,15 +8,13 @@
 #include <string.h>
 #include <errno.h>
 
-#define VENDOR_ID                         0x335e
-#define PRODUCT_ID                        0x8a01
 #define MAPLE_PHONE_INTERFACE             2
 #define PHONY_ENDPOINT_IN                 0x81
 #define PHONY_ENDPOINT_OUT                0x01
 
 const static int TIMEOUT = 5000; /* timeout in ms */
 
-const char *phony_state_message(int state) {
+const char *phony_hid_state_to_str(int state) {
   switch (state) {
   case PHONY_NOT_READY:
     return "Not ready";
@@ -41,7 +39,28 @@ struct PhonyHidContext *phony_hid_new(void) {
     fprintf(stderr, "phony_hid_new unable to allocate");
     return NULL;
   }
+  // Configure default vid and pid
+  c->vendor_id = EIGHT_AMPS_VID;
+  c->product_id = MAPLE_V3_PID;
   return c;
+}
+
+int phony_hid_set_vendor_id(struct PhonyHidContext *c, int vid) {
+  if (c == NULL) {
+    fprintf(stderr, "phony_hid_set_vendor_id requires a valid context\n");
+    return EINVAL; // Invalid argument
+  }
+  c->vendor_id = vid;
+  return 0;
+}
+
+int phony_hid_set_product_id(struct PhonyHidContext *c, int pid) {
+  if (c == NULL) {
+    fprintf(stderr, "phony_hid_set_product_id requires a valid context\n");
+    return EINVAL; // Invalid argument
+  }
+  c->product_id = pid;
+  return 0;
 }
 
 static int auto_detach_kernel(struct PhonyHidContext *c, int enable) {
@@ -189,6 +208,12 @@ static int interrupt_transfer(struct PhonyHidContext *c, uint8_t addr,
 
 static int set_hostavail(struct PhonyHidContext *c, int is_host_avail) {
   printf(">> set_hostavail\n");
+  if (!c->is_open) {
+    int status = phony_hid_open(c);
+    if (status != EXIT_SUCCESS) {
+      return status;
+    }
+  }
   uint8_t addr = PHONY_ENDPOINT_OUT;
   uint8_t len = 2 + 1; // 3 bytes + 1 address byte?
   unsigned char data[len];
@@ -215,14 +240,16 @@ static int get_phone_state(struct PhonyHidContext *c) {
   // data[1] = 0x1;
   int r = interrupt_transfer(c, addr, data, len);
 
-  // const char *state = phony_state_message(data[1]);
+  // const char *state = phony_hid_state_to_str(data[1]);
   // printf("PHONY STATe: %s\n", state);
   return r;
 }
 
-int phony_hid_open(struct PhonyHidContext *c, int vid, int pid) {
+int phony_hid_open(struct PhonyHidContext *c) {
+  if (c->is_open) {
+    return EXIT_SUCCESS;
+  }
   int status = -1;
-
   libusb_context *lusb_ctx = NULL;
   status = libusb_init(&lusb_ctx);
   if (status < 0) {
@@ -231,9 +258,10 @@ int phony_hid_open(struct PhonyHidContext *c, int vid, int pid) {
   }
   c->lusb_context = lusb_ctx;
 
-  status = find_device(c, vid, pid);
+  status = find_device(c, c->vendor_id, c->product_id);
   if (status < 0) {
-    fprintf(stderr, "Could not find/open the HID device\n");
+    fprintf(stderr, "Could not open HID device at vid 0x%02x and pid "
+                    "0x%02x\n", c->vendor_id, c->product_id);
     goto out;
   }
   printf("Successfully found the expected HID device\n");
@@ -257,8 +285,31 @@ int phony_hid_open(struct PhonyHidContext *c, int vid, int pid) {
   out:
   return status;
 }
-static int release_resources(struct PhonyHidContext *c) {
+
+int phony_hid_reset_device(struct PhonyHidContext *c) {
   int status = EXIT_SUCCESS;
+  if (!c->is_open) {
+    status = phony_hid_open(c);
+    if (status != EXIT_SUCCESS) {
+      return status;
+    }
+  }
+
+  status = libusb_reset_device(c->device_handle);
+  if (status != 0) {
+    fprintf(stderr, "phony_hid_reset_device error %d %s\n", status,
+            libusb_error_name(status));
+  } else {
+    printf("Successfully reset_device\n");
+  }
+  return status;
+}
+
+int phony_hid_close(struct PhonyHidContext *c) {
+  int status = EXIT_SUCCESS;
+  if (!c->is_open) {
+    return status;
+  }
 
   libusb_device_handle *dev_h = c->device_handle;
   if (dev_h != NULL) {
@@ -269,15 +320,9 @@ static int release_resources(struct PhonyHidContext *c) {
       }
     }
 
-    status = libusb_reset_device(dev_h);
-    if (status != 0) {
-      fprintf(stderr, "libusb_reset_device error %d %s\n", status,
-              libusb_error_name(status));
-    } else {
-      printf("Successfully reset_device\n");
-    }
-
-    // libusb_attach_kernel_driver(dev_h, MAPLE_PHONE_INTERFACE);
+    // NOTE(lbayes): Ignore error, it's logged in the called method and any
+    // failures here should not impact subsequent calls.
+    phony_hid_reset_device(c);
     libusb_close(dev_h);
     libusb_exit(NULL);
   }
@@ -285,7 +330,33 @@ static int release_resources(struct PhonyHidContext *c) {
   return status;
 }
 
+int phony_hid_set_hostavail(struct PhonyHidContext *c, bool is_hostavail) {
+  if (!c->is_open) {
+    int status = phony_hid_open(c);
+    if (status != EXIT_SUCCESS) {
+      return status;
+    }
+  }
+  uint8_t addr = PHONY_ENDPOINT_OUT;
+  uint8_t len = 2 + 1; // 3 bytes + 1 address byte?
+  unsigned char data[len];
+  memset(data, 0x0, len);
+  if (is_hostavail) {
+    data[2] = 0x1; // hostavail = 1 && offhook = 1
+  } else {
+    data[2] = 0x0; // hostavail = 1
+  }
+
+  return interrupt_transfer(c, addr, data, len);
+}
+
 int phony_hid_set_offhook(struct PhonyHidContext *c, bool is_offhook) {
+  if (!c->is_open) {
+    int status = phony_hid_open(c);
+    if (status != EXIT_SUCCESS) {
+      return status;
+    }
+  }
   uint8_t addr = PHONY_ENDPOINT_OUT;
   uint8_t len = 2 + 1; // 3 bytes + 1 address byte?
   unsigned char data[len];
@@ -301,7 +372,7 @@ int phony_hid_set_offhook(struct PhonyHidContext *c, bool is_offhook) {
 
 int phony_hid_free(struct PhonyHidContext *c) {
   if (c != NULL) {
-    int status = release_resources(c);
+    int status = phony_hid_close(c);
     free(c);
     return status;
   }

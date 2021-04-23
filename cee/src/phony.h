@@ -29,7 +29,7 @@ PhonyContext *phony_new(void);
  * @param PhonyContext*
  * @return int Status code
  */
-int phony_open(PhonyContext *c, int vid, int pid);
+int phony_open_device(PhonyContext *c, int vid, int pid);
 
 /**
  * Initialize a new telephone connection with the first Maple device found on

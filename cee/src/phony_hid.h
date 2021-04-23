@@ -42,6 +42,8 @@ typedef enum PhonyHidState {
 typedef struct PhonyHidContext {
   bool is_open;
   bool is_interface_claimed;
+  int vendor_id;
+  int product_id;
   libusb_context *lusb_context;
   libusb_device_handle *device_handle;
   libusb_device *device;
@@ -54,23 +56,30 @@ typedef struct PhonyHidContext {
  * @param state
  * @return const char *label
  */
-const char *phony_state_message(int state);
-
-int phony_hid_set_offhook(struct PhonyHidContext *c, bool is_offhook);
-
-int phony_hid_update_report(struct PhonyHidContext *c);
+const char *phony_hid_state_to_str(int state);
 
 /**
- * Create a new HID client context. Be sure to also call phony_hid_open(c)
- * with the context object that was returned from this function.
+ * Create a new HID client context.
  *
- * @param vid
- * @param pid
  * @return PhonyHidContext*
  */
 struct PhonyHidContext *phony_hid_new(void);
 
-int phony_hid_open(struct PhonyHidContext *c, int vid, int pid);
+int phony_hid_set_vendor_id(struct PhonyHidContext *c, int vid);
+
+int phony_hid_set_product_id(struct PhonyHidContext *c, int pid);
+
+int phony_hid_open(struct PhonyHidContext *c);
+
+int phony_hid_close(struct PhonyHidContext *c);
+
+int phony_hid_update_report(struct PhonyHidContext *c);
+
+int phony_hid_set_offhook(struct PhonyHidContext *c, bool is_offhook);
+
+int phony_hid_set_hostavail(struct PhonyHidContext *c, bool is_hostavail);
+
+int phony_hid_reset_device(struct PhonyHidContext *c);
 
 int phony_hid_free(struct PhonyHidContext *c);
 

@@ -16,14 +16,15 @@ static void activate(GtkApplication *native_app, gpointer user_data) {
   Application *app = (Application *)user_data;
   gtk_window_set_title(GTK_WINDOW(window), app->title);
   gtk_window_set_default_size(GTK_WINDOW(window), APP_WIDTH, APP_HEIGHT);
-  // configure_terminal(GTK_WINDOW(window));
 
   // Create the PhonyContext and related view component
   PhonyContext *pc = phony_new();
   int status = phony_open_maple(pc);
-  if (status != 0) {
-    exit(status);
+  if (status != EXIT_SUCCESS) {
+    fprintf(stderr, "phony_hid_open failed, but is being ignored for "
+                    "retries\n");
   }
+
   PhoneViewContext *p = phone_view_new(pc);
 
   // Add the phone view

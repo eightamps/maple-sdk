@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define DEFAULT_TELEPHONE_DEVICE_NAME "ASI Telephone"
 
@@ -180,6 +181,13 @@ StitcherContext *stitcher_new(void) {
     return NULL;
   }
 
+  c->to_phone_device_name = DEFAULT_TELEPHONE_DEVICE_NAME;
+  c->from_phone_device_name = DEFAULT_TELEPHONE_DEVICE_NAME;
+
+  // Set the defaults on the context object, clients can replace them.
+  // strstr(&c->to_phone_device_name, DEFAULT_TELEPHONE_DEVICE_NAME);
+  // strstr(&c->from_phone_device_name, DEFAULT_TELEPHONE_DEVICE_NAME);
+
   c->to_phone = calloc(1, sizeof(StitcherOutDevice));
   if (c->to_phone == NULL) {
     log_err("stitcher unable to allocate to_phone");
@@ -251,12 +259,12 @@ static int init_from_device(StitcherContext *c, StitcherInDevice *sin,
     }
     // Get the default input device
     device = soundio_get_input_device(c->soundio, index);
-    if (strstr(device->name, DEFAULT_TELEPHONE_DEVICE_NAME) != NULL) {
+    if (strstr(device->name, c->from_phone_device_name) != NULL) {
       log_err("ASI Telephone must not be a default device");
       return ENXIO;
     }
   } else {
-    device = get_input_device_matching(c, DEFAULT_TELEPHONE_DEVICE_NAME);
+    device = get_input_device_matching(c, c->from_phone_device_name);
   }
 
   if (device == NULL) {
@@ -287,12 +295,12 @@ static int init_to_device(StitcherContext *c, StitcherOutDevice *sout,
       return ENXIO; // No such device or address.
     }
     device = soundio_get_output_device(c->soundio, index);
-    if (strstr(device->name, DEFAULT_TELEPHONE_DEVICE_NAME) != NULL) {
+    if (strstr(device->name, c->to_phone_device_name) != NULL) {
       log_err("ASI Telephone must not be a default device");
       return ENXIO;
     }
   } else {
-    device = get_output_device_matching(c, DEFAULT_TELEPHONE_DEVICE_NAME);
+    device = get_output_device_matching(c, c->to_phone_device_name);
   }
 
   if (device == NULL) {
@@ -469,14 +477,17 @@ static int config_device_pair(StitcherOutDevice *from, StitcherInDevice *to,
   return EXIT_SUCCESS;
 }
 
-int stitcher_start(StitcherContext *c) {
+void *start_thread(void *vargp) {
+  printf("stitcher start_thread\n");
+  StitcherContext *c = vargp;
   int status;
 
   if (c->soundio == NULL) {
     status = stitcher_init(c);
     if (status != EXIT_SUCCESS) {
       log_err("stitcher_start failed to automatically initialize");
-      return status;
+      c->thread_exit_status = status;
+      return NULL;
     }
   }
 
@@ -485,18 +496,25 @@ int stitcher_start(StitcherContext *c) {
   sc_to_phone->context = c;
   status = config_device_pair(c->to_phone, c->from_mic, sc_to_phone);
   if (status != EXIT_SUCCESS) {
-    return status;
+    c->thread_exit_status = status;
+    return NULL;
   }
 
   struct StitcherStreamContext *sc_from_phone = calloc(1, size);
   sc_from_phone->context = c;
   status = config_device_pair(c->to_speaker, c->from_phone, sc_from_phone);
   if (status != EXIT_SUCCESS) {
-    return status;
+    c->thread_exit_status = status;
+    return NULL;
   }
 
+  printf("stitcher about to wait on events\n");
   c->is_active = true;
-  soundio_wait_events(c->soundio);
+  while (!c->should_exit) {
+    printf("looping while waiting\n");
+    sleep(1);
+  }
+  // soundio_wait_events(c->soundio);
   c->is_active = false;
 
   // TODO(lbayes): free all audio resources here.
@@ -504,13 +522,20 @@ int stitcher_start(StitcherContext *c) {
   free(sc_to_phone);
   free(sc_from_phone);
   log_info("stitcher_start success");
-  return EXIT_SUCCESS;
+  c->thread_exit_status = EXIT_SUCCESS;
+  printf("stitcher thread ended\n");
+}
+
+int stitcher_start(StitcherContext *c) {
+  printf("before thread\n");
+  pthread_create(&c->thread_id, NULL, start_thread, c);
+  printf("after thread\n");
+  return 0;
 }
 
 int stitcher_stop(StitcherContext *c) {
-  if (c->is_active) {
-    soundio_wakeup(c->soundio);
-  }
+  printf("stitcher_stop attempting to exit thread\n");
+  c->should_exit = true;
 }
 
 static void out_device_free(StitcherOutDevice *d) {
@@ -574,6 +599,12 @@ void stitcher_free(StitcherContext *c) {
 
   free(c);
 }
+
+int stitcher_join(StitcherContext *c) {
+  pthread_join(c->thread_id, NULL);
+  return c->thread_exit_status;
+}
+
 
 /*
 void stitcher_dtmf_callback(struct SoundIoOutStream *out_stream,
