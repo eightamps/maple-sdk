@@ -33,17 +33,19 @@ static void show_status(PhoneViewContext *c, int status) {
   if (status == EXIT_SUCCESS) {
     gtk_text_buffer_set_text(b, "\n", 1);
   } else {
-    char *content = malloc(256);
-    sprintf(content, "status: %d\n", status);
-    gtk_text_buffer_set_text(b, content, strlen(content));
+    char *content = malloc(64);
+    sprintf(content, "status: %d", status);
+    size_t len = strlen(content);
+    gtk_text_buffer_set_text(b, content, len);
     free(content);
   }
 }
 
-static void dial_clicked(GtkWidget *widget, gpointer data) {
+static void dial_clicked(__attribute__((unused)) GtkWidget *widget,
+                         gpointer data) {
   PhoneViewContext *c = data;
   GtkEntryBuffer *b = gtk_entry_get_buffer(c->phone_number_view);
-  char *text = gtk_entry_buffer_get_text(b);
+  const char *text = gtk_entry_buffer_get_text(b);
   printf("dial_clicked with: %s\n", text);
 
   // int status = phony_dial(c->phony, text);
@@ -51,7 +53,8 @@ static void dial_clicked(GtkWidget *widget, gpointer data) {
   show_status(c, status);
 }
 
-static void hangup_clicked(GtkWidget *widget, gpointer data) {
+static void hangup_clicked(__attribute__((unused)) GtkWidget *widget,
+                           gpointer data) {
   PhoneViewContext *c = data;
   int status = phony_hang_up(c->phony);
   show_status(c, status);
