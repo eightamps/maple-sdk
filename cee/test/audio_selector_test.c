@@ -7,8 +7,7 @@
 #include "minunit.h"
 
 char *test_audio_selector_new(void) {
-
-
-  muAssert(0, "Expected new");
+  AudioSelectorContext *c = audio_selector_new();
+  muAssert(NULL != c, "Expect context");
   return NULL;
 }
