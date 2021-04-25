@@ -13,7 +13,7 @@
 
 PhonyContext *phony_new(void) {
   // Initialize Phony context
-  PhonyContext *c = calloc(1, sizeof(PhonyContext));
+  PhonyContext *c = calloc(sizeof(PhonyContext), 1);
   if (c == NULL) {
     return NULL;
   }

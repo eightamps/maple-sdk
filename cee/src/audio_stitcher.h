@@ -2,8 +2,8 @@
 // Created by lukebayes on 4/19/21.
 //
 
-#ifndef MAPLE_STITCHER_H
-#define MAPLE_STITCHER_H
+#ifndef MAPLE_AUDIO_STITCHER_H
+#define MAPLE_AUDIO_STITCHER_H
 
 #include <soundio/soundio.h>
 #include <pthread.h>
@@ -68,4 +68,4 @@ int stitcher_join(StitcherContext *c);
 void stitcher_dtmf_callback(struct SoundIoOutStream *out_stream,
      __attribute__((unused)) int frame_count_min, int frame_count_max);
 
-#endif // MAPLE_STITCHER_H
+#endif // MAPLE_AUDIO_STITCHER_H

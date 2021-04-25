@@ -67,7 +67,7 @@ int dtmf_dial(DtmfContext *c, const char *values, int sample_rate) {
 }
 
 struct DtmfContext *dtmf_new() {
-  DtmfContext *c = calloc(1, sizeof(DtmfContext));
+  DtmfContext *c = calloc(sizeof(DtmfContext), 1);
   if (c == NULL) {
     fprintf(stderr, "dtmf_new cannot allocate\n");
     return NULL;

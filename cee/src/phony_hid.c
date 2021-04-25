@@ -34,7 +34,7 @@ const char *phony_hid_state_to_str(int state) {
 }
 
 struct PhonyHidContext *phony_hid_new(void) {
-  struct PhonyHidContext *c = calloc(1, sizeof(struct PhonyHidContext));
+  struct PhonyHidContext *c = calloc(sizeof(struct PhonyHidContext), 1);
   if (c == NULL) {
     fprintf(stderr, "phony_hid_new unable to allocate");
     return NULL;

@@ -61,7 +61,7 @@ static void hangup_clicked(__attribute__((unused)) GtkWidget *widget,
 }
 
 struct PhoneViewContext *phone_view_new(PhonyContext *model) {
-  PhoneViewContext *c = calloc(1, sizeof(PhoneViewContext));
+  PhoneViewContext *c = calloc(sizeof(PhoneViewContext), 1);
   if (c == NULL) {
     log_err("Failed to allocate PhoneViewContext");
     return NULL;

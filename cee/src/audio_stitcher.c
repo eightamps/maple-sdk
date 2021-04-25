@@ -4,7 +4,7 @@
 
 #include "dtmf.h"
 #include "log.h"
-#include "stitcher.h"
+#include "audio_stitcher.h"
 #include <errno.h>
 #include <soundio/soundio.h>
 #include <stdio.h>
@@ -175,7 +175,7 @@ static void write_callback(struct SoundIoOutStream *out_stream,
 
 StitcherContext *stitcher_new(void) {
   StitcherContext *c = NULL;
-  c = calloc(1, sizeof(StitcherContext));
+  c = calloc(sizeof(StitcherContext), 1);
   if (c == NULL) {
     log_err("stitcher_new unable to allocate memory");
     return NULL;
@@ -188,28 +188,28 @@ StitcherContext *stitcher_new(void) {
   // strstr(&c->to_phone_device_name, DEFAULT_TELEPHONE_DEVICE_NAME);
   // strstr(&c->from_phone_device_name, DEFAULT_TELEPHONE_DEVICE_NAME);
 
-  c->to_phone = calloc(1, sizeof(StitcherOutDevice));
+  c->to_phone = calloc(sizeof(StitcherOutDevice), 1);
   if (c->to_phone == NULL) {
     log_err("stitcher unable to allocate to_phone");
     stitcher_free(c);
     return NULL;
   }
 
-  c->to_speaker = calloc(1, sizeof(StitcherOutDevice));
+  c->to_speaker = calloc(sizeof(StitcherOutDevice), 1);
   if (c->to_speaker == NULL) {
     log_err("stitcher unable to allocate to_speaker");
     stitcher_free(c);
     return NULL;
   }
 
-  c->from_phone = calloc(1, sizeof(StitcherInDevice));
+  c->from_phone = calloc(sizeof(StitcherInDevice), 1);
   if (c->from_phone == NULL) {
     log_err("stitcher unable to allocate from_phone");
     stitcher_free(c);
     return NULL;
   }
 
-  c->from_mic = calloc(1, sizeof(StitcherInDevice));
+  c->from_mic = calloc(sizeof(StitcherInDevice), 1);
   if (c->from_mic == NULL) {
     log_err("stitcher unable to allocate from_mic");
     stitcher_free(c);
@@ -492,7 +492,7 @@ void *start_thread(void *vargp) {
   }
 
   size_t size = sizeof(StitcherStreamContext);
-  struct StitcherStreamContext *sc_to_phone = calloc(1, size);
+  struct StitcherStreamContext *sc_to_phone = calloc(size, 1);
   sc_to_phone->context = c;
   status = config_device_pair(c->to_phone, c->from_mic, sc_to_phone);
   if (status != EXIT_SUCCESS) {
@@ -500,7 +500,7 @@ void *start_thread(void *vargp) {
     return NULL;
   }
 
-  struct StitcherStreamContext *sc_from_phone = calloc(1, size);
+  struct StitcherStreamContext *sc_from_phone = calloc(size, 1);
   sc_from_phone->context = c;
   status = config_device_pair(c->to_speaker, c->from_phone, sc_from_phone);
   if (status != EXIT_SUCCESS) {

@@ -16,11 +16,11 @@ set(AppSources
         src/phony.h
         src/phony_hid.c
         src/phony_hid.h
-        src/stitcher.c
-        src/stitcher.h
+        src/audio_stitcher.c
+        src/audio_stitcher.h
         src/pthread_play.c
         src/pthread_play.h
-        )
+        src/audio_selector.c src/audio_selector.h)
 
 set(GtkSources
         src/gtk/application.c
@@ -44,7 +44,7 @@ set(TestSources
         test/stitcher_test.h
         test/test_helper.c
         test/test_helper.h
-        )
+        test/audio_selector_test.c test/audio_selector_test.h)
 
 set(VendorLibs
         ${PROJECT_BINARY_DIR}/../vendor/kissfft/libkissfft-float.so
