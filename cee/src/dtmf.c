@@ -61,6 +61,7 @@ int dtmf_dial(DtmfContext *c, const char *values, int sample_rate) {
   c->sample_rate = sample_rate;
   c->entries = malloc(values_count + 1);
   strcpy(c->entries, values);
+  c->is_active = true;
 
   return EXIT_SUCCESS;
 }
@@ -104,7 +105,12 @@ static float get_sample_for(float freq_1, float freq_2, float sample_rate,
   return sample;
 }
 
-float dtmf_next_sample(DtmfContext *c) {
+int dtmf_next_sample(DtmfContext *c, float **sample) {
+  if (!c->is_active) {
+    log_err("dtmf_next_sample must follow dtmf_dial call");
+    return -EINVAL;
+  }
+
   if (c->duration_ms == 0) {
     configure_dtmf(c);
   }
@@ -113,31 +119,35 @@ float dtmf_next_sample(DtmfContext *c) {
   // TODO(lbayes): Should return something else to end signal.
   if (c->sample_index >= c->sample_count) {
     c->is_complete = true;
-    return 0.0f;
+    **sample = 0.0f;
+    return 0;
   }
 
   int entry_index = c->sample_index / (c->entry_sample_count +
-      c->padding_sample_count);
+                                       c->padding_sample_count);
   int entry_location = c->sample_index % (c->entry_sample_count +
-      c->padding_sample_count);
+                                          c->padding_sample_count);
 
   // We're inside of a padding block
   if (entry_location > c->entry_sample_count) {
     c->sample_index++;
-    return 0.0f;
+    **sample = 0.0f;
+    return 0;
   }
 
   // We're inside of an entry, get the DTMF signal sample
   int entry = (int)c->entries[entry_index];
   DtmfToneInfo *tones = get_tone_info(entry);
-  float sample = get_sample_for(
+  float result = get_sample_for(
       (float)tones->tone1,
       (float)tones->tone2,
       (float)c->sample_rate,
       (float)c->sample_index);
-
+  *sample = &result;
+  // printf("RESULT: %.6f\n", result);
+  // printf("SAMPLE: %.6f\n", **sample);
   c->sample_index++;
-  return sample;
+  return EXIT_SUCCESS;
 }
 
 void dtmf_free(DtmfContext *c) {

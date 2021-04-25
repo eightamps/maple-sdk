@@ -42,7 +42,7 @@ char *test_phony_hid_new(void) {
 // bus. It's not clear to me (yet) how best to stub libusb services in C.
 char *test_phony_hid_open(void) {
   PhonyHidContext *c = phony_hid_new();
-  int status = phony_hid_open(c, EIGHT_AMPS_VID, MAPLE_V3_PID);
+  int status = phony_hid_open(c);
   muAssert(status >= 0, "Expected valid status from phony_hid_open");
   muAssert(c->is_open, "Expected is_open");
 

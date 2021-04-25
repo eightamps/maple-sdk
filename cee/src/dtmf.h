@@ -19,6 +19,7 @@ typedef struct DtmfContext {
   int sample_count;
   int sample_index;
   int sample_rate;
+  bool is_active;
   bool is_complete;
   char *entries;
 }DtmfContext;
@@ -47,7 +48,7 @@ int dtmf_dial(DtmfContext *c, const char *values, int sample_rate);
  * @param DtmfContext*: The context for samples.
  * @return float: The current sample value.
  */
-float dtmf_next_sample(DtmfContext *c);
+int dtmf_next_sample(DtmfContext *c, float **sample);
 
 /**
  * Free the provided context object.

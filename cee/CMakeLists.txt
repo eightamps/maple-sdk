@@ -42,6 +42,8 @@ set(TestSources
         test/phony_test.h
         test/stitcher_test.c
         test/stitcher_test.h
+        test/test_helper.c
+        test/test_helper.h
         )
 
 set(VendorLibs
@@ -57,6 +59,8 @@ link_libraries(
         m
         pthread
         )
+
+add_executable(example-one src/soundio_main.c)
 
 add_library(maple-dev STATIC ${AppSources})
 add_executable(maple src/main.c ${AppSources} ${VendorLibs})

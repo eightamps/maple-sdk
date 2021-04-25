@@ -12,7 +12,7 @@ char *allTests(void) {
 
   // Stitcher tests
   muRunTest(test_stitcher_new);
-  // muRunTest(test_stitcher_init);
+  muRunTest(test_stitcher_init);
 
   // FFT tests
   muRunTest(test_fft_empty);
@@ -20,10 +20,11 @@ char *allTests(void) {
   muRunTest(test_fft_sine);
 
   // DTMF tests
+  muRunTest(test_dtmf_duration_multiple);
+  muRunTest(test_dtmf_duration_single);
+  muRunTest(test_dtmf_next_sample_without_dial);
   muRunTest(test_dtmf_null_numbers);
   muRunTest(test_dtmf_empty_numbers);
-  muRunTest(test_dtmf_duration_single);
-  muRunTest(test_dtmf_duration_multiple);
   muRunTest(test_dtmf_sample_count);
   muRunTest(test_dtmf_sample_multiple);
   muRunTest(test_dtmf_large_sample_rate);
@@ -33,8 +34,8 @@ char *allTests(void) {
   muRunTest(test_dtmf_entry_and_padding);
 
   // Phony tests
-  // muRunTest(test_phony_callable);
-  // muRunTest(test_phony_report);
+  muRunTest(test_phony_callable);
+  muRunTest(test_phony_report);
 
   // PhoneView tests
   // TODO(lbayes): Running the following test throws errors in console, need
@@ -44,7 +45,7 @@ char *allTests(void) {
   // PhonyHid tests
   muRunTest(test_phony_hid_state);
   muRunTest(test_phony_hid_new);
-  muRunTest(test_phony_hid_open);
+  // muRunTest(test_phony_hid_open); // TODO(lbayes): mock the service
 
   return NULL;
 }

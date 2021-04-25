@@ -93,8 +93,9 @@ int phony_dial(PhonyContext *c, const char *numbers) {
     }
 
     // We have a potentially valid input string, send to DTMF for configuration.
-    // DtmfContext *dc = dtmf_new(numbers, sample_rate);
-    DtmfContext *dc = c->dtmf_context;
+    // DtmfContext *dc = dtmf_new();
+    // DtmfContext *dc = c->dtmf_context;
+     printf("TODO(lbayes): FIGURE OUT WHERE TO INSTANTIATE DTMF\n");
     status = dtmf_dial(dc, numbers, sample_rate);
     if (status < 0) {
       fprintf(stderr, "phony_dial failed in dtmf_dial\n");

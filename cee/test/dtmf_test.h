@@ -7,6 +7,7 @@
 
 char *test_dtmf_null_numbers(void);
 char *test_dtmf_empty_numbers(void);
+char *test_dtmf_next_sample_without_dial(void);
 char *test_dtmf_duration_single(void);
 char *test_dtmf_duration_multiple(void);
 char *test_dtmf_sample_count(void);
