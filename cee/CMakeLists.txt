@@ -10,8 +10,6 @@ include_directories(vendor/kissfft)
 set(AppSources
         src/dtmf.c
         src/dtmf.h
-        src/libusb_helper.c
-        src/libusb_helper.h
         src/phony.c
         src/phony.h
         src/phony_hid.c
@@ -46,7 +44,7 @@ set(TestSources
         test/stitcher_test.h
         test/test_helper.c
         test/test_helper.h
-        )
+        test/stitch_test.c test/stitch_test.h)
 
 set(VendorLibs
         ${PROJECT_BINARY_DIR}/../vendor/kissfft/libkissfft-float.so
@@ -63,10 +61,10 @@ link_libraries(
         )
 
 
-add_executable(soundio_example src/soundio_example.c ${VendorLibs})
+add_executable(soundio_example src/main_soundio_example.c ${VendorLibs})
 
 add_library(maple-dev STATIC ${AppSources})
-add_executable(stitch_example src/stitch_example.c ${AppSources})
+add_executable(stitch_example src/main_stitch_example.c ${AppSources})
 add_executable(maple src/main.c ${AppSources} ${VendorLibs})
 add_executable(maple-test test/test_main.c
         ${AppSources}

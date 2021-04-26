@@ -42,8 +42,10 @@ char *test_dtmf_duration_single(void) {
   dtmf_dial(c, "5", DTMF_TEST_SAMPLE_RATE);
   float *sample;
   int status = dtmf_next_sample(c, &sample);
+
+  int floats_match = floats_match_as_str(*sample, 0.0f);
   muAssert(status == 0, "Expected success");
-  muAssert(*sample == 0.0f, "Expected zero sample");
+  muAssert(floats_match == 0, "Expected zero sample");
   muAssert(c->duration_ms == 250, "Expected duration");
   dtmf_free(c);
   return NULL;

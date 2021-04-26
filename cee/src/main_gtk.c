@@ -9,16 +9,17 @@
 static const char *APP_TITLE = "Demo App";
 
 int main(int argc, char *argv[]) {
-  printf("Configuring Application\n");
-  Application *app = application_new();
+  printf("Configuring ApplicationContext\n");
+  ApplicationContext *app = application_new();
   memcpy(app->title, APP_TITLE, strlen(APP_TITLE) + 1);
-  printf("Running Application\n");
+  printf("Running ApplicationContext\n");
   int status = application_run(app, argc, argv);
   application_free(app);
+
   if (status == 0) {
-    printf("Exiting Application with status: 0 (SUCCESS)\n");
+    printf("Exiting ApplicationContext with status: 0 (SUCCESS)\n");
   } else {
-    printf("ERROR: Application exiting with status: %d (FAILURE)\n", status);
+    printf("ERROR: ApplicationContext exiting with status: %d (FAILURE)\n", status);
   }
   return status;
 

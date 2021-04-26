@@ -3,12 +3,11 @@
 //
 
 #include "stitch.h"
+#include "log.h"
 #include <soundio/soundio.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
 
 static int min_int(int a, int b) {
   return (a < b) ? a : b;
@@ -17,23 +16,34 @@ static int min_int(int a, int b) {
 StitchContext *stitch_new(void) {
   StitchContext *c = calloc(sizeof(StitchContext), 1);
   if (c == NULL) {
-    fprintf(stderr, "stitch_new failed to allocate memory\n");
+    log_err("stitch_new failed to allocate memory");
     return NULL;
   }
-  c->backend = SoundIoBackendAlsa;
-  c->input_latency = 0.02;
+  c->is_initialized = false;
+  c->backend = SoundIoBackendNone;
+  c->input_latency = 0.02; // 20ms
+  return c;
+}
+
+StitchContext *stitch_new_linux(void) {
+  StitchContext *c = stitch_new();
+  if (c == NULL) {
+    return c;
+  }
+
+  // c->backend = SoundIoBackendAlsa;
   return c;
 }
 
 static void read_callback(struct SoundIoInStream *instream, int frame_count_min, int frame_count_max) {
   StitchContext *c = instream->userdata;
   if (c == NULL) {
-    fprintf(stderr, "read_callback unable to get StitchContext\n");
+    log_err("read_callback unable to get StitchContext");
     return;
   }
 
-  printf("<< read_callback with min: %d and max: %d\n", frame_count_min,
-         frame_count_max);
+  // log_info("<< read_callback with min: %d and max: %d", frame_count_min,
+         // frame_count_max);
 
   struct SoundIoRingBuffer *ring_buffer = c->ring_buffer;
   struct SoundIoChannelArea *areas;
@@ -43,7 +53,7 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
   int free_count = free_bytes / instream->bytes_per_frame;
 
   if (frame_count_min > free_count) {
-    fprintf(stderr, "ring buffer overflow\n");
+    log_err("ring buffer overflow");
     return;
   }
 
@@ -54,7 +64,7 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
     int frame_count = frames_left;
 
     if ((err = soundio_instream_begin_read(instream, &areas, &frame_count))) {
-      fprintf(stderr, "begin read error: %s\n", soundio_strerror(err));
+      log_err("begin read error: %s", soundio_strerror(err));
       return;
     }
 
@@ -66,7 +76,7 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
       // Due to an overflow there is a hole. Fill the ring buffer with
       // silence for the size of the hole.
       memset(write_ptr, 0, frame_count * instream->bytes_per_frame);
-      fprintf(stderr, "Dropped %d frames due to internal overflow\n", frame_count);
+      log_err("Dropped %d frames due to internal overflow", frame_count);
     } else {
       for (int frame = 0; frame < frame_count; frame += 1) {
         for (int ch = 0; ch < instream->layout.channel_count; ch += 1) {
@@ -78,7 +88,7 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
     }
 
     if ((err = soundio_instream_end_read(instream))) {
-      fprintf(stderr, "end read error: %s\n", soundio_strerror(err));
+      log_err("end read error: %s", soundio_strerror(err));
       return;
     }
 
@@ -96,12 +106,12 @@ static void write_callback(struct SoundIoOutStream *outstream,
     int frame_count_min, int frame_count_max) {
   StitchContext *c = outstream->userdata;
   if (c == NULL) {
-    fprintf(stderr, "write_callback unable to get StitchContext\n");
+    log_err("write_callback unable to get StitchContext");
     return;
   }
 
-  fprintf(stderr, ">> write_callback with min %d and max: %d\n",
-          frame_count_min, frame_count_max);
+  // log_err(">> write_callback with min %d and max: %d",
+          // frame_count_min, frame_count_max);
 
   struct SoundIoRingBuffer *ring_buffer = c->ring_buffer;
   struct SoundIoChannelArea *areas;
@@ -123,7 +133,7 @@ static void write_callback(struct SoundIoOutStream *outstream,
       }
       status = soundio_outstream_begin_write(outstream, &areas, &frame_count);
       if (status) {
-        fprintf(stderr, "begin write error: %s\n", soundio_strerror(status));
+        log_err("begin write error: %s", soundio_strerror(status));
         return;
       }
 
@@ -140,7 +150,7 @@ static void write_callback(struct SoundIoOutStream *outstream,
 
       status = soundio_outstream_end_write(outstream);
       if (status) {
-        fprintf(stderr, "end write error: %s\n", soundio_strerror(status));
+        log_err("end write error: %s", soundio_strerror(status));
         return;
       }
 
@@ -156,7 +166,7 @@ static void write_callback(struct SoundIoOutStream *outstream,
 
     status = soundio_outstream_begin_write(outstream, &areas, &fframe_count);
     if (status) {
-      fprintf(stderr, "begin write error: %s\n", soundio_strerror(status));
+      log_err("begin write error: %s", soundio_strerror(status));
     }
 
     if (fframe_count <= 0) {
@@ -173,7 +183,7 @@ static void write_callback(struct SoundIoOutStream *outstream,
 
     status = soundio_outstream_end_write(outstream);
     if (status) {
-      fprintf(stderr, "end write error: %s\n", soundio_strerror(status));
+      log_err("end write error: %s", soundio_strerror(status));
       return;
     }
 
@@ -187,24 +197,24 @@ static void write_callback(struct SoundIoOutStream *outstream,
 static void underflow_callback(struct SoundIoOutStream *outstream) {
   static int count = 0;
   StitchContext *c = outstream->userdata;
-  fprintf(stderr, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> underflow "
-                  "count: %d on stream id: %ld\n", ++count, c->thread_id);
+  log_err("stitch write_underflow count: %d on stream id: %ld", ++count,
+          c->thread_id);
 }
 
-static void *stitch_start_thread(void *vargp) {
-  StitchContext *c = vargp;
+int stitch_init(StitchContext *c) {
+  int status = EXIT_SUCCESS;
+  if (c == NULL) {
+    log_err("stitch_init requires a non-null context");
+    return -EINVAL;
+  }
 
   struct SoundIo *soundio = soundio_create();
 
   if (!soundio) {
-    fprintf(stderr, "out of memory\n");
+    log_err("out of memory");
     c->thread_exit_status = -ENOMEM;
     return NULL;
   }
-
-  c->soundio = soundio;
-
-  int status;
 
   if (c->backend == SoundIoBackendNone) {
     status = soundio_connect(soundio);
@@ -212,11 +222,26 @@ static void *stitch_start_thread(void *vargp) {
     status = soundio_connect_backend(soundio, c->backend);
   }
   if (status != EXIT_SUCCESS) {
-    fprintf(stderr, "stitch_start failed to connect soundio with: %s\n",
+    log_err("stitch_init failed to connect soundio with: %s",
             soundio_strerror(status));
   }
 
   soundio_flush_events(soundio);
+  c->soundio = soundio;
+  c->is_initialized = true;
+
+  return status;
+}
+
+static void *stitch_start_thread(void *vargp) {
+  StitchContext *c = vargp;
+  int status = stitch_init(c);
+  if (status != EXIT_SUCCESS) {
+    return status;
+  }
+
+  struct SoundIo *soundio = c->soundio;
+
 
   int in_device_index;
   if (c->in_device_id) {
@@ -233,15 +258,14 @@ static void *stitch_start_thread(void *vargp) {
       soundio_device_unref(device);
     }
     if (!found) {
-      fprintf(stderr, "Invalid input device id: %s\n", c->in_device_id);
+      log_err("Invalid input device id: %s", c->in_device_id);
       c->thread_exit_status = -EINVAL;
       return NULL;
     }
   } else {
     int default_in_device_index = soundio_default_input_device_index(soundio);
     if (default_in_device_index < 0) {
-      fprintf(stderr, "No default input device found, try specifying a device"
-                      " id.\n");
+      log_err("No default input device found, try specifying a device id.");
       c->thread_exit_status = -EINVAL;
       return NULL;
     }
@@ -265,14 +289,14 @@ static void *stitch_start_thread(void *vargp) {
       soundio_device_unref(device);
     }
     if (!found) {
-      fprintf(stderr, "Invalid output device id: %s\n", c->out_device_id);
+      log_err("Invalid output device id: %s", c->out_device_id);
       c->thread_exit_status = -EINVAL;
       return NULL;
     }
   } else {
     int default_out_device_index = soundio_default_output_device_index(soundio);
     if (default_out_device_index < 0) {
-      fprintf(stderr, "No default output device found\n");
+      log_err("No default output device found");
     }
 
     out_device_index = default_out_device_index;
@@ -281,7 +305,7 @@ static void *stitch_start_thread(void *vargp) {
   struct SoundIoDevice *out_device = soundio_get_output_device(soundio,
                                                                out_device_index);
   if (!out_device) {
-    fprintf(stderr, "could not get output device: out of memory\n");
+    log_err("could not get output device: out of memory");
     c->thread_exit_status = -ENOMEM;
     return NULL;
   }
@@ -289,13 +313,13 @@ static void *stitch_start_thread(void *vargp) {
   struct SoundIoDevice *in_device = soundio_get_input_device(soundio,
                                                              in_device_index);
   if (!in_device) {
-    fprintf(stderr, "could not get input device: out of memory\n");
+    log_err("could not get input device: out of memory");
     c->thread_exit_status = -ENOMEM;
     return NULL;
   }
 
-  printf("stitch input device name: %s\n", in_device->name);
-  printf("stitch output device name: %s\n", out_device->name);
+  log_info("stitch input device name: %s", in_device->name);
+  log_info("stitch output device name: %s", out_device->name);
 
   soundio_device_sort_channel_layouts(out_device);
   const struct SoundIoChannelLayout *layout = soundio_best_matching_channel_layout(
@@ -303,7 +327,7 @@ static void *stitch_start_thread(void *vargp) {
       in_device->layouts, in_device->layout_count);
 
   if (!layout) {
-    fprintf(stderr, "channel layouts not compatible\n");
+    log_err("channel layouts not compatible");
     c->thread_exit_status = -ENOMEM;
     return NULL;
   }
@@ -317,14 +341,14 @@ static void *stitch_start_thread(void *vargp) {
   }
 
   if (!*sample_rate) {
-    fprintf(stderr, "incompatible sample rates\n");
+    log_err("incompatible sample rates");
     // TODO(lbayes): Consider resampling input to a supported output in this
     //  case...
     c->thread_exit_status = -EINVAL;
     return NULL;
   }
 
-  printf("Starting with sample_rate: %d\n", *sample_rate);
+  log_info("Starting with sample_rate: %d", *sample_rate);
 
   enum SoundIoFormat *fmt;
   for (fmt = prioritized_formats; *fmt != SoundIoFormatInvalid; fmt += 1) {
@@ -334,14 +358,14 @@ static void *stitch_start_thread(void *vargp) {
     }
   }
   if (*fmt == SoundIoFormatInvalid) {
-    fprintf(stderr, "incompatible sample formats\n");
+    log_err("incompatible sample formats");
     c->thread_exit_status = -EINVAL;
     return NULL;
   }
 
   struct SoundIoInStream *instream = soundio_instream_create(in_device);
   if (!instream) {
-    fprintf(stderr, "No instream found\n");
+    log_err("No instream found");
     c->thread_exit_status = -EINVAL;
     return NULL;
   }
@@ -353,15 +377,14 @@ static void *stitch_start_thread(void *vargp) {
   instream->read_callback = read_callback;
 
   if ((status = soundio_instream_open(instream))) {
-    fprintf(stderr, "unable to open input stream: %s\n",
-            soundio_strerror(status));
+    log_err("unable to open input stream: %s", soundio_strerror(status));
     c->thread_exit_status = -EINVAL;
     return NULL;
   }
 
   struct SoundIoOutStream *outstream = soundio_outstream_create(out_device);
   if (!outstream) {
-    fprintf(stderr, "out of memory\n");
+    log_err("out of memory");
     c->thread_exit_status = -ENOMEM;
     return NULL;
   }
@@ -376,7 +399,7 @@ static void *stitch_start_thread(void *vargp) {
   status = soundio_outstream_open(outstream);
   if (status) {
     const char *msg = soundio_strerror(status);
-    fprintf(stderr, "unable to open output stream: %s\n", msg);
+    log_err("unable to open output stream: %s", msg);
     c->thread_exit_status = -EINVAL;
     return NULL;
   }
@@ -388,14 +411,14 @@ static void *stitch_start_thread(void *vargp) {
                  // instream->bytes_per_frame;
   c->ring_buffer = soundio_ring_buffer_create(soundio, capacity);
 
-  printf("Creating ring_buffer with latency %fs and capacity: %d and "
-         " bytes_per_frame: %d\n",
+  log_info("Creating ring_buffer with latency %fs and capacity: %d and "
+         " bytes_per_frame: %d",
          c->input_latency, capacity, instream->bytes_per_frame);
 
-  printf("outstream->bytes_per_frame: %d\n", outstream->bytes_per_frame);
+  log_info("outstream->bytes_per_frame: %d", outstream->bytes_per_frame);
 
   if (!c->ring_buffer) {
-    fprintf(stderr, "unable to create ring buffer: out of memory\n");
+    log_err("unable to create ring buffer: out of memory");
     return NULL;
   }
 
@@ -407,18 +430,18 @@ static void *stitch_start_thread(void *vargp) {
   soundio_ring_buffer_advance_write_ptr(c->ring_buffer, fill_count);
 
   if ((status = soundio_instream_start(instream))) {
-    fprintf(stderr, "unable to stitch_start input device: %s\n",
+    log_err("unable to stitch_start input device: %s",
        soundio_strerror(status));
     return NULL;
   }
 
   if ((status = soundio_outstream_start(outstream))) {
-    fprintf( stderr, "unable to stitch_start output device: %s\n",
-       soundio_strerror(status));
+    log_err("unable to stitch_start output device: %s",
+            soundio_strerror(status));
   }
 
   c->is_active = true;
-  printf("stitch starting now\n");
+  log_info("stitch starting now");
 
   while (c->is_active == true) {
     soundio_wait_events(soundio);
@@ -428,7 +451,6 @@ static void *stitch_start_thread(void *vargp) {
   soundio_instream_destroy(instream);
   soundio_device_unref(in_device);
   soundio_device_unref(out_device);
-  soundio_destroy(soundio);
   return NULL;
 }
 
@@ -438,8 +460,7 @@ int stitch_join(StitchContext *c) {
 }
 
 int stitch_start(StitchContext *c) {
-  pthread_create(&c->thread_id, NULL, stitch_start_thread, c);
-  return EXIT_SUCCESS;
+  return pthread_create(&c->thread_id, NULL, stitch_start_thread, c);
 }
 
 int stitch_stop(StitchContext *c) {
@@ -451,6 +472,9 @@ void stitch_free(StitchContext *c) {
   if (c != NULL) {
     if (c->is_active) {
       stitch_stop(c);
+    }
+    if (c->soundio != NULL) {
+      soundio_destroy(c->soundio);
     }
     free(c);
   }
@@ -474,6 +498,6 @@ enum SoundIoBackend stitch_get_backend_from_label(char *label) {
     return SoundIoBackendWasapi;
   }
 
-  fprintf(stderr, "Invalid backend: %s\n", label);
+  log_err("Invalid backend: %s", label);
   return -EINVAL;
 }

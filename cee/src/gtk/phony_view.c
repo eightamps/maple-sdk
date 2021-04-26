@@ -48,8 +48,7 @@ static void dial_clicked(__attribute__((unused)) GtkWidget *widget,
   const char *text = gtk_entry_buffer_get_text(b);
   printf("dial_clicked with: %s\n", text);
 
-  int status = phony_dial(c->phony, text);
-  show_status(c, status);
+  show_status(c, phony_dial(c->phony, text));
 }
 
 static void hangup_clicked(__attribute__((unused)) GtkWidget *widget,
@@ -59,6 +58,26 @@ static void hangup_clicked(__attribute__((unused)) GtkWidget *widget,
   show_status(c, status);
 }
 
+static void phony_state_changed_handler(void *varg) {
+  PhoneViewContext *c = varg;
+  GtkWidget *dial_btn = c->dial_btn;
+  GtkWidget *hang_up_btn = c->hang_up_btn;
+
+  PhonyContext *pc = c->phony;
+  switch (pc->state) {
+  case PHONY_LINE_IN_USE:
+    gtk_widget_set_visible(dial_btn, FALSE);
+    gtk_widget_set_visible(hang_up_btn, TRUE);
+    break;
+  case PHONY_READY:
+    gtk_widget_set_visible(dial_btn, TRUE);
+    gtk_widget_set_visible(hang_up_btn, FALSE);
+    break;
+  case PHONY_NOT_READY:
+    break;
+  }
+}
+
 struct PhoneViewContext *phone_view_new(PhonyContext *model) {
   PhoneViewContext *c = calloc(sizeof(PhoneViewContext), 1);
   if (c == NULL) {
@@ -66,7 +85,10 @@ struct PhoneViewContext *phone_view_new(PhonyContext *model) {
     return NULL;
   }
 
+  phony_set_state_changed(model, phony_state_changed_handler, c);
+
   c->phony = model;
+
   int padding = 2;
 
   GtkBox *box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
@@ -118,12 +140,12 @@ struct PhoneViewContext *phone_view_new(PhonyContext *model) {
 
   GtkEntry *entry = GTK_ENTRY(gtk_entry_new());
   GtkButton *dial_btn = GTK_BUTTON(gtk_button_new_with_label("Dial"));
-  GtkButton *hangup_btn = GTK_BUTTON(gtk_button_new_with_label("Hang Up"));
+  GtkButton *hang_up_btn = GTK_BUTTON(gtk_button_new_with_label("Hang Up"));
 
   gtk_box_pack_start(row_5, GTK_WIDGET(entry), gtk_true(), gtk_true(), padding);
   gtk_box_pack_start(row_5, GTK_WIDGET(dial_btn), gtk_true(), gtk_true(),
                                       padding);
-  gtk_box_pack_start(row_5, GTK_WIDGET(hangup_btn), gtk_true(), gtk_true(),
+  gtk_box_pack_start(row_5, GTK_WIDGET(hang_up_btn), gtk_true(), gtk_true(),
                      padding);
 
   GtkTextView *message_view = GTK_TEXT_VIEW(gtk_text_view_new());
@@ -132,6 +154,8 @@ struct PhoneViewContext *phone_view_new(PhonyContext *model) {
   gtk_box_pack_start(row_6, GTK_WIDGET(message_view), gtk_true(), gtk_true(),
                      padding);
   c->message_view = message_view;
+  c->dial_btn = dial_btn;
+  c->hang_up_btn = hang_up_btn;
 
   g_signal_connect(btn_1, "clicked", G_CALLBACK(num_clicked), c);
   g_signal_connect(btn_2, "clicked", G_CALLBACK(num_clicked), c);
@@ -147,7 +171,7 @@ struct PhoneViewContext *phone_view_new(PhonyContext *model) {
   g_signal_connect(btn_hash, "clicked", G_CALLBACK(num_clicked), c);
 
   g_signal_connect(dial_btn, "clicked", G_CALLBACK(dial_clicked), c);
-  g_signal_connect(hangup_btn, "clicked", G_CALLBACK(hangup_clicked), c);
+  g_signal_connect(hang_up_btn, "clicked", G_CALLBACK(hangup_clicked), c);
   c->phone_number_view = entry;
 
   gtk_entry_set_text(entry, DEFAULT_8A_PHONE_NUMBER);

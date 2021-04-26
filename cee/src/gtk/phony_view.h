@@ -13,6 +13,8 @@ typedef struct PhoneViewContext {
   GtkWidget *widget;
   GtkEntry *phone_number_view;
   GtkTextView *message_view;
+  GtkButton *dial_btn;
+  GtkButton *hang_up_btn;
 }PhoneViewContext;
 
 struct PhoneViewContext *phone_view_new(PhonyContext *model);

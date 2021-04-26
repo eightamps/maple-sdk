@@ -5,25 +5,18 @@
 #ifndef MAPLE_APPLICATION_H
 #define MAPLE_APPLICATION_H
 
-//
-// Created by lukebayes on 4/15/21.
-//
-
-#ifndef FIR_APPLICATION_H
-#define FIR_APPLICATION_H
+#include <phony.h>
 
 #define APP_TITLE_LEN 256
 
-typedef struct Application {
+typedef struct ApplicationContext {
   char title[APP_TITLE_LEN];
   void *native_app;
-}Application;
+  PhonyContext *phony_context;
+} ApplicationContext;
 
-Application *application_new(void);
-int application_run(Application *app, int argc, char *argv[]);
-void application_free(Application *app);
-
-#endif //FIR_APPLICATION_H
-
+ApplicationContext *application_new(void);
+int application_run(ApplicationContext *app, int argc, char *argv[]);
+void application_free(ApplicationContext *app);
 
 #endif //MAPLE_APPLICATION_H

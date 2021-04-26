@@ -7,16 +7,18 @@
 #include "string.h"
 
 int floats_match_as_str(float a, float b) {
-  char a_str[10];
-  char b_str[10];
+  const size_t len = 6;
+  char a_str[len];
+  char b_str[len];
 
-  sprintf(a_str, "%.3f", a);
-  sprintf(b_str, "%.3f", b);
+  snprintf(a_str, len, "%.3f", a);
+  snprintf(b_str, len, "%.3f", b);
 
-  int result = strcmp(a_str, b_str);
+  int result = strncmp(a_str, b_str, len);
   if (0 != result) {
     fprintf(stderr, "floats_match_as_str failed with a: %s vs b: %s\n", a_str,
             b_str);
   }
+
   return result;
 }

@@ -38,26 +38,35 @@ static int prioritized_sample_rates[] = {
     96000,
 };
 
+typedef struct StitchDevice {
+  int index;
+  char *id;
+  char *name;
+}StitchDevice;
+
 typedef struct StitchContext {
   struct SoundIo *soundio;
   pthread_t thread_id;
   int thread_exit_status;
   float input_latency;
+  bool is_initialized;
   bool is_active;
   bool in_raw;
   bool out_raw;
   enum SoundIoBackend backend;
   char *in_device_id;
   char *out_device_id;
+  char *in_device_blocklist;
+  char *out_device_blocklist;
   struct SoundIoRingBuffer *ring_buffer;
 }StitchContext;
 
 StitchContext *stitch_new(void);
+int stitch_init(StitchContext *c);
 int stitch_start(StitchContext *c);
 int stitch_stop(StitchContext *c);
 int stitch_join(StitchContext *c);
 void stitch_free(StitchContext *c);
 enum SoundIoBackend stitch_get_backend_from_label(char *label);
-
 
 #endif //MAPLE_STITCH_H

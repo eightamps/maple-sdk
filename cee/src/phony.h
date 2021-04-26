@@ -6,16 +6,39 @@
 #define MAPLE_PHONY_H
 
 #include "phony_hid.h"
-#include "stitcher.h"
+#include "stitch.h"
 #include "dtmf.h"
+
+
+typedef enum PhonyState {
+  PHONY_NOT_READY = 0,
+  PHONY_READY,
+  PHONY_OFF_HOOK,
+  PHONY_RINGING,
+  PHONY_LINE_NOT_FOUND,
+  PHONY_LINE_IN_USE,
+  PHONY_HOST_NOT_FOUND,
+}PhonyState;
+
+
+typedef void (*phony_state_changed)(void *varg);
 
 /**
  * Represents a telephone connection.
  */
 typedef struct PhonyContext {
+  PhonyState state;
+  phony_state_changed state_changed;
+  void *userdata;
   PhonyHidContext *hid_context;
   DtmfContext  *dtmf_context;
-  StitcherContext *stitcher_context;
+  StitchContext *to_phone;
+  StitchContext *from_phone;
+
+
+  //StitcherContext *stitcher_context;
+  pthread_t thread_id;
+  bool is_looping;
 }PhonyContext;
 
 /**
@@ -62,10 +85,26 @@ int phony_take_off_hook(PhonyContext *phony);
 int phony_hang_up(PhonyContext *phony);
 
 /**
+ * Set a callback that will be called whenever the PhonyContext state changes.
+ * @param *PhonyContext
+ * @param *phony_state_changed
+ * @return int Status code
+ */
+int phony_set_state_changed(PhonyContext *c, phony_state_changed callback,
+                            void *userdata);
+
+/**
  * Close down and free the provided telephone connection.
  * @param PhonyContext*
  * @return void
  */
 void phony_free(PhonyContext *c);
+
+/**
+ * Get a human readable label from an Phony state value.
+ * @param state
+ * @return const char *label
+ */
+const char *phony_state_to_str(int state);
 
 #endif //MAPLE_PHONY_H

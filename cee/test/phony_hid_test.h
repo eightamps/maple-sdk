@@ -8,6 +8,7 @@
 char *test_phony_hid_state(void);
 char *test_phony_hid_new(void);
 char *test_phony_hid_open(void);
+char *test_struct_transform(void);
 
 
 #endif // MAPLE_PHONY_HID_TEST_H
