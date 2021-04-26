@@ -5,14 +5,10 @@
 #include "phony_hid_test.h"
 #include "phony_test.h"
 #include "stitcher_test.h"
-#include "audio_selector_test.h"
 
 char *allTests(void) {
   // Begin the test suite
   muSuiteStart();
-
-  // Audio Selector tests
-  muRunTest(test_audio_selector_new);
 
   // Stitcher tests
   muRunTest(test_stitcher_new);

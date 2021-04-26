@@ -512,7 +512,7 @@ int libusb_help_me(void) {
     goto out;
   }
 
-  // App features start here:
+  // App features stitch_start here:
   r = set_hostavail(ctx, 1);
   if (r < 0) {
     goto out;

@@ -2,7 +2,7 @@
 // Created by lukebayes on 4/21/21.
 //
 #include "minunit.h"
-#include "audio_stitcher.h"
+#include "stitcher.h"
 #include "stitcher_test.h"
 #include <stdbool.h>
 

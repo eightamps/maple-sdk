@@ -199,7 +199,7 @@ int main(int argc, char **argv) {
   bool in_raw = false;
   bool out_raw = false;
 
-  double microphone_latency = 0.1; // seconds
+  double microphone_latency = 0.2; // seconds
 
   for (int i = 1; i < argc; i += 1) {
     char *arg = argv[i];
@@ -354,7 +354,7 @@ int main(int argc, char **argv) {
   outstream->format = *fmt;
   outstream->sample_rate = *sample_rate;
   outstream->layout = *layout;
-  outstream->software_latency = microphone_latency / 2;
+  outstream->software_latency = microphone_latency;
   outstream->write_callback = write_callback;
   outstream->underflow_callback = underflow_callback;
 

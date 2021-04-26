@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include "application.h"
 #include "phony.h"
-#include "phone_view.h"
+#include "phony_view.h"
 
 #define APP_WIDTH 300
 #define APP_HEIGHT 400

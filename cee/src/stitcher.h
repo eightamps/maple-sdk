@@ -2,8 +2,8 @@
 // Created by lukebayes on 4/19/21.
 //
 
-#ifndef MAPLE_AUDIO_STITCHER_H
-#define MAPLE_AUDIO_STITCHER_H
+#ifndef MAPLE_STITCHER_H
+#define MAPLE_STITCHER_H
 
 #include <soundio/soundio.h>
 #include <pthread.h>
@@ -51,10 +51,11 @@ typedef void (StitcherCallback)(struct SoundIoOutStream *out_stream,
 
 StitcherContext *stitcher_new(void);
 int stitcher_init(StitcherContext *c);
+
 int stitcher_start(StitcherContext *c);
 int stitcher_stop(StitcherContext *c);
-void stitcher_free(StitcherContext *c);
 int stitcher_join(StitcherContext *c);
+void stitcher_free(StitcherContext *c);
 
 /**
  * This is a specific implementation of a Soundio device stream callback that
@@ -68,4 +69,4 @@ int stitcher_join(StitcherContext *c);
 void stitcher_dtmf_callback(struct SoundIoOutStream *out_stream,
      __attribute__((unused)) int frame_count_min, int frame_count_max);
 
-#endif // MAPLE_AUDIO_STITCHER_H
+#endif // MAPLE_STITCHER_H

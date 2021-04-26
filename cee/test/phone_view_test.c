@@ -3,7 +3,7 @@
 //
 
 #include "phone_view_test.h"
-#include "gtk/phone_view.h"
+#include "gtk/phony_view.h"
 #include "minunit.h"
 
 char *test_phone_view_new(void) {

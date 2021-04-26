@@ -4,7 +4,7 @@
 
 #include "dtmf.h"
 #include "log.h"
-#include "audio_stitcher.h"
+#include "stitcher.h"
 #include <errno.h>
 #include <soundio/soundio.h>
 #include <stdio.h>
@@ -220,11 +220,11 @@ StitcherContext *stitcher_new(void) {
 }
 
 static struct SoundIoDevice *get_input_device_matching(StitcherContext *c,
-    char *matcher) {
+    char *substring) {
   int count = soundio_input_device_count(c->soundio);
   for (int i = 0; i < count; i++) {
     struct SoundIoDevice *d = soundio_get_input_device(c->soundio, i);
-    if (strstr(d->name, matcher) != NULL) {
+    if (strstr(d->name, substring) != NULL) {
       return d;
     }
   }
@@ -233,11 +233,11 @@ static struct SoundIoDevice *get_input_device_matching(StitcherContext *c,
 }
 
 static struct SoundIoDevice *get_output_device_matching(StitcherContext *c,
-    char *matcher) {
+    char *substring) {
   int count = soundio_output_device_count(c->soundio);
   for (int i = 0; i < count; i++) {
     struct SoundIoDevice *d = soundio_get_output_device(c->soundio, i);
-    if (strstr(d->name, matcher) != NULL) {
+    if (strstr(d->name, substring) != NULL) {
       return d;
     }
   }
@@ -418,7 +418,7 @@ static int configure_out_stream(StitcherOutDevice *device,
 
   status = soundio_outstream_start(stream);
   if (status != EXIT_SUCCESS) {
-    log_err("stitcher_start unable to start stream");
+    log_err("stitcher_start unable to stitch_start stream");
     return status;
   }
 
@@ -451,7 +451,7 @@ static int configure_in_stream(StitcherInDevice *device,
 
   status = soundio_instream_start(stream);
   if (status != EXIT_SUCCESS) {
-    log_err("stitcher_start unable to start stream");
+    log_err("stitcher_start unable to stitch_start stream");
     return status;
   }
 
@@ -477,8 +477,8 @@ static int config_device_pair(StitcherOutDevice *from, StitcherInDevice *to,
   return EXIT_SUCCESS;
 }
 
-void *start_thread(void *vargp) {
-  printf("stitcher start_thread\n");
+void *stitcher_start_thread(void *vargp) {
+  printf("stitcher stitcher_start_thread\n");
   StitcherContext *c = vargp;
   int status;
 
@@ -528,7 +528,7 @@ void *start_thread(void *vargp) {
 
 int stitcher_start(StitcherContext *c) {
   printf("before thread\n");
-  pthread_create(&c->thread_id, NULL, start_thread, c);
+  pthread_create(&c->thread_id, NULL, stitcher_start_thread, c);
   printf("after thread\n");
   return 0;
 }

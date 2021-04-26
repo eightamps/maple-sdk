@@ -6,7 +6,7 @@
 #define MAPLE_PHONY_H
 
 #include "phony_hid.h"
-#include "audio_stitcher.h"
+#include "stitcher.h"
 #include "dtmf.h"
 
 /**

@@ -2,7 +2,7 @@
 // Created by lukebayes on 4/21/21.
 //
 
-#include "phone_view.h"
+#include "phony_view.h"
 #include "phony.h"
 #include "log.h"
 #include <stdlib.h>
@@ -48,8 +48,7 @@ static void dial_clicked(__attribute__((unused)) GtkWidget *widget,
   const char *text = gtk_entry_buffer_get_text(b);
   printf("dial_clicked with: %s\n", text);
 
-  // int status = phony_dial(c->phony, text);
-  int status = phony_take_off_hook(c->phony);
+  int status = phony_dial(c->phony, text);
   show_status(c, status);
 }
 

@@ -58,12 +58,39 @@ int phony_open_maple(PhonyContext *c) {
 
 int phony_take_off_hook(PhonyContext *c) {
   printf("phony_take_off_hook called\n");
-  return phony_hid_set_offhook(c->hid_context, 1);
+  // TODO(lbayes): Move this work to a notification, that gets called whenever
+  // the HID device transitions from on to off-hook. Make sure to debounce the
+  // transition itself to avoid spurious bouncy transitions.
+  int status = stitcher_start(c->stitcher_context);
+  if (status != EXIT_SUCCESS) {
+    return status;
+  }
+
+  status = phony_hid_set_offhook(c->hid_context, 1);
+  if (status != EXIT_SUCCESS) {
+    stitcher_stop(c->stitcher_context);
+  }
+
+  return status;
 }
 
 int phony_hang_up(PhonyContext *c) {
   printf("phony_hang_up called\n");
-  return phony_hid_set_offhook(c->hid_context, 0);
+  int hid_status = phony_hid_set_offhook(c->hid_context, 0);
+  if (hid_status != EXIT_SUCCESS) {
+    fprintf(stderr, "phony_hang_up failed to set HID client offhook\n");
+  }
+
+  // TODO(lbayes): Move this work to a notification from the device, whenever
+  //  hook state transitions from off to on-hook, these devices should be torn
+  //  down.
+  //  Don't forget to debounce the transition.
+  int stitcher_status = stitcher_stop(c->stitcher_context);
+  if (stitcher_status != EXIT_SUCCESS) {
+    fprintf(stderr, "phony_hang_up failed to stop stitcher\n");
+  }
+
+  return stitcher_status || hid_status;
 }
 
 int phony_dial(PhonyContext *c, const char *numbers) {

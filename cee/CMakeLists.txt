@@ -16,17 +16,19 @@ set(AppSources
         src/phony.h
         src/phony_hid.c
         src/phony_hid.h
-        src/audio_stitcher.c
-        src/audio_stitcher.h
+        src/stitcher.c
+        src/stitcher.h
         src/pthread_play.c
         src/pthread_play.h
-        src/audio_selector.c src/audio_selector.h)
+        src/stitch.c
+        src/stitch.h
+        )
 
 set(GtkSources
         src/gtk/application.c
         src/gtk/application.h
-        src/gtk/phone_view.c
-        src/gtk/phone_view.h
+        src/gtk/phony_view.c
+        src/gtk/phony_view.h
         )
 
 set(TestSources
@@ -44,7 +46,7 @@ set(TestSources
         test/stitcher_test.h
         test/test_helper.c
         test/test_helper.h
-        test/audio_selector_test.c test/audio_selector_test.h)
+        )
 
 set(VendorLibs
         ${PROJECT_BINARY_DIR}/../vendor/kissfft/libkissfft-float.so
@@ -60,9 +62,11 @@ link_libraries(
         pthread
         )
 
-add_executable(example-one src/soundio_main.c)
+
+add_executable(soundio_example src/soundio_example.c ${VendorLibs})
 
 add_library(maple-dev STATIC ${AppSources})
+add_executable(stitch_example src/stitch_example.c ${AppSources})
 add_executable(maple src/main.c ${AppSources} ${VendorLibs})
 add_executable(maple-test test/test_main.c
         ${AppSources}

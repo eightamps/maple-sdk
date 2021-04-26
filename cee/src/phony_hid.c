@@ -220,6 +220,7 @@ static int set_hostavail(struct PhonyHidContext *c, int is_host_avail) {
   memset(data, 0x0, len);
   // TODO(lbayes): This is NOT correct, we need to bit shift here, otherwise
   //  we're clobbering various other bits on the full byte.
+  //  More info here: https://codeforces.com/blog/entry/18169
   data[2] = is_host_avail;
 
   // data[0] = addr; // first bit active indicates hostavail = true
@@ -276,7 +277,7 @@ int phony_hid_open(struct PhonyHidContext *c) {
     goto out;
   }
 
-  // App features start here:
+  // App features stitch_start here:
   status = set_hostavail(c, 1);
   if (status < 0) {
     goto out;
