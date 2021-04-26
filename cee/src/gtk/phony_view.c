@@ -62,8 +62,8 @@ static void phony_state_changed_handler(void *varg) {
   PhoneViewContext *c = varg;
   GtkWidget *dial_btn = c->dial_btn;
   GtkWidget *hang_up_btn = c->hang_up_btn;
-
   PhonyContext *pc = c->phony;
+  // Only do work on state transitions.
   switch (pc->state) {
   case PHONY_LINE_IN_USE:
     gtk_widget_set_visible(dial_btn, FALSE);

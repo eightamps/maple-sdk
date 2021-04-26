@@ -32,10 +32,9 @@ static enum SoundIoFormat prioritized_formats[] = {
 };
 
 static int prioritized_sample_rates[] = {
-    24000,
-    44100,
     48000,
-    96000,
+    44100,
+    24000,
 };
 
 typedef struct StitchDevice {

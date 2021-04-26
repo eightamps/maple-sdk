@@ -20,7 +20,8 @@ StitchContext *stitch_new(void) {
     return NULL;
   }
   c->is_initialized = false;
-  c->backend = SoundIoBackendNone;
+  c->backend = SoundIoBackendAlsa;
+  // c->backend = SoundIoBackendNone;
   c->input_latency = 0.02; // 20ms
   return c;
 }
@@ -31,7 +32,7 @@ StitchContext *stitch_new_linux(void) {
     return c;
   }
 
-  // c->backend = SoundIoBackendAlsa;
+  c->backend = SoundIoBackendAlsa;
   return c;
 }
 
@@ -471,7 +472,11 @@ int stitch_stop(StitchContext *c) {
 void stitch_free(StitchContext *c) {
   if (c != NULL) {
     if (c->is_active) {
-      stitch_stop(c);
+      c->is_active = false;
+      pthread_cancel(c->thread_id);
+    }
+    if (c->ring_buffer) {
+      soundio_ring_buffer_destroy(c->ring_buffer);
     }
     if (c->soundio != NULL) {
       soundio_destroy(c->soundio);

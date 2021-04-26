@@ -71,6 +71,18 @@ PhonyContext *phony_new(void) {
   return c;
 }
 
+static int phony_swap_audio(PhonyContext *c) {
+  int status = EXIT_SUCCESS;
+  StitchContext *from = c->from_phone;
+  stitch_init(from);
+  stitch_start(from);
+  return status;
+}
+
+static int phony_stop_audio(PhonyContext *c) {
+  return stitch_stop(c->from_phone);
+}
+
 static void *phony_poll_for_updates(void *varg) {
   PhonyContext *c = varg;
   PhonyHidContext *hc = c->hid_context;
@@ -81,6 +93,7 @@ static void *phony_poll_for_updates(void *varg) {
     return NULL;
   }
 
+  PhonyState last_state;
   c->is_looping = true;
   while (c->is_looping) {
     printf("phony waiting for HID report\n");
@@ -98,10 +111,28 @@ static void *phony_poll_for_updates(void *varg) {
       c->state = PHONY_NOT_READY;
     }
 
-    printf("UPDATED PHONY STATE to: %s\n", phony_state_to_str(c->state));
-    if (c->state_changed != NULL) {
-      c->state_changed(c->userdata);
-      // (phony_state_changed)c->state_changed(c->userdata);
+    int status;
+    if (c->state != last_state) {
+      if (c->state_changed != NULL) {
+        printf("calling phony state_changed handler now\n");
+        c->state_changed(c->userdata);
+        // (phony_state_changed)c->state_changed(c->userdata);
+      }
+
+      printf("UPDATED PHONY STATE to: %s\n", phony_state_to_str(c->state));
+      if (c->state == PHONY_LINE_IN_USE) {
+        status = phony_swap_audio(c);
+        if (status != EXIT_SUCCESS) {
+          fprintf(stderr, "FAILED TO SWAP AUDIO with: %d\n", status);
+        }
+      } else if (c->state == PHONY_READY) {
+        status = phony_stop_audio(c);
+        if (status != EXIT_SUCCESS) {
+          fprintf(stderr, "FAILED TO STOP AUDIO with: %d\n", status);
+        }
+      }
+
+      last_state = c->state;
     }
   }
 }
