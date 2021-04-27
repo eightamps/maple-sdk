@@ -5,5 +5,8 @@
     <libraryRoots>
       <file path="$PROJECT_DIR$/vendor/libsoundio" />
     </libraryRoots>
+    <excludeRoots>
+      <file path="$PROJECT_DIR$/vendor/libsoundio/src" />
+    </excludeRoots>
   </component>
 </project>

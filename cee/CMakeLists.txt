@@ -47,7 +47,8 @@ set(TestSources
         test/stitch_test.c test/stitch_test.h)
 
 set(VendorLibs
-        ${PROJECT_BINARY_DIR}/../vendor/kissfft/libkissfft-float.so
+        ${PROJECT_SOURCE_DIR}/vendor/kissfft/libkissfft-float.so
+        ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio.so
         )
 
 # link_directories(${CMAKE_BINARY_DIR}}/vendor/kissfft)
@@ -55,25 +56,24 @@ set(VendorLibs
 link_libraries(
         usb-1.0
         hidapi-libusb
-        soundio
         m
         pthread
         )
 
-
+# Build artifacts
+add_library(maple-dev STATIC ${AppSources} ${VendorLibs})
 add_executable(soundio_example src/main_soundio_example.c ${VendorLibs})
-
-add_library(maple-dev STATIC ${AppSources})
 add_executable(stitch_example src/main_stitch_example.c ${AppSources})
 add_executable(maple src/main.c ${AppSources} ${VendorLibs})
+add_executable(maple-gtk src/main_gtk.c
+        ${AppSources}
+        ${GtkSources}
+        ${VendorLibs}
+        )
 add_executable(maple-test test/test_main.c
         ${AppSources}
         ${GtkSources}
         ${TestSources}
-        )
-add_executable(maple-gtk src/main_gtk.c
-        ${AppSources}
-        ${GtkSources}
         )
 
 # Configure GTK+-3.0
@@ -83,5 +83,6 @@ include_directories(${GTK3_INCLUDE_DIRS})
 link_directories(${GTK3_LIBRARY_DIRS})
 add_definitions(${GTK3_CFLAGS_OTHER})
 
-target_link_libraries(maple-gtk ${GTK3_LIBRARIES})
+# Add GTK to relevant executables
+target_link_libraries(maple-gtk ${GTK3_LIBRARIES} ${VendorLibs})
 target_link_libraries(maple-test ${GTK3_LIBRARIES} ${VendorLibs})
