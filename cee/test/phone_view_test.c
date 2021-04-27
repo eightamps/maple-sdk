@@ -8,7 +8,7 @@
 
 char *test_phone_view_new(void) {
   /*
-  PhoneViewContext *c = phone_view_new();
+  PhonyViewContext *c = phone_view_new();
   muAssert(c != NULL, "Expected new view");
   muAssert(c->widget == NULL, "Expected NULL widget");
 

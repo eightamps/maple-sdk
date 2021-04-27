@@ -20,8 +20,8 @@ StitchContext *stitch_new(void) {
     return NULL;
   }
   c->is_initialized = false;
-  c->backend = SoundIoBackendAlsa;
-  // c->backend = SoundIoBackendNone;
+  // c->backend = SoundIoBackendAlsa;
+  c->backend = SoundIoBackendNone;
   c->input_latency = 0.02; // 20ms
   return c;
 }
@@ -214,7 +214,7 @@ int stitch_init(StitchContext *c) {
   if (!soundio) {
     log_err("out of memory");
     c->thread_exit_status = -ENOMEM;
-    return NULL;
+    return -ENOMEM;
   }
 
   if (c->backend == SoundIoBackendNone) {
@@ -238,11 +238,10 @@ static void *stitch_start_thread(void *vargp) {
   StitchContext *c = vargp;
   int status = stitch_init(c);
   if (status != EXIT_SUCCESS) {
-    return status;
+    return NULL;
   }
 
   struct SoundIo *soundio = c->soundio;
-
 
   int in_device_index;
   if (c->in_device_id) {
@@ -473,7 +472,7 @@ void stitch_free(StitchContext *c) {
   if (c != NULL) {
     if (c->is_active) {
       c->is_active = false;
-      pthread_cancel(c->thread_id);
+      stitch_join(c);
     }
     if (c->ring_buffer) {
       soundio_ring_buffer_destroy(c->ring_buffer);

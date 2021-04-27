@@ -25,8 +25,6 @@ const char *phony_state_to_str(int state) {
     return "Line not found";
   case PHONY_LINE_IN_USE:
     return "Line in use";
-  case PHONY_HOST_NOT_FOUND:
-    return "Host not found";
   }
 }
 
@@ -215,12 +213,9 @@ void phony_free(PhonyContext *c) {
     // Stop listening for state messages from device.
     if (c->is_looping) {
       c->is_looping = false;
-      // phony_join(c);
+      // Cancel the thread, because it's likely blocked on an HID read
+      // operation.
       pthread_cancel(c->thread_id);
-    }
-
-    if (c->hid_context != NULL) {
-      phony_hid_free(c->hid_context);
     }
     if (c->to_phone != NULL) {
       stitch_free(c->to_phone);
@@ -230,6 +225,9 @@ void phony_free(PhonyContext *c) {
     }
     if (c->dtmf_context != NULL) {
       dtmf_free(c->dtmf_context);
+    }
+    if (c->hid_context != NULL) {
+      phony_hid_free(c->hid_context);
     }
     free(c);
   }

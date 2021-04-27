@@ -8,14 +8,16 @@
 #include <stdlib.h>
 
 #define DEFAULT_8A_PHONE_NUMBER "7273392258"
+#define PV_SHOW_DIAL TRUE
+#define PV_SHOW_HANG_UP FALSE
 
-static void update(PhoneViewContext *c) {
+static void update(PhonyViewContext *c) {
   gtk_widget_queue_draw(GTK_WIDGET(c->phone_number_view));
 }
 
 static void num_clicked(GtkWidget *widget, gpointer data) {
   GtkButton *btn = GTK_BUTTON(widget);
-  PhoneViewContext *c = data;
+  PhonyViewContext *c = data;
   GtkEntry *entry = c->phone_number_view;
 
   const gchar *label = gtk_button_get_label(btn);
@@ -26,7 +28,7 @@ static void num_clicked(GtkWidget *widget, gpointer data) {
   update(c);
 }
 
-static void show_status(PhoneViewContext *c, int status) {
+static void show_status(PhonyViewContext *c, int status) {
   GtkTextView *m = c->message_view;
   GtkTextBuffer *b = gtk_text_view_get_buffer(m);
 
@@ -43,7 +45,7 @@ static void show_status(PhoneViewContext *c, int status) {
 
 static void dial_clicked(__attribute__((unused)) GtkWidget *widget,
                          gpointer data) {
-  PhoneViewContext *c = data;
+  PhonyViewContext *c = data;
   GtkEntryBuffer *b = gtk_entry_get_buffer(c->phone_number_view);
   const char *text = gtk_entry_buffer_get_text(b);
   printf("dial_clicked with: %s\n", text);
@@ -53,35 +55,46 @@ static void dial_clicked(__attribute__((unused)) GtkWidget *widget,
 
 static void hangup_clicked(__attribute__((unused)) GtkWidget *widget,
                            gpointer data) {
-  PhoneViewContext *c = data;
+  PhonyViewContext *c = data;
   int status = phony_hang_up(c->phony);
   show_status(c, status);
 }
 
+static void update_buttons(PhonyViewContext *c, bool show_dial) {
+  GtkWidget *dial_btn = GTK_WIDGET(c->dial_btn);
+  GtkWidget *hang_up_btn = GTK_WIDGET(c->hang_up_btn);
+
+  gtk_widget_set_visible(dial_btn, show_dial);
+  gtk_widget_set_visible(hang_up_btn, !show_dial);
+}
+
 static void phony_state_changed_handler(void *varg) {
-  PhoneViewContext *c = varg;
-  GtkWidget *dial_btn = c->dial_btn;
-  GtkWidget *hang_up_btn = c->hang_up_btn;
+  PhonyViewContext *c = varg;
   PhonyContext *pc = c->phony;
   // Only do work on state transitions.
   switch (pc->state) {
-  case PHONY_LINE_IN_USE:
-    gtk_widget_set_visible(dial_btn, FALSE);
-    gtk_widget_set_visible(hang_up_btn, TRUE);
+  case PHONY_LINE_NOT_FOUND:
+    printf("LINE NOT FOUND\n");
+    break;
+  case PHONY_RINGING:
+    printf("ring ring, ring ring\n");
     break;
   case PHONY_READY:
-    gtk_widget_set_visible(dial_btn, TRUE);
-    gtk_widget_set_visible(hang_up_btn, FALSE);
+    update_buttons(c, PV_SHOW_DIAL);
+    break;
+  case PHONY_OFF_HOOK:
+  case PHONY_LINE_IN_USE:
+    update_buttons(c, PV_SHOW_HANG_UP);
     break;
   case PHONY_NOT_READY:
     break;
   }
 }
 
-struct PhoneViewContext *phone_view_new(PhonyContext *model) {
-  PhoneViewContext *c = calloc(sizeof(PhoneViewContext), 1);
+struct PhonyViewContext *phone_view_new(PhonyContext *model) {
+  PhonyViewContext *c = calloc(sizeof(PhonyViewContext), 1);
   if (c == NULL) {
-    log_err("Failed to allocate PhoneViewContext");
+    log_err("Failed to allocate PhonyViewContext");
     return NULL;
   }
 
@@ -176,17 +189,12 @@ struct PhoneViewContext *phone_view_new(PhonyContext *model) {
 
   gtk_entry_set_text(entry, DEFAULT_8A_PHONE_NUMBER);
 
-  /*
-  gtk_grid_attach(grid, dial_btn, 0, 4, 1, 1);
-  gtk_grid_attach(grid, entry,    1, 4, 2, 1);
-  c->widget = GTK_WIDGET(grid);
-   */
-
   c->widget = GTK_WIDGET(box);
+  // update_buttons(c, PV_SHOW_DIAL);
   return c;
 }
 
-void phone_view_free(PhoneViewContext *c) {
+void phone_view_free(PhonyViewContext *c) {
   if (c != NULL) {
     if (c->widget != NULL) {
       gtk_widget_destroy(c->widget);

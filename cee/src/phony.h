@@ -17,7 +17,6 @@ typedef enum PhonyState {
   PHONY_RINGING,
   PHONY_LINE_NOT_FOUND,
   PHONY_LINE_IN_USE,
-  PHONY_HOST_NOT_FOUND,
 }PhonyState;
 
 

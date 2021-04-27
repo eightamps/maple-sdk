@@ -8,7 +8,7 @@
 #include <gtk/gtk.h>
 #include "phony.h"
 
-typedef struct PhoneViewContext {
+typedef struct PhonyViewContext {
   PhonyState last_state;
   PhonyContext *phony;
   GtkWidget *widget;
@@ -16,9 +16,9 @@ typedef struct PhoneViewContext {
   GtkTextView *message_view;
   GtkButton *dial_btn;
   GtkButton *hang_up_btn;
-}PhoneViewContext;
+}PhonyViewContext;
 
-struct PhoneViewContext *phone_view_new(PhonyContext *model);
-void phone_view_free(PhoneViewContext *c);
+struct PhonyViewContext *phone_view_new(PhonyContext *model);
+void phone_view_free(PhonyViewContext *c);
 
 #endif //MAPLE_PHONY_VIEW_H

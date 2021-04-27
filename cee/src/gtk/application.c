@@ -27,7 +27,7 @@ static void activate_callback(GtkApplication *native_app, gpointer user_data) {
                     "retries\n");
   }
 
-  PhoneViewContext *p = phone_view_new(pc);
+  PhonyViewContext *p = phone_view_new(pc);
 
   // Add the phone view
   gtk_container_add(GTK_CONTAINER(window), p->widget);

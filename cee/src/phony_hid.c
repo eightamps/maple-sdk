@@ -104,7 +104,7 @@ int phony_hid_get_report(struct PhonyHidContext *c) {
   unsigned char data[len];
   memset(data, 0x0, len);
 
-  status = interrupt_transfer(c, addr, &data, len);
+  status = interrupt_transfer(c, addr, data, len);
   printf("phony_hid_get_report finished with status: %d\n", status);
   if (status == EXIT_SUCCESS) {
     in_report_to_struct(c->in_report, data[1]);
@@ -309,6 +309,15 @@ int phony_hid_close(struct PhonyHidContext *c) {
     return status;
   }
 
+  /*
+  if (c->in_report->line_in_use) {
+    status = phony_hid_set_off_hook(c, false);
+    if (status != EXIT_SUCCESS) {
+      fprintf(stderr, "phony_hid_close failed to hang up an open line\n");
+    }
+  }
+  */
+
   libusb_device_handle *dev_h = c->device_handle;
   if (dev_h != NULL) {
     if (c->is_interface_claimed) {
@@ -328,21 +337,23 @@ int phony_hid_close(struct PhonyHidContext *c) {
       printf("Successfully reset_device\n");
     }
 
-    libusb_close(dev_h);
-    libusb_exit(NULL);
+    // NOTE(lbayes): We cannot close the libusb device because we just reset
+    // the device...
+    // libusb_close(dev_h);
+    libusb_exit(c->lusb_context);
   }
   printf("Exiting now\n");
   return status;
 }
 
 int phony_hid_set_hostavail(struct PhonyHidContext *c, bool is_hostavail) {
-  printf("phony_hid_set_hostavail to: %B\n", is_hostavail);
+  printf("phony_hid_set_hostavail to: %d\n", is_hostavail);
   c->out_report->host_avail = is_hostavail;
   return phony_hid_set_report(c);
 }
 
 int phony_hid_set_off_hook(struct PhonyHidContext *c, bool is_offhook) {
-  printf("phony_Hid_set_offhook to: %B\n", is_offhook);
+  printf("phony_Hid_set_offhook to: %d\n", is_offhook);
   c->out_report->off_hook = is_offhook;
   return phony_hid_set_report(c);
 }
