@@ -16,8 +16,6 @@ set(AppSources
         src/phony_hid.h
         src/stitcher.c
         src/stitcher.h
-        src/pthread_play.c
-        src/pthread_play.h
         src/stitch.c
         src/stitch.h
         )
@@ -44,17 +42,20 @@ set(TestSources
         test/stitcher_test.h
         test/test_helper.c
         test/test_helper.h
-        test/stitch_test.c test/stitch_test.h)
+        test/stitch_test.c
+        test/stitch_test.h
+        )
 
 set(VendorLibs
         ${PROJECT_SOURCE_DIR}/vendor/kissfft/libkissfft-float.so
-        ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio.so
+        # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio.so
         )
 
 # link_directories(${CMAKE_BINARY_DIR}}/vendor/kissfft)
 
 link_libraries(
         usb-1.0
+        soundio
         hidapi-libusb
         m
         pthread
@@ -83,6 +84,8 @@ include_directories(${GTK3_INCLUDE_DIRS})
 link_directories(${GTK3_LIBRARY_DIRS})
 add_definitions(${GTK3_CFLAGS_OTHER})
 
-# Add GTK to relevant executables
+# Add link relevant libraries to targets
+target_link_libraries(maple ${VendorLibs})
 target_link_libraries(maple-gtk ${GTK3_LIBRARIES} ${VendorLibs})
 target_link_libraries(maple-test ${GTK3_LIBRARIES} ${VendorLibs})
+target_link_libraries(soundio_example ${VendorLibs})

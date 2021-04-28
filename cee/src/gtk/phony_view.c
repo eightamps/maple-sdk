@@ -61,6 +61,7 @@ static void hangup_clicked(__attribute__((unused)) GtkWidget *widget,
 }
 
 static void update_buttons(PhonyViewContext *c, bool show_dial) {
+  log_info("update buttons");
   GtkWidget *dial_btn = GTK_WIDGET(c->dial_btn);
   GtkWidget *hang_up_btn = GTK_WIDGET(c->hang_up_btn);
 
@@ -72,6 +73,7 @@ static void update_buttons(PhonyViewContext *c, bool show_dial) {
 }
 
 static void disable_buttons(PhonyViewContext *c) {
+  log_info("disable buttons");
   GtkWidget *dial_btn = GTK_WIDGET(c->dial_btn);
   GtkWidget *hang_up_btn = GTK_WIDGET(c->hang_up_btn);
 
@@ -103,6 +105,8 @@ static void phony_state_changed_idle_handler(void *varg) {
   case PHONY_NOT_READY:
     break;
   }
+
+  g_idle_remove_by_data(varg);
 }
 
 static void phony_state_changed_handler(void *varg) {
@@ -212,11 +216,8 @@ struct PhonyViewContext *phone_view_new(PhonyContext *model) {
   return c;
 }
 
-void phone_view_free(PhonyViewContext *c) {
+void phony_view_free(PhonyViewContext *c) {
   if (c != NULL) {
-    if (c->widget != NULL) {
-      gtk_widget_destroy(c->widget);
-    }
     free(c);
   }
 }

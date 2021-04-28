@@ -2,12 +2,13 @@
 // Created by lukebayes on 4/25/21.
 //
 
-#include "stitch.h"
 #include "log.h"
+#include "stitch.h"
+#include <errno.h>
 #include <soundio/soundio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
+#include <unistd.h>
 
 static int min_int(int a, int b) {
   return (a < b) ? a : b;
@@ -20,9 +21,10 @@ StitchContext *stitch_new(void) {
     return NULL;
   }
   c->is_initialized = false;
-  // c->backend = SoundIoBackendAlsa;
-  c->backend = SoundIoBackendNone;
-  c->input_latency = 0.02; // 20ms
+  c->backend = SoundIoBackendAlsa;
+  // c->backend = SoundIoBackendPulseAudio;
+  // c->backend = SoundIoBackendNone;
+  c->input_latency = 0.04; // 20ms
   return c;
 }
 
@@ -200,10 +202,9 @@ static void underflow_callback(struct SoundIoOutStream *outstream) {
   StitchContext *c = outstream->userdata;
   log_err("stitch write_underflow count: %d on stream id: %ld", ++count,
           c->thread_id);
-  if (count > 10) {
+  if (count >= 10) {
     log_err("stitch killing thread now due to underflow conditions");
     c->is_active = false;
-    pthread_cancel(c->thread_id);
     c->thread_exit_status = -EIO; // I/O error
     count = 0;
   }
@@ -430,9 +431,9 @@ static void *stitch_start_thread(void *vargp) {
   }
 
   char *buf = soundio_ring_buffer_write_ptr(c->ring_buffer);
-
-  int fill_count = (int)c->input_latency * outstream->sample_rate *
-                   outstream->bytes_per_frame;
+  int fill_count = soundio_ring_buffer_free_count(c->ring_buffer) / 2;
+  // int fill_count = (int)c->input_latency * outstream->sample_rate *
+                   // outstream->bytes_per_frame;
   memset(buf, 0, fill_count);
   soundio_ring_buffer_advance_write_ptr(c->ring_buffer, fill_count);
 
@@ -451,9 +452,12 @@ static void *stitch_start_thread(void *vargp) {
   log_info("stitch starting now");
 
   while (c->is_active == true) {
-    soundio_wait_events(soundio);
+    // NOTE(lbayes): DO NOT use soundio_wait_events here. It is a blocking call!
+    // soundio_wait_events(soundio);
+    sleep(0.04);
   }
 
+  log_info("stitch thread finishing");
   soundio_outstream_destroy(outstream);
   soundio_instream_destroy(instream);
   soundio_device_unref(in_device);

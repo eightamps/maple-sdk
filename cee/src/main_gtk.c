@@ -2,24 +2,26 @@
 // Created by lukebayes on 4/20/21.
 //
 #include "gtk/application.h"
-#include <stdlib.h>
+#include "log.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static const char *APP_TITLE = "Demo App";
 
 int main(int argc, char *argv[]) {
-  printf("Configuring ApplicationContext\n");
+  log_info("Configuring ApplicationContext");
   ApplicationContext *app = application_new();
   memcpy(app->title, APP_TITLE, strlen(APP_TITLE) + 1);
-  printf("Running ApplicationContext\n");
+  log_info("Running ApplicationContext");
   int status = application_run(app, argc, argv);
+
   application_free(app);
 
   if (status == 0) {
-    printf("Exiting ApplicationContext with status: 0 (SUCCESS)\n");
+    log_info("Exiting ApplicationContext with status: 0 (SUCCESS)");
   } else {
-    printf("ERROR: ApplicationContext exiting with status: %d (FAILURE)\n", status);
+    log_info("ERROR: ApplicationContext exiting with status: %d (FAILURE)", status);
   }
   return status;
 

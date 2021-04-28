@@ -2,11 +2,12 @@
 // Created by lukebayes on 4/15/21.
 //
 
-#include <gtk/gtk.h>
-#include <stddef.h>
 #include "application.h"
+#include "log.h"
 #include "phony.h"
 #include "phony_view.h"
+#include <gtk/gtk.h>
+#include <stddef.h>
 
 #define APP_WIDTH 300
 #define APP_HEIGHT 400
@@ -23,16 +24,21 @@ static void activate_callback(GtkApplication *native_app, gpointer user_data) {
 
   int status = phony_open_maple(pc);
   if (status != EXIT_SUCCESS) {
-    fprintf(stderr, "phony_hid_open failed, but is being ignored for "
-                    "retries\n");
+    log_err("phony_hid_open failed, but is being ignored for retries");
   }
 
-  PhonyViewContext *p = phone_view_new(pc);
+  log_info("aye");
 
+  PhonyViewContext *p = phone_view_new(pc);
+  app->phony_view_context = p;
+
+  log_info("bee");
   // Add the phone view
   gtk_container_add(GTK_CONTAINER(window), p->widget);
 
+  log_info("cee");
   gtk_widget_show_all(window);
+  log_info("dee");
 }
 
 ApplicationContext *application_new(void) {
@@ -47,6 +53,7 @@ ApplicationContext *application_new(void) {
   g_signal_connect(native_app, "activate",
                    G_CALLBACK(activate_callback), app);
   app->native_app = native_app;
+  log_info("eee");
   return app;
 }
 
@@ -55,14 +62,14 @@ int application_run(ApplicationContext *app, int argc, char *argv[]) {
   return g_application_run(native_app, argc, argv);
 }
 
-void application_free(ApplicationContext *app) {
-  if (app != NULL) {
-    if (app->phony_context != NULL) {
-      phony_free(app->phony_context);
-    }
+void application_free(ApplicationContext *c) {
+  if (c != NULL) {
 
-    GApplication *native_app = G_APPLICATION(app->native_app);
+    phony_view_free(c->phony_view_context);
+    phony_free(c->phony_context);
+
+    GApplication *native_app = G_APPLICATION(c->native_app);
     g_object_unref(native_app);
-    free(app);
+    free(c);
   }
 }

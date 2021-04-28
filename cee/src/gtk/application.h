@@ -19,6 +19,6 @@ typedef struct ApplicationContext {
 
 ApplicationContext *application_new(void);
 int application_run(ApplicationContext *app, int argc, char *argv[]);
-void application_free(ApplicationContext *app);
+void application_free(ApplicationContext *c);
 
 #endif //MAPLE_APPLICATION_H

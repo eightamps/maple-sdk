@@ -1,7 +1,8 @@
+#include "log.h"
 #include "phony.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include "pthread_play.h"
 
 #define DEFAULT_8A_PHONE_NUMBER "7273392258"
 
@@ -19,7 +20,7 @@ int phony_exercise(void) {
     return status;
   }
 
-  sleep(10);
+  sleep(30);
 
   phony_hang_up(c);
   phony_free(c);
@@ -27,6 +28,7 @@ int phony_exercise(void) {
 }
 
 int stitcher_exercise(void) {
+  /*
   int status = 0;
   StitcherContext *c = stitcher_new();
   if (c == NULL) {
@@ -60,10 +62,47 @@ int stitcher_exercise(void) {
   }
 
   return status;
+   */
+  return 0;
+}
+
+int stitch_exercise(void) {
+  StitchContext *c = stitch_new();
+  if (c == NULL) {
+    log_err("Failed creation");
+    return -ENOMEM;
+  }
+
+  int status = stitch_init(c);
+  if (status != EXIT_SUCCESS) {
+    log_err("Failed init");
+    return status;
+  }
+  log_info("init success");
+
+  status = stitch_start(c);
+  if (status != EXIT_SUCCESS) {
+    log_err("Failed start");
+    return status;
+  }
+  log_info("start success");
+
+  sleep(10);
+
+  log_info("sleep finished, stopping now");
+  status = stitch_stop(c);
+  if (status != EXIT_SUCCESS) {
+    log_err("Failed stop");
+    return status;
+  }
+  log_info("stop finished");
+
+  return status;
 }
 
 int main() {
-  return stitcher_exercise();
+  return stitch_exercise();
+  // return stitcher_exercise();
   // return phony_exercise();
   // return thread_play_start();
 }

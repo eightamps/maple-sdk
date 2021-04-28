@@ -19,6 +19,6 @@ typedef struct PhonyViewContext {
 }PhonyViewContext;
 
 struct PhonyViewContext *phone_view_new(PhonyContext *model);
-void phone_view_free(PhonyViewContext *c);
+void phony_view_free(PhonyViewContext *c);
 
 #endif //MAPLE_PHONY_VIEW_H

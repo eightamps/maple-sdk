@@ -12,7 +12,7 @@ char *test_phone_view_new(void) {
   muAssert(c != NULL, "Expected new view");
   muAssert(c->widget == NULL, "Expected NULL widget");
 
-  phone_view_free(c);
+  phony_view_free(c);
   */
   return NULL;
 }

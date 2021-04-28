@@ -16,9 +16,9 @@
 const static int INFINITE_TIMEOUT = 0; /* timeout in ms, or zero for infinite */
 
 static uint8_t struct_to_out_report(PhonyHidOutReport *r) {
-  printf("struct_to_out_report with:\n");
-  printf("host_avail: %d\n", r->host_avail);
-  printf("off_hook: %d\n", r->off_hook);
+  log_info("struct_to_out_report with:");
+  log_info("host_avail: %d", r->host_avail);
+  log_info("off_hook: %d", r->off_hook);
   uint8_t state = 0;
 
   if (r->off_hook) {
@@ -33,7 +33,7 @@ static uint8_t struct_to_out_report(PhonyHidOutReport *r) {
   } else {
     state &= ~(1 << 0);
   }
-  printf("output: 0x%02x\n", state);
+  log_info("output: 0x%02x", state);
   return state;
 }
 
@@ -51,15 +51,13 @@ int phony_hid_in_report_to_struct(PhonyHidInReport *in_report, uint8_t value) {
     in_report->line_in_use = true;
   }
 
-  printf("in_report_to_struct with:\n");
-  printf("RAW VALUE: 0x%02x\n", value);
-  /*
-  printf("loop: 0x%02x\n", in_report->loop);
-  printf("ring: 0x%02x\n", in_report->ring);
-  printf("line_not_found: 0x%02x\n", in_report->line_not_found);
-  printf("line_in_use: 0x%02x\n", in_report->line_in_use);
-  printf("polarity: 0x%02x\n", in_report->polarity);
-  */
+  log_info("in_report_to_struct with:");
+  log_info("RAW VALUE: 0x%02x", value);
+  log_info("loop: 0x%02x", in_report->loop);
+  log_info("ring: 0x%02x", in_report->ring);
+  log_info("line_not_found: 0x%02x", in_report->line_not_found);
+  log_info("line_in_use: 0x%02x", in_report->line_in_use);
+  log_info("polarity: 0x%02x", in_report->polarity);
 
   return EXIT_SUCCESS;
 }
@@ -74,21 +72,20 @@ static int interrupt_transfer(struct PhonyHidContext *c, uint8_t addr,
   r = libusb_interrupt_transfer(dev_h, addr, data, len, &transferred,
                                 INFINITE_TIMEOUT);
   if (r < 0) {
-    fprintf(stderr, "Interrupt read error %d %s\n", r, libusb_error_name(r));
+    log_err("Interrupt read error %d %s", r, libusb_error_name(r));
     return r;
   } else {
-    printf("Successfully interrupt_transferred %d bytes\n", transferred);
+    log_info("Successfully interrupt_transferred %d bytes", transferred);
 
     if (transferred < len) {
-      fprintf(stderr, "Interrupt transfer short read transferred %d bytes\n",
+      log_err("Interrupt transfer short read transferred %d bytes",
               transferred);
       return ENODATA;
     }
 
     for (int i = 0; i < len; i++) {
-      printf("i: %d q: 0x%02x\n", i, data[i]);
+      log_info("i: %d q: 0x%02x", i, data[i]);
     }
-    printf("\n");
   }
   return r;
 }
@@ -100,8 +97,8 @@ static int phony_hid_set_report(struct PhonyHidContext *c) {
   memset(data, 0x0, len);
   PhonyHidOutReport *out = c->out_report;
 
-  printf("out_report->host_avail: %d\n", out->host_avail);
-  printf("out_report->off_hook: %d\n", out->off_hook);
+  log_info("out_report->host_avail: %d", out->host_avail);
+  log_info("out_report->off_hook: %d", out->off_hook);
   data[2] = struct_to_out_report(c->out_report);
 
   return interrupt_transfer(c, addr, data, len);
@@ -115,7 +112,7 @@ int phony_hid_get_report(struct PhonyHidContext *c) {
   memset(data, 0x0, len);
 
   status = interrupt_transfer(c, addr, data, len);
-  printf("phony_hid_get_report finished with status: %d\n", status);
+  log_info("phony_hid_get_report finished with status: %d", status);
   if (status == EXIT_SUCCESS) {
     phony_hid_in_report_to_struct(c->in_report, data[1]);
   }
@@ -126,7 +123,7 @@ int phony_hid_get_report(struct PhonyHidContext *c) {
 struct PhonyHidContext *phony_hid_new(void) {
   struct PhonyHidContext *c = calloc(sizeof(struct PhonyHidContext), 1);
   if (c == NULL) {
-    fprintf(stderr, "phony_hid_new unable to allocate");
+    log_err("phony_hid_new unable to allocate");
     return NULL;
   }
   // Configure default vid and pid
@@ -139,7 +136,7 @@ struct PhonyHidContext *phony_hid_new(void) {
 
 int phony_hid_set_vendor_id(struct PhonyHidContext *c, int vid) {
   if (c == NULL) {
-    fprintf(stderr, "phony_hid_set_vendor_id requires a valid context\n");
+    log_err("phony_hid_set_vendor_id requires a valid context");
     return EINVAL; // Invalid argument
   }
   c->vendor_id = vid;
@@ -148,7 +145,7 @@ int phony_hid_set_vendor_id(struct PhonyHidContext *c, int vid) {
 
 int phony_hid_set_product_id(struct PhonyHidContext *c, int pid) {
   if (c == NULL) {
-    fprintf(stderr, "phony_hid_set_product_id requires a valid context\n");
+    log_err("phony_hid_set_product_id requires a valid context");
     return EINVAL; // Invalid argument
   }
   c->product_id = pid;
@@ -159,10 +156,10 @@ static int auto_detach_kernel(struct PhonyHidContext *c, int enable) {
   libusb_device_handle *dev_h = c->device_handle;
   int status = libusb_set_auto_detach_kernel_driver(dev_h, enable);
   if (status != 0) {
-    fprintf(stderr, "libusb_set_auto_detach_kernel_driver = 0 failed with: "
-                    "%d\n", status);
+    log_err("libusb_set_auto_detach_kernel_driver = 0 failed with: "
+                    "%d", status);
   }
-  printf("Successfully called libusb_set_auto_detach_kernel_driver\n");
+  log_info("Successfully called libusb_set_auto_detach_kernel_driver");
   return status;
 }
 
@@ -170,11 +167,11 @@ static int claim_interface(struct PhonyHidContext *c, int interface) {
   libusb_device_handle *dev_h = c->device_handle;
   int status = libusb_claim_interface(dev_h, interface);
   if (status < 0) {
-    fprintf(stderr, "libusb_claim_interface error %d %s\n", status,
+    log_err("libusb_claim_interface error %d %s", status,
             libusb_error_name(status));
   }
   c->is_interface_claimed = true;
-  printf("Successfully claimed interface %d\n", interface);
+  log_info("Successfully claimed interface %d", interface);
   return status;
 }
 
@@ -192,17 +189,17 @@ static int find_device(struct PhonyHidContext *c, int vid, int pid) {
     int bus_no = libusb_get_bus_number(d);
     int dev_addr = libusb_get_device_address(d);
 
-    printf("Found hid device at bus: 0x%02x (%d) and dev addr 0x%02x (%d)\n",
+    log_info("Found hid device at bus: 0x%02x (%d) and dev addr 0x%02x (%d)",
            bus_no, bus_no, dev_addr, dev_addr);
 
     struct libusb_device_descriptor desc = {0};
     int rc = libusb_get_device_descriptor(d, &desc);
 
     if (rc == 0) {
-      printf("idVendor: 0x%02x\n", desc.idVendor);
-      printf("idProduct: 0x%02x\n", desc.idProduct);
-      // printf("bNumConfigurations: %u\n", desc.bNumConfigurations);
-      // printf("iSerialNumber: %u\n", desc.iSerialNumber);
+      log_info("idVendor: 0x%02x", desc.idVendor);
+      log_info("idProduct: 0x%02x", desc.idProduct);
+      // log_info("bNumConfigurations: %u", desc.bNumConfigurations);
+      // log_info("iSerialNumber: %u", desc.iSerialNumber);
       c->device_descriptor = &desc;
     }
     return status;
@@ -217,50 +214,50 @@ static int get_config_descriptors(struct PhonyHidContext *c) {
   struct libusb_config_descriptor *config = {0};
   status = libusb_get_config_descriptor(c->device, 0, &config);
   if (status < 0) {
-    fprintf(stderr, "failed to get config descriptor with: %d\n", status);
+    log_err("failed to get config descriptor with: %d", status);
     return status;
   }
 
-  printf("Successfully got config descriptor with:\n");
-  printf("bNumberIntefaces: %u\n", config->bNumInterfaces);
-  printf("bDescriptorType: %u\n", config->bDescriptorType);
-  printf("wTotalLength: %u\n", config->wTotalLength);
+  log_info("Successfully got config descriptor with:");
+  log_info("bNumberIntefaces: %u", config->bNumInterfaces);
+  log_info("bDescriptorType: %u", config->bDescriptorType);
+  log_info("wTotalLength: %u", config->wTotalLength);
 
   for (int i = 0; i < config->bNumInterfaces; i++) {
     struct libusb_interface interface = config->interface[i];
     const struct libusb_interface_descriptor *desc = interface.altsetting;
     if (desc->bInterfaceNumber == MAPLE_PHONE_INTERFACE) {
-      printf("==================================================\n");
-      printf("INTERFACE:\n");
-      printf("bInterfaceNumber: %u\n", desc->bInterfaceNumber);
-      printf("bDescriptorType: %u\n", desc->bDescriptorType);
-      printf("bAlternateSetting: %u\n", desc->bAlternateSetting);
-      printf("bInterfaceClass: %u\n", desc->bInterfaceClass);
-      printf("bInterfaceProtocol: %u\n", desc->bInterfaceProtocol);
-      printf("bLength: %u\n", desc->bLength);
-      printf("bNumEndpoints: %u\n", desc->bNumEndpoints);
-      printf("iInterface: %u\n", desc->iInterface);
+      log_info("==================================================");
+      log_info("INTERFACE:");
+      log_info("bInterfaceNumber: %u", desc->bInterfaceNumber);
+      log_info("bDescriptorType: %u", desc->bDescriptorType);
+      log_info("bAlternateSetting: %u", desc->bAlternateSetting);
+      log_info("bInterfaceClass: %u", desc->bInterfaceClass);
+      log_info("bInterfaceProtocol: %u", desc->bInterfaceProtocol);
+      log_info("bLength: %u", desc->bLength);
+      log_info("bNumEndpoints: %u", desc->bNumEndpoints);
+      log_info("iInterface: %u", desc->iInterface);
 
       for (int k = 0; k < desc->bNumEndpoints; k++) {
         const struct libusb_endpoint_descriptor ep_desc = desc->endpoint[k];
-        printf("---\n");
-        printf("ENDPOINT:\n");
+        log_info("---");
+        log_info("ENDPOINT:");
         uint8_t addr = ep_desc.bEndpointAddress;
-        printf("ep_desc->bEndpointAddress 0x%02x ", addr);
+        log_info("ep_desc->bEndpointAddress 0x%02x ", addr);
         if (addr & LIBUSB_ENDPOINT_IN) {
-          printf("(EP IN)\n");
+          log_info("(EP IN)");
         } else {
-          printf("(EP OUT)\n");
+          log_info("(EP OUT)");
         }
 
-        printf("ep_desc->bLength %u\n", ep_desc.bLength);
-        printf("ep_desc->bDescriptorType %u\n", ep_desc.bDescriptorType);
+        log_info("ep_desc->bLength %u", ep_desc.bLength);
+        log_info("ep_desc->bDescriptorType %u", ep_desc.bDescriptorType);
 
-        printf("ep_desc->bInterval %u\n", ep_desc.bInterval);
-        printf("ep_desc->bSynchAddress %u\n", ep_desc.bSynchAddress);
-        printf("ep_desc->bmAttributes %u\n", ep_desc.bmAttributes);
-        printf("ep_desc->extra_length %d\n", ep_desc.extra_length);
-        printf("ep_desc->wMaxPacketSize %u\n", ep_desc.wMaxPacketSize);
+        log_info("ep_desc->bInterval %u", ep_desc.bInterval);
+        log_info("ep_desc->bSynchAddress %u", ep_desc.bSynchAddress);
+        log_info("ep_desc->bmAttributes %u", ep_desc.bmAttributes);
+        log_info("ep_desc->extra_length %d", ep_desc.extra_length);
+        log_info("ep_desc->wMaxPacketSize %u", ep_desc.wMaxPacketSize);
       }
     }
   }
@@ -278,18 +275,18 @@ int phony_hid_open(struct PhonyHidContext *c) {
   libusb_context *lusb_ctx = NULL;
   status = libusb_init(&lusb_ctx);
   if (status != EXIT_SUCCESS) {
-    fprintf(stderr, "Failed to initialise libusb\n");
+    log_err("Failed to initialise libusb");
     goto out;
   }
   c->lusb_context = lusb_ctx;
 
   status = find_device(c, c->vendor_id, c->product_id);
   if (status != EXIT_SUCCESS) {
-    fprintf(stderr, "Could not open HID device at vid 0x%02x and pid "
-                    "0x%02x\n", c->vendor_id, c->product_id);
+    log_err("Could not open HID device at vid 0x%02x and pid "
+                    "0x%02x", c->vendor_id, c->product_id);
     goto out;
   }
-  printf("Successfully found the expected HID device\n");
+  log_info("Successfully found the expected HID device");
 
   status = auto_detach_kernel(c, 1); // enable auto-detach
   if (status != EXIT_SUCCESS) {
@@ -305,7 +302,7 @@ int phony_hid_open(struct PhonyHidContext *c) {
 
   status = phony_hid_set_hostavail(c, true);
   if (status != EXIT_SUCCESS) {
-    log_err("phony unable to set hostavail: %d\n", status);
+    log_err("phony unable to set hostavail: %d", status);
     goto out;
   }
 
@@ -323,7 +320,7 @@ int phony_hid_close(struct PhonyHidContext *c) {
   if (c->in_report->line_in_use) {
     status = phony_hid_set_off_hook(c, false);
     if (status != EXIT_SUCCESS) {
-      fprintf(stderr, "phony_hid_close failed to hang up an open line\n");
+      log_err("phony_hid_close failed to hang up an open line");
     }
   }
   */
@@ -333,7 +330,7 @@ int phony_hid_close(struct PhonyHidContext *c) {
     if (c->is_interface_claimed) {
       status = libusb_release_interface(dev_h, MAPLE_PHONE_INTERFACE);
       if (status != 0) {
-        fprintf(stderr, "libusb_release_interface error %d\n", status);
+        log_err("libusb_release_interface error %d", status);
       }
     }
 
@@ -341,10 +338,10 @@ int phony_hid_close(struct PhonyHidContext *c) {
     // failures here should not impact subsequent calls.
     status = libusb_reset_device(c->device_handle);
     if (status != 0) {
-      fprintf(stderr, "phony_hid_reset_device error %d %s\n", status,
+      log_err("phony_hid_reset_device error %d %s", status,
               libusb_error_name(status));
     } else {
-      printf("Successfully reset_device\n");
+      log_info("Successfully reset_device");
     }
 
     // NOTE(lbayes): We cannot close the libusb device because we just reset
@@ -352,18 +349,18 @@ int phony_hid_close(struct PhonyHidContext *c) {
     // libusb_close(dev_h);
     libusb_exit(c->lusb_context);
   }
-  printf("Exiting now\n");
+  log_info("Exiting now");
   return status;
 }
 
 int phony_hid_set_hostavail(struct PhonyHidContext *c, bool is_hostavail) {
-  printf("phony_hid_set_hostavail to: %d\n", is_hostavail);
+  log_info("phony_hid_set_hostavail to: %d", is_hostavail);
   c->out_report->host_avail = is_hostavail;
   return phony_hid_set_report(c);
 }
 
 int phony_hid_set_off_hook(struct PhonyHidContext *c, bool is_offhook) {
-  printf("phony_Hid_set_offhook to: %d\n", is_offhook);
+  log_info("phony_Hid_set_offhook to: %d", is_offhook);
   c->out_report->off_hook = is_offhook;
   return phony_hid_set_report(c);
 }

@@ -1,4 +1,4 @@
-//
+//log/
 // Created by lukebayes on 4/17/21.
 //
 
@@ -87,17 +87,17 @@ static int phony_stop_audio(PhonyContext *c) {
 static void *phony_poll_for_updates(void *varg) {
   PhonyContext *c = varg;
   PhonyHidContext *hc = c->hid_context;
-  printf("Phony begin polling...\n");
+  log_info("Phony begin polling...");
   int status = phony_hid_open(hc);
   if (status != EXIT_SUCCESS) {
-    log_err("phony unable to open HID client with status: %d\n", status);
+    log_err("phony unable to open HID client with status: %d", status);
     return NULL;
   }
 
   PhonyState last_state;
   c->is_looping = true;
   while (c->is_looping) {
-    printf("phony waiting for HID report\n");
+    log_info("phony waiting for HID report");
     phony_hid_get_report(hc);
     PhonyHidInReport *ir = hc->in_report;
     if (ir->ring) {
@@ -115,21 +115,20 @@ static void *phony_poll_for_updates(void *varg) {
     int status;
     if (c->state != last_state) {
       if (c->state_changed != NULL) {
-        printf("calling phony state_changed handler now\n");
+        log_info("calling phony state_changed handler now");
         c->state_changed(c->userdata);
-        // (phony_state_changed)c->state_changed(c->userdata);
       }
 
-      printf("UPDATED PHONY STATE to: %s\n", phony_state_to_str(c->state));
+      log_info("UPDATED PHONY STATE to: %s", phony_state_to_str(c->state));
       if (c->state == PHONY_LINE_IN_USE) {
         status = phony_swap_audio(c);
         if (status != EXIT_SUCCESS) {
-          fprintf(stderr, "FAILED TO SWAP AUDIO with: %d\n", status);
+          log_err("FAILED TO SWAP AUDIO with: %d", status);
         }
       } else if (c->state == PHONY_READY) {
         status = phony_stop_audio(c);
         if (status != EXIT_SUCCESS) {
-          fprintf(stderr, "FAILED TO STOP AUDIO with: %d\n", status);
+          log_err("FAILED TO STOP AUDIO with: %d", status);
         }
       }
 
@@ -155,12 +154,12 @@ int phony_open_device(PhonyContext *c, int vid, int pid) {
 
 int phony_open_maple(PhonyContext *c) {
   // Default VID/PID are already set in phony_hid.h
-  printf("phony_open_maple called\n");
+  log_info("phony_open_maple called");
   return phony_begin_polling(c);
 }
 
 int phony_take_off_hook(PhonyContext *c) {
-  printf("phony_take_off_hook called\n");
+  log_info("phony_take_off_hook called");
   // if (c->state == PHONY_READY) {
     int status = phony_hid_set_off_hook(c->hid_context, true);
     if (status != EXIT_SUCCESS) {
@@ -177,8 +176,8 @@ int phony_take_off_hook(PhonyContext *c) {
 
 int phony_hang_up(PhonyContext *c) {
   // if (c->state == PHONY_LINE_IN_USE) {
-    printf("phony_hang_up called\n");
-    int status = phony_hid_set_off_hook(c->hid_context, 0);
+    log_info("phony_hang_up called");
+    int status = phony_hid_set_off_hook(c->hid_context, false);
     if (status != EXIT_SUCCESS) {
       log_err("phony_hang_up failed with status: %d", status);
     }
@@ -189,7 +188,7 @@ int phony_hang_up(PhonyContext *c) {
 }
 
 int phony_dial(PhonyContext *c, const char *numbers) {
-  printf("phony_dial called with %s\n", numbers);
+  log_info("phony_dial called with %s", numbers);
   if (numbers == NULL || numbers[0] == '\0') {
     log_err("phony_dial called with empty input");
     return -EINVAL;
@@ -199,9 +198,9 @@ int phony_dial(PhonyContext *c, const char *numbers) {
     // Take the phone off hook!
     int status = phony_take_off_hook(c);
     if (status != EXIT_SUCCESS) {
-      fprintf(stderr, "failed to take off hook with: %d\n", status);
+      log_err("failed to take off hook with: %d", status);
     }
-    printf("Successfully requested phony_take_off_hook\n");
+    log_info("Successfully requested phony_take_off_hook");
     return status;
     // } else if (c->state == PHONY_LINE_IN_USE) {
     // TODO(lbayes): Update DTMF state and send dial tones to in-progress call.
@@ -248,8 +247,8 @@ void phony_free(PhonyContext *c) {
 int phony_set_state_changed(PhonyContext *c, phony_state_changed callback,
                             void *userdata) {
   if (c->state_changed != NULL) {
-    fprintf(stderr, "phony_set_state_changed cannot accept a second "
-                    "callback\n");
+    log_err("phony_set_state_changed cannot accept a second "
+                    "callback");
     return -EPERM; // Operation not permitted
   }
   c->state_changed = callback;
