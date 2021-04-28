@@ -6,13 +6,25 @@
 #include "phony_test.h"
 #include "stitcher_test.h"
 #include "stitch_test.h"
-#include "stitch_picker_test.h"
 
 char *allTests(void) {
   // Begin the test suite
   muSuiteStart();
 
-  muRunTest(test_stitch_picker_easy_host);
+  // DTMF tests
+  muRunTest(test_dtmf_duration_multiple);
+  muRunTest(test_dtmf_duration_single);
+  muRunTest(test_dtmf_next_sample_without_dial);
+  muRunTest(test_dtmf_null_numbers);
+  muRunTest(test_dtmf_empty_numbers);
+  muRunTest(test_dtmf_sample_count);
+  muRunTest(test_dtmf_sample_multiple);
+  muRunTest(test_dtmf_large_sample_rate);
+  muRunTest(test_dtmf_large_sample_rate_multiple);
+  muRunTest(test_dtmf_large_sample_rate_three);
+  muRunTest(test_dtmf_sample_index);
+  muRunTest(test_dtmf_entry_and_padding);
+  muRunTest(test_dtmf_double_dial);
 
   /*
   // PhonyHid tests
@@ -36,20 +48,6 @@ char *allTests(void) {
   muRunTest(test_fft_empty);
   muRunTest(test_fft_ones);
   muRunTest(test_fft_sine);
-
-  // DTMF tests
-  muRunTest(test_dtmf_duration_multiple);
-  muRunTest(test_dtmf_duration_single);
-  muRunTest(test_dtmf_next_sample_without_dial);
-  muRunTest(test_dtmf_null_numbers);
-  muRunTest(test_dtmf_empty_numbers);
-  muRunTest(test_dtmf_sample_count);
-  muRunTest(test_dtmf_sample_multiple);
-  muRunTest(test_dtmf_large_sample_rate);
-  muRunTest(test_dtmf_large_sample_rate_multiple);
-  muRunTest(test_dtmf_large_sample_rate_three);
-  muRunTest(test_dtmf_sample_index);
-  muRunTest(test_dtmf_entry_and_padding);
 
   // PhoneView tests
   // TODO(lbayes): Running the following test throws errors in console, need

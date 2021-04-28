@@ -18,7 +18,7 @@ set(AppSources
         src/stitcher.h
         src/stitch.c
         src/stitch.h
-        src/stitch_picker.c src/stitch_picker.h)
+        )
 
 set(GtkSources
         src/gtk/application.c
@@ -44,7 +44,8 @@ set(TestSources
         test/test_helper.h
         test/stitch_test.c
         test/stitch_test.h
-        test/stitch_picker_test.c test/stitch_picker_test.h)
+        )
+
 
 set(VendorLibs
         ${PROJECT_SOURCE_DIR}/vendor/kissfft/libkissfft-float.so

@@ -53,6 +53,7 @@ PhonyContext *phony_new(void) {
     phony_free(c);
     return NULL;
   }
+  stitch_init(to_phone);
   c->to_phone = to_phone;
 
   StitchContext *from_phone = stitch_new();
@@ -60,6 +61,7 @@ PhonyContext *phony_new(void) {
     phony_free(c);
     return NULL;
   }
+  stitch_init(from_phone);
   c->from_phone = from_phone;
 
   DtmfContext *dc = dtmf_new();
@@ -77,14 +79,13 @@ static int phony_swap_audio(PhonyContext *c) {
   StitchContext *sc;
 
   sc = c->from_phone;
-  stitch_init(sc);
 
   in = stitch_get_matching_input_device_index(sc, STITCH_ASI_TELEPHONE);
   out = stitch_get_default_output_index(sc);
   stitch_start(sc, in, out);
 
   sc = c->to_phone;
-  stitch_init(sc);
+  stitch_set_dtmf(sc, c->dtmf_context);
 
   in = stitch_get_default_input_index(sc);
   out = stitch_get_matching_output_device_index(sc, STITCH_ASI_TELEPHONE);
@@ -94,7 +95,8 @@ static int phony_swap_audio(PhonyContext *c) {
 }
 
 static int phony_stop_audio(PhonyContext *c) {
-  return stitch_stop(c->from_phone);
+  stitch_stop(c->from_phone);
+  stitch_stop(c->to_phone);
 }
 
 static void *phony_poll_for_updates(void *varg) {
@@ -208,11 +210,15 @@ int phony_dial(PhonyContext *c, const char *numbers) {
     return -EINVAL;
   }
 
+  // Send the numbers to the DTMF service.
+  dtmf_dial(c->dtmf_context, numbers);
+
   // if (c->state == PHONY_READY) {
     // Take the phone off hook!
     int status = phony_take_off_hook(c);
     if (status != EXIT_SUCCESS) {
       log_err("failed to take off hook with: %d", status);
+      return status;
     }
     log_info("Successfully requested phony_take_off_hook");
     return status;
@@ -226,21 +232,17 @@ int phony_dial(PhonyContext *c, const char *numbers) {
 
 void phony_free(PhonyContext *c) {
   if (c != NULL) {
-
     // Hang up if we're in a call.
     if (c->state == PHONY_LINE_IN_USE) {
       phony_hang_up(c);
     }
     if (c->hid_context) {
+      // Let the read thread exit after this call.
+      c->is_looping = false;
       // Attempt to flip hostavail on device.
       phony_hid_set_hostavail(c->hid_context, false);
-    }
-    // Stop listening for state messages from device.
-    if (c->is_looping) {
-      c->is_looping = false;
-      // Cancel the thread, because it's likely blocked on an HID read
-      // operation.
       pthread_cancel(c->thread_id);
+      // pthread_join(c->thread_id, NULL);
     }
     if (c->hid_context != NULL) {
       phony_hid_free(c->hid_context);

@@ -17,5 +17,6 @@ char *test_dtmf_large_sample_rate_multiple(void);
 char *test_dtmf_large_sample_rate_three(void);
 char *test_dtmf_sample_index(void);
 char *test_dtmf_entry_and_padding(void);
+char *test_dtmf_double_dial(void);
 
 #endif //MAPLE_DTMF_TEST_H

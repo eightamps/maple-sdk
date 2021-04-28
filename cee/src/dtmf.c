@@ -10,9 +10,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define MS_PER_ENTRY 250
-#define MS_PER_SPACE 100
-#define TWO_PI ((float)2 * (float)M_PI)
+static const float TWO_PI = M_PI * 2.0f;
 
 typedef struct DtmfToneInfo {
   const int char_code;
@@ -51,18 +49,34 @@ static DtmfToneInfo *get_tone_info(int char_code) {
   return NULL;
 }
 
-int dtmf_dial(DtmfContext *c, const char *values, int sample_rate) {
+int dtmf_dial(DtmfContext *c, const char *values) {
   if (values == NULL || strlen(values) < 1) {
     log_err("dtmf_new values must not be empty");
     return -EINVAL;
   }
 
-  int values_count = (int)strlen(values);
-  c->sample_rate = sample_rate;
-  c->entries = malloc(values_count + 1);
-  strcpy(c->entries, values);
-  c->is_active = true;
+  char *existing = (c->entries != NULL) ? c->entries : "";
 
+  int count = (int)strlen(values);
+  count += (int)strlen(existing);
+
+  char *new_entries = calloc(count + 1, 1);
+  strcat(new_entries, existing);
+  strcat(new_entries, values);
+
+  if (c->entries != NULL) {
+    free(c->entries);
+  }
+  c->entries = new_entries;
+  c->is_active = true;
+  c->duration_ms = 0; // Reset duration so we reconfigure tone timing
+
+  return EXIT_SUCCESS;
+}
+
+int dtmf_set_sample_rate(DtmfContext *c, int sample_rate) {
+  c->sample_rate = sample_rate;
+  log_info("dtmf_set_sample_rate with: %d", c->sample_rate);
   return EXIT_SUCCESS;
 }
 
@@ -72,20 +86,21 @@ struct DtmfContext *dtmf_new() {
     fprintf(stderr, "dtmf_new cannot allocate\n");
     return NULL;
   }
-  c->entry_ms = MS_PER_ENTRY;
-  c->padding_ms = MS_PER_SPACE;
+  c->sample_rate = DTMF_DEFAULT_SAMPLE_RATE;
+  c->entry_ms = DTMF_MS_PER_ENTRY;
+  c->padding_ms = DTMF_MS_PER_SPACE;
 
   return c;
 }
 
 static void configure_dtmf(DtmfContext *c) {
   int values_count = (int)strlen(c->entries);
-  c->duration_ms = values_count * c->entry_ms +
-      (values_count - 1) * c->padding_ms;
-
   float sample_rate = (float)c->sample_rate;
-  float duration_ms = (float)c->duration_ms;
+  float duration_ms = ((values_count * c->entry_ms) +
+      ((values_count - 1) * c->padding_ms));
 
+
+  c->duration_ms = duration_ms;
   c->sample_count = (int)(sample_rate * (duration_ms * 0.001f));
   c->entry_sample_count = (int)(sample_rate * ((float)c->entry_ms * 0.001f));
   c->padding_sample_count = (int)(sample_rate *
@@ -95,19 +110,25 @@ static void configure_dtmf(DtmfContext *c) {
 static float get_sample_for(float freq_1, float freq_2, float sample_rate,
     float sample_index) {
   // Apply the first tone
+  sample_rate = sample_rate * 4;
   float incr1 = TWO_PI / (sample_rate / freq_1);
-  float sample = (sinf(incr1 * sample_index) * 0.5f);
+  float sample = (sinf(incr1 * sample_index) * 0.7f);
 
   // Apply the second tone
   float incr2 = TWO_PI / (sample_rate / freq_2);
-  sample += (sinf(incr2 * sample_index) * 0.5f);
+  sample += (sinf(incr2 * sample_index) * 0.7f);
 
   return sample;
 }
 
-int dtmf_next_sample(DtmfContext *c, float **sample) {
+int dtmf_next_sample(DtmfContext *c, float *sample) {
   if (!c->is_active) {
     log_err("dtmf_next_sample must follow dtmf_dial call");
+    return -EINVAL;
+  }
+
+  if (c->entries == NULL) {
+    log_err("Cannot configure DTMF unless dtmf_dial has been called first.");
     return -EINVAL;
   }
 
@@ -118,8 +139,8 @@ int dtmf_next_sample(DtmfContext *c, float **sample) {
   // We've exceeded our window, return empty samples.
   // TODO(lbayes): Should return something else to end signal.
   if (c->sample_index >= c->sample_count) {
-    c->is_complete = true;
-    **sample = 0.0f;
+    c->is_active = false;
+    // *sample = 0x0f;
     return 0;
   }
 
@@ -131,7 +152,7 @@ int dtmf_next_sample(DtmfContext *c, float **sample) {
   // We're inside of a padding block
   if (entry_location > c->entry_sample_count) {
     c->sample_index++;
-    **sample = 0.0f;
+    // *sample = 0.0f;
     return 0;
   }
 
@@ -143,7 +164,7 @@ int dtmf_next_sample(DtmfContext *c, float **sample) {
       (float)tones->tone2,
       (float)c->sample_rate,
       (float)c->sample_index);
-  *sample = &result;
+  *sample = result;
   // printf("RESULT: %.6f\n", result);
   // printf("SAMPLE: %.6f\n", **sample);
   c->sample_index++;

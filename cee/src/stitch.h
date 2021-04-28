@@ -5,9 +5,10 @@
 #ifndef MAPLE_STITCH_H
 #define MAPLE_STITCH_H
 
+#include "dtmf.h"
 #include <pthread.h>
-#include <stdbool.h>
 #include <soundio/soundio.h>
+#include <stdbool.h>
 
 #define STITCH_ASI_TELEPHONE "ASI Telephone"
 #define STITCH_ASI_MICROPHONE "ASI Microphone"
@@ -39,8 +40,8 @@ static enum SoundIoFormat prioritized_formats[] = {
 };
 
 static int prioritized_sample_rates[] = {
-    24000,
     44100,
+    24000,
     48000,
 };
 
@@ -52,6 +53,7 @@ typedef struct StitchDevice {
 
 typedef struct StitchContext {
   struct SoundIo *soundio;
+  DtmfContext *dtmf_context;
   pthread_t thread_id;
   int thread_exit_status;
   float input_latency;
@@ -68,6 +70,7 @@ typedef struct StitchContext {
 StitchContext *stitch_new(void);
 int stitch_init(StitchContext *c);
 
+int stitch_set_dtmf(StitchContext *c, DtmfContext *d);
 int stitch_get_default_input_index(StitchContext *c);
 int stitch_get_default_output_index(StitchContext *c);
 int stitch_get_matching_input_device_index(StitchContext *c, char *name);

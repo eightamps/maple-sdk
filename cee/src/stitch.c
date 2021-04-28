@@ -167,14 +167,23 @@ static void write_callback(struct SoundIoOutStream *outstream,
       break;
     }
 
+    DtmfContext *d = c->dtmf_context;
+    float *sample = calloc(sizeof(float), 1);
+
     for (int frame = 0; frame < fframe_count; frame += 1) {
       for (int ch = 0; ch < outstream->layout.channel_count; ch += 1) {
-        memcpy(areas[ch].ptr, read_ptr, outstream->bytes_per_sample);
+        if (d && d->is_active) {
+          dtmf_next_sample(d, sample);
+          memcpy(areas[ch].ptr, sample, outstream->bytes_per_sample);
+        } else {
+          memcpy(areas[ch].ptr, read_ptr, outstream->bytes_per_sample);
+        }
         areas[ch].ptr += areas[ch].step;
         read_ptr += outstream->bytes_per_sample;
       }
     }
 
+    free(sample);
     status = soundio_outstream_end_write(outstream);
     if (status) {
       log_err("end write error: %s", soundio_strerror(status));
@@ -357,6 +366,9 @@ static void *stitch_start_thread(void *vargp) {
     return NULL;
   }
 
+  if (c->dtmf_context != NULL) {
+    dtmf_set_sample_rate(c->dtmf_context, *sample_rate);
+  }
   log_info("Starting with sample_rate: %d", *sample_rate);
 
   enum SoundIoFormat *fmt;
@@ -537,6 +549,10 @@ static int get_matching_device_index(StitchContext *c,
   }
 
   return result;
+}
+
+int stitch_set_dtmf(StitchContext *c, DtmfContext *d) {
+  c->dtmf_context = d;
 }
 
 int stitch_get_default_input_index(StitchContext *c) {

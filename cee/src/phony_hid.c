@@ -327,12 +327,14 @@ int phony_hid_close(struct PhonyHidContext *c) {
 
   libusb_device_handle *dev_h = c->device_handle;
   if (dev_h != NULL) {
+    /*
     if (c->is_interface_claimed) {
       status = libusb_release_interface(dev_h, MAPLE_PHONE_INTERFACE);
       if (status != 0) {
         log_err("libusb_release_interface error %d", status);
       }
     }
+     */
 
     // NOTE(lbayes): Ignore error, it's logged in the called method and any
     // failures here should not impact subsequent calls.
@@ -344,7 +346,7 @@ int phony_hid_close(struct PhonyHidContext *c) {
       log_info("Successfully reset_device");
     }
 
-    // NOTE(lbayes): We cannot close the libusb device because we just reset
+   // NOTE(lbayes): We cannot close the libusb device because we just reset
     // the device...
     // libusb_close(dev_h);
     libusb_exit(c->lusb_context);

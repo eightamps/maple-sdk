@@ -10,6 +10,11 @@
 
 #include <stdbool.h>
 
+#define DTMF_DEFAULT_SAMPLE_RATE 44100
+#define DTMF_MS_PER_ENTRY 500
+#define DTMF_MS_PER_SPACE 500
+
+
 typedef struct DtmfContext {
   int duration_ms;
   int entry_ms;
@@ -20,7 +25,6 @@ typedef struct DtmfContext {
   int sample_index;
   int sample_rate;
   bool is_active;
-  bool is_complete;
   char *entries;
 }DtmfContext;
 
@@ -37,8 +41,17 @@ DtmfContext *dtmf_new(void);
  * @param sample_rate: The sample rate in Hz (e.g., 44100)
  * @return
  */
-int dtmf_dial(DtmfContext *c, const char *values, int sample_rate);
+int dtmf_dial(DtmfContext *c, const char *values);
 
+/**
+ * Set the DTMF sample rate.
+ *
+ * This should be done before calling next_sample.
+ * @param *DtmfContext
+ * @param int sample_rate
+ * @return Status code
+ */
+int dtmf_set_sample_rate(DtmfContext *c, int sample_rate);
 /**
  * Get the next DTMF sample for the configured context.
  *
@@ -48,7 +61,7 @@ int dtmf_dial(DtmfContext *c, const char *values, int sample_rate);
  * @param DtmfContext*: The context for samples.
  * @return float: The current sample value.
  */
-int dtmf_next_sample(DtmfContext *c, float **sample);
+int dtmf_next_sample(DtmfContext *c, float *sample);
 
 /**
  * Free the provided context object.

@@ -6,6 +6,14 @@
 #include "stdio.h"
 #include "string.h"
 
+/**
+ * Returns 0 if both floats convert to the same 3 digit string value using
+ * snprintf.
+ *
+ * @param a (float)
+ * @param b (float)
+ * @return 0 if matching
+ */
 int floats_match_as_str(float a, float b) {
   const size_t len = 6;
   char a_str[len];
