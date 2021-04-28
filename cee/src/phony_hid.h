@@ -14,7 +14,7 @@
 typedef struct PhonyHidInReport {
   uint8_t loop; // 0
   uint8_t ring; // 1
-  uint8_t ring2; // 2
+  uint8_t line_not_found; // 2
   uint8_t line_in_use; // 3
   uint8_t polarity; // 4
   uint8_t unused__;
@@ -65,5 +65,7 @@ int phony_hid_set_off_hook(struct PhonyHidContext *c, bool is_offhook);
 int phony_hid_set_hostavail(struct PhonyHidContext *c, bool is_hostavail);
 
 void phony_hid_free(struct PhonyHidContext *c);
+
+int phony_hid_in_report_to_struct(PhonyHidInReport *in_report, uint8_t value);
 
 #endif // MAPLE_PHONY_HID_H

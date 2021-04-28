@@ -7,6 +7,7 @@
 #include "minunit.h"
 #include <string.h>
 
+
 /*
 static uint8_t struct_to_out_report_fake(PhonyHidOutReport *r) {
   printf("struct_to_out_report with:\n");
@@ -30,41 +31,45 @@ static uint8_t struct_to_out_report_fake(PhonyHidOutReport *r) {
   return state;
 }
 */
-static int in_report_to_struct(PhonyHidInReport *in_report, uint8_t value) {
-  in_report->loop = (value >> 0) & 1;
-  in_report->ring = (value >> 1) & 1;
-  in_report->ring2 = (value >> 2) & 1;
-  in_report->line_in_use = (value >> 3) & 1;
-  in_report->polarity = (value >> 4) & 1;
 
-  return EXIT_SUCCESS;
-}
-
-char *test_struct_transform(void) {
+char *test_hid_in_report_to_struct(void) {
   PhonyHidInReport *in = calloc(sizeof(struct PhonyHidInReport), 1);
   muAssert(in != NULL, "Expected in report");
 
-  in_report_to_struct(in, 0x01);
+  phony_hid_in_report_to_struct(in, 0x01);
   muAssert(in->loop, "Expected loop");
   muAssert(in->ring == 0, "Expected no ring");
-  muAssert(in->ring2 == 0, "Expected no ring2");
+  muAssert(in->line_not_found == 0, "Expected no line_not_found");
   muAssert(in->line_in_use == 0, "Expected no line_in_use");
   muAssert(in->polarity == 0, "Expected no polarity");
 
-  in_report_to_struct(in, 0x02);
+  phony_hid_in_report_to_struct(in, 0x02);
   muAssert(in->loop == 0, "Expected no loop");
   muAssert(in->ring, "Expected ring");
-  muAssert(in->ring2 == 0, "Expected no ring2");
+  muAssert(in->line_not_found == 0, "Expected no line_not_found");
   muAssert(in->line_in_use == 0, "Expected no line_in_use");
   muAssert(in->polarity == 0, "Expected no polarity");
 
-  in_report_to_struct(in, 0x03);
+  phony_hid_in_report_to_struct(in, 0x03);
   muAssert(in->loop, "Expected loop");
   muAssert(in->ring, "Expected ring");
-  muAssert(in->ring2 == 0, "Expected no ring2");
+  muAssert(in->line_not_found == 0, "Expected no line_not_found");
   muAssert(in->line_in_use == 0, "Expected no line_in_use");
   muAssert(in->polarity == 0, "Expected no polarity");
 
+  phony_hid_in_report_to_struct(in, 0x04);
+  muAssert(in->loop == 0, "Expected no loop");
+  muAssert(in->ring == 0, "Expected ring");
+  muAssert(in->line_not_found == 1, "Expected no line_not_found");
+  muAssert(in->line_in_use == 0, "Expected no line_in_use");
+  muAssert(in->polarity == 0, "Expected no polarity");
+
+  phony_hid_in_report_to_struct(in, 0x05);
+  muAssert(in->loop == 1, "Expected no loop");
+  muAssert(in->ring == 0, "Expected ring");
+  muAssert(in->line_not_found == 0, "Expected no line_not_found");
+  muAssert(in->line_in_use == 1, "Expected no line_in_use");
+  muAssert(in->polarity == 0, "Expected no polarity");
 
   /*
   PhonyHidOutReport *out = calloc(sizeof(struct PhonyHidOutReport), 1);
@@ -91,30 +96,6 @@ char *test_struct_transform(void) {
 
   // muAssert(0, "SDF");
    */
-  return NULL;
-}
-
-char *test_phony_hid_state(void) {
-  const char *one = phony_hid_state_to_str(PHONY_NOT_READY);
-  muAssert(strcmp("Not ready", one) == 0, "Expected Not ready");
-
-  const char *two = phony_hid_state_to_str(PHONY_READY);
-  muAssert(strcmp("Ready", two) == 0, "Expected Ready");
-
-  const char *three = phony_hid_state_to_str(PHONY_OFF_HOOK);
-  muAssert(strcmp("Off hook", three) == 0, "Expected Off hook");
-
-  const char *four = phony_hid_state_to_str(PHONY_RINGING);
-  muAssert(strcmp("Ringing", four) == 0, "Expected Ringing");
-
-  const char *five = phony_hid_state_to_str(PHONY_LINE_NOT_FOUND);
-  muAssert(strcmp("Line not found", five) == 0, "Expected Line not found");
-
-  const char *six = phony_hid_state_to_str(PHONY_LINE_IN_USE);
-  muAssert(strcmp("Line in use", six) == 0, "Expected Line in use");
-
-  const char *seven = phony_hid_state_to_str(PHONY_HOST_NOT_FOUND);
-  muAssert(strcmp("Host not found", seven) == 0, "Expected Host not found");
   return NULL;
 }
 

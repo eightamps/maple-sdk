@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 const char *phony_state_to_str(int state) {
   switch (state) {
@@ -25,6 +24,10 @@ const char *phony_state_to_str(int state) {
     return "Line not found";
   case PHONY_LINE_IN_USE:
     return "Line in use";
+  case PHONY_DEVICE_NOT_FOUND:
+    return "Device not found";
+  default:
+    return "Unknown state";
   }
 }
 
@@ -97,11 +100,11 @@ static void *phony_poll_for_updates(void *varg) {
     printf("phony waiting for HID report\n");
     phony_hid_get_report(hc);
     PhonyHidInReport *ir = hc->in_report;
-    if (ir->ring || ir->ring2) {
+    if (ir->ring) {
       c->state = PHONY_RINGING;
     } else if (ir->line_in_use) {
       c->state = PHONY_LINE_IN_USE;
-    } else if (!ir->loop) {
+    } else if (!ir->loop || ir->line_not_found) {
       c->state = PHONY_LINE_NOT_FOUND;
     } else if (ir->loop) {
       c->state = PHONY_READY;
@@ -210,12 +213,24 @@ int phony_dial(PhonyContext *c, const char *numbers) {
 
 void phony_free(PhonyContext *c) {
   if (c != NULL) {
+
+    // Hang up if we're in a call.
+    if (c->state == PHONY_LINE_IN_USE) {
+      phony_hang_up(c);
+    }
+    if (c->hid_context) {
+      // Attempt to flip hostavail on device.
+      phony_hid_set_hostavail(c->hid_context, false);
+    }
     // Stop listening for state messages from device.
     if (c->is_looping) {
       c->is_looping = false;
       // Cancel the thread, because it's likely blocked on an HID read
       // operation.
       pthread_cancel(c->thread_id);
+    }
+    if (c->hid_context != NULL) {
+      phony_hid_free(c->hid_context);
     }
     if (c->to_phone != NULL) {
       stitch_free(c->to_phone);
@@ -225,9 +240,6 @@ void phony_free(PhonyContext *c) {
     }
     if (c->dtmf_context != NULL) {
       dtmf_free(c->dtmf_context);
-    }
-    if (c->hid_context != NULL) {
-      phony_hid_free(c->hid_context);
     }
     free(c);
   }

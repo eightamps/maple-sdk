@@ -17,6 +17,7 @@ typedef enum PhonyState {
   PHONY_RINGING,
   PHONY_LINE_NOT_FOUND,
   PHONY_LINE_IN_USE,
+  PHONY_DEVICE_NOT_FOUND,
 }PhonyState;
 
 
@@ -33,9 +34,6 @@ typedef struct PhonyContext {
   DtmfContext  *dtmf_context;
   StitchContext *to_phone;
   StitchContext *from_phone;
-
-
-  //StitcherContext *stitcher_context;
   pthread_t thread_id;
   bool is_looping;
 }PhonyContext;
@@ -105,5 +103,8 @@ void phony_free(PhonyContext *c);
  * @return const char *label
  */
 const char *phony_state_to_str(int state);
+
+//
+int phony_in_report_to_struct(PhonyHidInReport *in_report, uint8_t value);
 
 #endif //MAPLE_PHONY_H

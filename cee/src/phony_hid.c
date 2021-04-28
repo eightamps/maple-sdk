@@ -37,19 +37,29 @@ static uint8_t struct_to_out_report(PhonyHidOutReport *r) {
   return state;
 }
 
-static int in_report_to_struct(PhonyHidInReport *in_report, uint8_t value) {
+int phony_hid_in_report_to_struct(PhonyHidInReport *in_report, uint8_t value) {
   in_report->loop = (value >> 0) & 1;
   in_report->ring = (value >> 1) & 1;
-  in_report->line_in_use = (value >> 2) & 1;
-  in_report->polarity = (value >> 3) & 1;
+  in_report->line_not_found = (value >> 2) & 1;
+  in_report->line_in_use = (value >> 3) & 1;
+  in_report->polarity = (value >> 4) & 1;
+
+  // TODO(lbayes): Found this condition experimentally while working on other
+  //  issues. Figure out why this is happening.
+  if (in_report->loop && in_report->line_not_found) {
+    in_report->line_not_found = false;
+    in_report->line_in_use = true;
+  }
 
   printf("in_report_to_struct with:\n");
-  printf("INPUT: 0x%02x\n", value);
+  printf("RAW VALUE: 0x%02x\n", value);
+  /*
   printf("loop: 0x%02x\n", in_report->loop);
   printf("ring: 0x%02x\n", in_report->ring);
-  printf("ring2: 0x%02x\n", in_report->ring2);
+  printf("line_not_found: 0x%02x\n", in_report->line_not_found);
   printf("line_in_use: 0x%02x\n", in_report->line_in_use);
   printf("polarity: 0x%02x\n", in_report->polarity);
+  */
 
   return EXIT_SUCCESS;
 }
@@ -107,7 +117,7 @@ int phony_hid_get_report(struct PhonyHidContext *c) {
   status = interrupt_transfer(c, addr, data, len);
   printf("phony_hid_get_report finished with status: %d\n", status);
   if (status == EXIT_SUCCESS) {
-    in_report_to_struct(c->in_report, data[1]);
+    phony_hid_in_report_to_struct(c->in_report, data[1]);
   }
 
   return status;
@@ -231,8 +241,8 @@ static int get_config_descriptors(struct PhonyHidContext *c) {
       printf("bNumEndpoints: %u\n", desc->bNumEndpoints);
       printf("iInterface: %u\n", desc->iInterface);
 
-      for (int i = 0; i < desc->bNumEndpoints; i++) {
-        const struct libusb_endpoint_descriptor ep_desc = desc->endpoint[i];
+      for (int k = 0; k < desc->bNumEndpoints; k++) {
+        const struct libusb_endpoint_descriptor ep_desc = desc->endpoint[k];
         printf("---\n");
         printf("ENDPOINT:\n");
         uint8_t addr = ep_desc.bEndpointAddress;
@@ -361,6 +371,7 @@ int phony_hid_set_off_hook(struct PhonyHidContext *c, bool is_offhook) {
 void phony_hid_free(struct PhonyHidContext *c) {
   if (c != NULL) {
     phony_hid_close(c);
+
     if (c->in_report != NULL) {
       free(c->in_report);
     }

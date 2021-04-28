@@ -65,16 +65,30 @@ static void update_buttons(PhonyViewContext *c, bool show_dial) {
   GtkWidget *hang_up_btn = GTK_WIDGET(c->hang_up_btn);
 
   gtk_widget_set_visible(dial_btn, show_dial);
+  gtk_widget_set_sensitive(dial_btn, show_dial);
+
   gtk_widget_set_visible(hang_up_btn, !show_dial);
+  gtk_widget_set_sensitive(hang_up_btn, !show_dial);
 }
 
-static void phony_state_changed_handler(void *varg) {
+static void disable_buttons(PhonyViewContext *c) {
+  GtkWidget *dial_btn = GTK_WIDGET(c->dial_btn);
+  GtkWidget *hang_up_btn = GTK_WIDGET(c->hang_up_btn);
+
+  gtk_widget_set_sensitive(dial_btn, FALSE);
+  gtk_widget_set_sensitive(hang_up_btn, FALSE);
+}
+
+static void phony_state_changed_idle_handler(void *varg) {
   PhonyViewContext *c = varg;
   PhonyContext *pc = c->phony;
   // Only do work on state transitions.
   switch (pc->state) {
   case PHONY_LINE_NOT_FOUND:
-    printf("LINE NOT FOUND\n");
+  case PHONY_DEVICE_NOT_FOUND:
+    printf("LINE OR DEVICE NOT FOUND\n");
+    update_buttons(c, PV_SHOW_DIAL);
+    disable_buttons(c);
     break;
   case PHONY_RINGING:
     printf("ring ring, ring ring\n");
@@ -89,6 +103,10 @@ static void phony_state_changed_handler(void *varg) {
   case PHONY_NOT_READY:
     break;
   }
+}
+
+static void phony_state_changed_handler(void *varg) {
+  g_idle_add(phony_state_changed_idle_handler, varg);
 }
 
 struct PhonyViewContext *phone_view_new(PhonyContext *model) {
@@ -190,7 +208,7 @@ struct PhonyViewContext *phone_view_new(PhonyContext *model) {
   gtk_entry_set_text(entry, DEFAULT_8A_PHONE_NUMBER);
 
   c->widget = GTK_WIDGET(box);
-  // update_buttons(c, PV_SHOW_DIAL);
+  update_buttons(c, PV_SHOW_DIAL);
   return c;
 }
 

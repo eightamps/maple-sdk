@@ -200,6 +200,13 @@ static void underflow_callback(struct SoundIoOutStream *outstream) {
   StitchContext *c = outstream->userdata;
   log_err("stitch write_underflow count: %d on stream id: %ld", ++count,
           c->thread_id);
+  if (count > 10) {
+    log_err("stitch killing thread now due to underflow conditions");
+    c->is_active = false;
+    pthread_cancel(c->thread_id);
+    c->thread_exit_status = -EIO; // I/O error
+    count = 0;
+  }
 }
 
 int stitch_init(StitchContext *c) {
@@ -248,8 +255,8 @@ static void *stitch_start_thread(void *vargp) {
     bool found = false;
     for (int i = 0; i < soundio_input_device_count(soundio); i += 1) {
       struct SoundIoDevice *device = soundio_get_input_device(soundio, i);
-      if (device->is_raw == c->in_raw && strcmp(device->id, c->in_device_id) ==
-                                         0) {
+      if (device->is_raw == c->in_raw &&
+          strcmp(device->id, c->in_device_id) == 0) {
         in_device_index = i;
         found = true;
         soundio_device_unref(device);
@@ -392,7 +399,7 @@ static void *stitch_start_thread(void *vargp) {
   outstream->format = *fmt;
   outstream->sample_rate = *sample_rate;
   outstream->layout = *layout;
-  outstream->software_latency = c->input_latency;
+  outstream->software_latency = c->input_latency / 2;
   outstream->write_callback = write_callback;
   outstream->underflow_callback = underflow_callback;
 
