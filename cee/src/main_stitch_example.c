@@ -56,9 +56,9 @@ int main(int argc, char **argv) {
       } else if (strcmp(arg, "--backend") == 0) {
         c->backend = stitch_get_backend_from_label(argv[i]);
       } else if (strcmp(arg, "--in-device") == 0) {
-        c->in_device_id = argv[i];
+        c->in_device_index = argv[i];
       } else if (strcmp(arg, "--out-device") == 0) {
-        c->out_device_id = argv[i];
+        c->out_device_index = argv[i];
       } else if (strcmp(arg, "--latency") == 0) {
         c->input_latency = atof(argv[i]);
       } else {
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  stitch_start(c);
+  stitch_start(c, NULL, NULL);
   int incr = 0;
   while (incr++ < 5) {
     printf("main looping\n");

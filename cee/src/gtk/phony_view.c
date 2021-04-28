@@ -81,7 +81,7 @@ static void disable_buttons(PhonyViewContext *c) {
   gtk_widget_set_sensitive(hang_up_btn, FALSE);
 }
 
-static void phony_state_changed_idle_handler(void *varg) {
+static int phony_state_changed_idle_handler(void *varg) {
   PhonyViewContext *c = varg;
   PhonyContext *pc = c->phony;
   // Only do work on state transitions.
@@ -107,10 +107,11 @@ static void phony_state_changed_idle_handler(void *varg) {
   }
 
   g_idle_remove_by_data(varg);
+  return EXIT_SUCCESS;
 }
 
 static void phony_state_changed_handler(void *varg) {
-  g_idle_add(phony_state_changed_idle_handler, varg);
+  g_idle_add(&phony_state_changed_idle_handler, varg);
 }
 
 struct PhonyViewContext *phone_view_new(PhonyContext *model) {

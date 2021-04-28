@@ -6,11 +6,15 @@
 #include "phony_test.h"
 #include "stitcher_test.h"
 #include "stitch_test.h"
+#include "stitch_picker_test.h"
 
 char *allTests(void) {
   // Begin the test suite
   muSuiteStart();
 
+  muRunTest(test_stitch_picker_easy_host);
+
+  /*
   // PhonyHid tests
   // muRunTest(test_phony_hid_open); // TODO(lbayes): mock the service
   muRunTest(test_phony_hid_new);
@@ -19,8 +23,6 @@ char *allTests(void) {
   // Phony tests
   muRunTest(test_phony_state);
 
-
-  /*
   // Stitch tests
   muRunTest(test_stitch_new);
   muRunTest(test_stitch_init_null);

@@ -80,7 +80,7 @@ int stitch_exercise(void) {
   }
   log_info("init success");
 
-  status = stitch_start(c);
+  status = stitch_start(c, NULL, NULL);
   if (status != EXIT_SUCCESS) {
     log_err("Failed start");
     return status;

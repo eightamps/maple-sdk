@@ -68,15 +68,28 @@ PhonyContext *phony_new(void) {
     return NULL;
   }
   c->dtmf_context = dc;
-
   return c;
 }
 
 static int phony_swap_audio(PhonyContext *c) {
   int status = EXIT_SUCCESS;
-  StitchContext *from = c->from_phone;
-  stitch_init(from);
-  stitch_start(from);
+  int in, out;
+  StitchContext *sc;
+
+  sc = c->from_phone;
+  stitch_init(sc);
+
+  in = stitch_get_matching_input_device_index(sc, STITCH_ASI_TELEPHONE);
+  out = stitch_get_default_output_index(sc);
+  stitch_start(sc, in, out);
+
+  sc = c->to_phone;
+  stitch_init(sc);
+
+  in = stitch_get_default_input_index(sc);
+  out = stitch_get_matching_output_device_index(sc, STITCH_ASI_TELEPHONE);
+  stitch_start(sc, in, out);
+
   return status;
 }
 
@@ -125,7 +138,8 @@ static void *phony_poll_for_updates(void *varg) {
         if (status != EXIT_SUCCESS) {
           log_err("FAILED TO SWAP AUDIO with: %d", status);
         }
-      } else if (c->state == PHONY_READY) {
+      } else if (last_state == PHONY_LINE_IN_USE &&
+          c->state == PHONY_READY) {
         status = phony_stop_audio(c);
         if (status != EXIT_SUCCESS) {
           log_err("FAILED TO STOP AUDIO with: %d", status);
