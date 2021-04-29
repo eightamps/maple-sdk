@@ -16,8 +16,9 @@
 #define STITCH_WAY_2_CALL_LOWER "way2call"
 #define STITCH_SPDIF "PDIF"
 #define STITCH_PULSE_AUDIO "PulseAudio sound server"
-#define STITCH_BUFFER_CAPACITY_MULTIPLIER 40
-#define STITCH_DEFAULT_LATENCY_MS (float)0.06f
+#define STITCH_BUFFER_CAPACITY_MULTIPLIER 30
+#define STITCH_DEFAULT_LATENCY_MS (float)0.07f
+#define STITCH_OUT_DELAY_SECONDS 2
 
 static enum SoundIoFormat prioritized_formats[] = {
     SoundIoFormatFloat32NE,

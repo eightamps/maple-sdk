@@ -384,7 +384,7 @@ static void *stitch_start_thread(void *vargp) {
   }
 
   // Wait some time before starting up the outstream handling
-  sleep(2);
+  sleep(STITCH_OUT_DELAY_SECONDS);
 
   status = soundio_outstream_start(outstream);
   if (status != EXIT_SUCCESS) {
