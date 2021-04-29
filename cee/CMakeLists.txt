@@ -3,6 +3,12 @@ project(maple C)
 
 set(CMAKE_C_STANDARD 11)
 
+option(TEST_MODE "Activate TEST_MODE" OFF)
+
+if(TEST_MODE)
+        add_definitions(-DTEST_MODE)
+endif()
+
 include_directories(src)
 include_directories(test)
 include_directories(vendor/kissfft)

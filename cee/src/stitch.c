@@ -14,7 +14,7 @@ static int min_int(int a, int b) {
   return (a < b) ? a : b;
 }
 
-StitchContext *stitch_new_with_label(const char *label) {
+StitchContext *stitch_new_with_label(char *label) {
   StitchContext *c = stitch_new();
   c->label = label;
   return c;

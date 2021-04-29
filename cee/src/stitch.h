@@ -62,7 +62,7 @@ typedef struct StitchContext {
   struct SoundIoRingBuffer *ring_buffer;
 }StitchContext;
 
-StitchContext *stitch_new_with_label(const char *label);
+StitchContext *stitch_new_with_label(char *label);
 StitchContext *stitch_new(void);
 int stitch_init(StitchContext *c);
 
