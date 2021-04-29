@@ -9,6 +9,9 @@
 #include "stitch.h"
 #include "dtmf.h"
 
+#define PHONY_EIGHT_AMPS_VID 0x335e
+#define PHONY_MAPLE_V3_PID 0x8a01
+
 typedef enum PhonyState {
   PHONY_NOT_READY = 0,
   PHONY_READY,

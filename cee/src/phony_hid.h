@@ -8,9 +8,6 @@
 #include <libusb-1.0/libusb.h>
 #include <stdbool.h>
 
-#define EIGHT_AMPS_VID 0x335e
-#define MAPLE_V3_PID 0x8a01
-
 typedef struct PhonyHidInReport {
   uint8_t loop; // 0
   uint8_t ring; // 1

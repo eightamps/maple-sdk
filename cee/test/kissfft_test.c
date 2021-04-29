@@ -7,9 +7,9 @@
 #include <kiss_fft.h>
 #include <math.h>
 
-#define TWO_PI 2.0f * (float)M_PI
+#define TWO_PI (2.0f * (float)M_PI)
 #define N 16
-#define NF N / 2 - 1
+#define NF (N / 2 - 1)
 
 static char *exec_fft(const kiss_fft_cpx in[N],
                      kiss_fft_cpx out[NF]) {
@@ -30,7 +30,7 @@ char *test_fft_empty(void) {
 
   exec_fft(in, out);
   muAssert(out[0].r == 0.0f, "Expected zero");
-  muAssert(out[15].r == 0.0f, "Expected zero");
+  muAssert(out[NF].r == 0.0f, "Expected zero");
 
   return NULL;
 }

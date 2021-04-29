@@ -56,8 +56,8 @@ typedef struct StitchContext {
   int out_device_index;
   bool is_initialized;
   bool is_active;
-  bool in_raw;
-  bool out_raw;
+  // bool in_raw;
+  // bool out_raw;
   enum SoundIoBackend backend;
   struct SoundIoRingBuffer *ring_buffer;
 }StitchContext;
@@ -76,6 +76,6 @@ int stitch_start(StitchContext *c, int in_index, int out_index);
 int stitch_stop(StitchContext *c);
 int stitch_join(StitchContext *c);
 void stitch_free(StitchContext *c);
-enum SoundIoBackend stitch_get_backend_from_label(char *label);
+// enum SoundIoBackend stitch_get_backend_from_label(char *label);
 
 #endif //MAPLE_STITCH_H

@@ -9,8 +9,8 @@
  ******************************************************************************
  */
 
-#ifndef _DEBUG_H_
-#define _DEBUG_H_
+#ifndef MAPLE_LOG
+#define MAPLE_LOG
 
 #include <stdio.h>
 #include <errno.h>
@@ -58,4 +58,4 @@
 #define check_debug(A, M, ...) if (!(A)) { debug(M, ##__VA_ARGS__);\
   errno = 0; goto error; }
 
-#endif  // _DEBUG_H_
+#endif // MAPLE_LOG

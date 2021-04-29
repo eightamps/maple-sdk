@@ -5,7 +5,6 @@
 #include "phony_hid.h"
 #include "log.h"
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <errno.h>
 
@@ -96,10 +95,9 @@ static int phony_hid_set_report(struct PhonyHidContext *c) {
   unsigned char data[len];
   memset(data, 0x0, len);
   PhonyHidOutReport *out = c->out_report;
-
   log_info("out_report->host_avail: %d", out->host_avail);
   log_info("out_report->off_hook: %d", out->off_hook);
-  data[2] = struct_to_out_report(c->out_report);
+  data[2] = struct_to_out_report(out);
 
   return interrupt_transfer(c, addr, data, len);
 }
@@ -127,8 +125,8 @@ struct PhonyHidContext *phony_hid_new(void) {
     return NULL;
   }
   // Configure default vid and pid
-  c->vendor_id = EIGHT_AMPS_VID;
-  c->product_id = MAPLE_V3_PID;
+  c->vendor_id = 0x0;
+  c->product_id = 0x0;
   c->in_report = calloc(sizeof(PhonyHidInReport), 1);
   c->out_report = calloc(sizeof(PhonyHidOutReport), 1);
   return c;
@@ -152,9 +150,9 @@ int phony_hid_set_product_id(struct PhonyHidContext *c, int pid) {
   return 0;
 }
 
-static int auto_detach_kernel(struct PhonyHidContext *c, int enable) {
+static int auto_detach_kernel(struct PhonyHidContext *c) {
   libusb_device_handle *dev_h = c->device_handle;
-  int status = libusb_set_auto_detach_kernel_driver(dev_h, enable);
+  int status = libusb_set_auto_detach_kernel_driver(dev_h, 1);
   if (status != 0) {
     log_err("libusb_set_auto_detach_kernel_driver = 0 failed with: "
                     "%d", status);
@@ -208,6 +206,7 @@ static int find_device(struct PhonyHidContext *c, int vid, int pid) {
   return LIBUSB_ERROR_NOT_FOUND;
 }
 
+/*
 static int get_config_descriptors(struct PhonyHidContext *c) {
   int status = EXIT_SUCCESS;
   libusb_context *lusb_ctx = c->lusb_context;
@@ -219,7 +218,7 @@ static int get_config_descriptors(struct PhonyHidContext *c) {
   }
 
   log_info("Successfully got config descriptor with:");
-  log_info("bNumberIntefaces: %u", config->bNumInterfaces);
+  log_info("bNumberInterfaces: %u", config->bNumInterfaces);
   log_info("bDescriptorType: %u", config->bDescriptorType);
   log_info("wTotalLength: %u", config->wTotalLength);
 
@@ -264,6 +263,7 @@ static int get_config_descriptors(struct PhonyHidContext *c) {
 
   return status;
 }
+*/
 
 int phony_hid_open(struct PhonyHidContext *c) {
   if (c->is_open) {
@@ -288,7 +288,7 @@ int phony_hid_open(struct PhonyHidContext *c) {
   }
   log_info("Successfully found the expected HID device");
 
-  status = auto_detach_kernel(c, 1); // enable auto-detach
+  status = auto_detach_kernel(c); // enable auto-detach
   if (status != EXIT_SUCCESS) {
     goto out;
   }

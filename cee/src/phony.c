@@ -6,10 +6,8 @@
 #include "log.h"
 #include "phony.h"
 #include "phony_hid.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 const char *phony_state_to_str(int state) {
   switch (state) {
@@ -75,29 +73,46 @@ PhonyContext *phony_new(void) {
 }
 
 static int phony_swap_audio(PhonyContext *c) {
-  int status = EXIT_SUCCESS;
-  int in, out;
+  int in_index, out_index;
   StitchContext *sc;
 
+  // Set up the FROM PHONE audio signals
   sc = c->from_phone;
+  in_index = stitch_get_matching_input_device_index(sc, STITCH_ASI_TELEPHONE);
+  if (in_index == -1) {
+    log_err("phony unable to find valid telephone audio input device");
+    return -ENODEV;
+  }
+  out_index = stitch_get_default_output_index(sc);
+  if (out_index == -1) {
+    log_err("phony unable to find valid default host audio output device");
+    return -ENODEV;
+  }
+  stitch_start(sc, in_index, out_index);
 
-  in = stitch_get_matching_input_device_index(sc, STITCH_ASI_TELEPHONE);
-  out = stitch_get_default_output_index(sc);
-  stitch_start(sc, in, out);
-
+  // Set up the TO PHONE audio signals
   sc = c->to_phone;
   stitch_set_dtmf(sc, c->dtmf_context);
+  in_index = stitch_get_default_input_index(sc);
+  if (in_index == -1) {
+    log_err("phony unable to find valid default host audio input device");
+    return -ENODEV;
+  }
 
-  in = stitch_get_default_input_index(sc);
-  out = stitch_get_matching_output_device_index(sc, STITCH_ASI_TELEPHONE);
-  stitch_start(sc, in, out);
+  out_index = stitch_get_matching_output_device_index(sc, STITCH_ASI_TELEPHONE);
+  if (out_index == -1) {
+    log_err("phony unable to find valid telephone audio output device");
+    return -ENODEV;
+  }
+  stitch_start(sc, in_index, out_index);
 
-  return status;
+  return EXIT_SUCCESS;
 }
 
 static int phony_stop_audio(PhonyContext *c) {
   stitch_stop(c->from_phone);
   stitch_stop(c->to_phone);
+  return EXIT_SUCCESS;
 }
 
 static void *phony_poll_for_updates(void *varg) {
@@ -128,7 +143,6 @@ static void *phony_poll_for_updates(void *varg) {
       c->state = PHONY_NOT_READY;
     }
 
-    int status;
     if (c->state != last_state) {
       if (c->state_changed != NULL) {
         log_info("calling phony state_changed handler now");
@@ -143,15 +157,14 @@ static void *phony_poll_for_updates(void *varg) {
         }
       } else if (last_state == PHONY_LINE_IN_USE &&
           c->state == PHONY_READY) {
-        status = phony_stop_audio(c);
-        if (status != EXIT_SUCCESS) {
-          log_err("FAILED TO STOP AUDIO with: %d", status);
-        }
+        phony_stop_audio(c);
       }
 
       last_state = c->state;
     }
   }
+
+  return NULL;
 }
 
 static int begin_polling(PhonyContext *c) {
@@ -170,9 +183,8 @@ int phony_open_device(PhonyContext *c, int vid, int pid) {
 }
 
 int phony_open_maple(PhonyContext *c) {
-  // Default VID/PID are already set in phony_hid.h
   log_info("phony_open_maple called");
-  return begin_polling(c);
+  return phony_open_device(c, PHONY_EIGHT_AMPS_VID, PHONY_MAPLE_V3_PID);
 }
 
 int phony_take_off_hook(PhonyContext *c) {
@@ -192,16 +204,12 @@ int phony_take_off_hook(PhonyContext *c) {
 }
 
 int phony_hang_up(PhonyContext *c) {
-  // if (c->state == PHONY_LINE_IN_USE) {
     log_info("phony_hang_up called");
     int status = phony_hid_set_off_hook(c->hid_context, false);
     if (status != EXIT_SUCCESS) {
       log_err("phony_hang_up failed with status: %d", status);
     }
     return status;
-  // }
-
-  return EXIT_SUCCESS;
 }
 
 int phony_dial(PhonyContext *c, const char *numbers) {
@@ -227,8 +235,6 @@ int phony_dial(PhonyContext *c, const char *numbers) {
     // TODO(lbayes): Update DTMF state and send dial tones to in-progress call.
     // log_err("NOT YET IMPLEMENTED");
   //}
-
-  return EXIT_SUCCESS;
 }
 
 void phony_free(PhonyContext *c) {

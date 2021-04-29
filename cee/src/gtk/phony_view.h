@@ -9,7 +9,6 @@
 #include "phony.h"
 
 typedef struct PhonyViewContext {
-  PhonyState last_state;
   PhonyContext *phony;
   GtkWidget *widget;
   GtkEntry *phone_number_view;

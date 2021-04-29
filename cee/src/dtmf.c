@@ -5,7 +5,6 @@
 #include "dtmf.h"
 #include "log.h"
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -96,11 +95,11 @@ struct DtmfContext *dtmf_new() {
 static void configure_dtmf(DtmfContext *c) {
   int values_count = (int)strlen(c->entries);
   float sample_rate = (float)c->sample_rate;
-  float duration_ms = ((values_count * c->entry_ms) +
+  float duration_ms = (float)((values_count * c->entry_ms) +
       ((values_count - 1) * c->padding_ms));
 
 
-  c->duration_ms = duration_ms;
+  c->duration_ms = (int)duration_ms;
   c->sample_count = (int)(sample_rate * (duration_ms * 0.001f));
   c->entry_sample_count = (int)(sample_rate * ((float)c->entry_ms * 0.001f));
   c->padding_sample_count = (int)(sample_rate *

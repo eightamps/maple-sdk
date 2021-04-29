@@ -28,7 +28,7 @@ StitchContext *stitch_new(void) {
   }
   c->is_initialized = false;
   c->backend = SoundIoBackendNone;
-  c->input_latency = 0.04; // ms
+  c->input_latency = 0.04f; // ms
   return c;
 }
 
@@ -38,13 +38,12 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
     log_err("read_callback unable to get StitchContext");
     return;
   }
-
   // log_info("<< read_callback with min: %d and max: %d", frame_count_min,
-         // frame_count_max);
+  // frame_count_max);
 
+  int status;
   struct SoundIoRingBuffer *ring_buffer = c->ring_buffer;
   struct SoundIoChannelArea *areas;
-  int err;
   char *write_ptr = soundio_ring_buffer_write_ptr(ring_buffer);
   int free_bytes = soundio_ring_buffer_free_count(ring_buffer);
   int free_count = free_bytes / instream->bytes_per_frame;
@@ -60,8 +59,9 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
   for (;;) {
     int frame_count = frames_left;
 
-    if ((err = soundio_instream_begin_read(instream, &areas, &frame_count))) {
-      log_err("begin read error: %s", soundio_strerror(err));
+    status = soundio_instream_begin_read(instream, &areas, &frame_count);
+    if (status != EXIT_SUCCESS) {
+      log_err("begin read error: %s", soundio_strerror(status));
       return;
     }
 
@@ -84,8 +84,9 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
       }
     }
 
-    if ((err = soundio_instream_end_read(instream))) {
-      log_err("end read error: %s", soundio_strerror(err));
+    status = soundio_instream_end_read(instream);
+    if (status != EXIT_SUCCESS) {
+      log_err("end read error: %s", soundio_strerror(status));
       return;
     }
 
@@ -323,7 +324,8 @@ static void *stitch_start_thread(void *vargp) {
   instream->software_latency = c->input_latency;
   instream->read_callback = read_callback;
 
-  if ((status = soundio_instream_open(instream))) {
+  status = soundio_instream_open(instream);
+  if (status != EXIT_SUCCESS) {
     log_err("unable to open input stream: %s", soundio_strerror(status));
     c->thread_exit_status = -EINVAL;
     return NULL;
@@ -345,14 +347,13 @@ static void *stitch_start_thread(void *vargp) {
 
   status = soundio_outstream_open(outstream);
   if (status) {
-    const char *msg = soundio_strerror(status);
-    log_err("unable to open output stream: %s", msg);
+    log_err("unable to open output stream: %s", soundio_strerror(status));
     c->thread_exit_status = -EINVAL;
     return NULL;
   }
 
-  int capacity = (c->input_latency * instream->sample_rate *
-                 instream->bytes_per_frame) * 40;
+  int capacity = (int)(c->input_latency * (float)instream->sample_rate *
+      (float)instream->bytes_per_frame) * 40;
 
   // int capacity = (c->input_latency * 2) * instream->sample_rate *
                  // instream->bytes_per_frame;
@@ -376,7 +377,8 @@ static void *stitch_start_thread(void *vargp) {
   memset(buf, 0x0, fill_count);
   // soundio_ring_buffer_advance_write_ptr(c->ring_buffer, fill_count);
 
-  if ((status = soundio_instream_start(instream))) {
+  status = soundio_instream_start(instream);
+  if (status != EXIT_SUCCESS) {
     log_err("unable to stitch_start input device: %s",
        soundio_strerror(status));
     return NULL;
@@ -385,9 +387,11 @@ static void *stitch_start_thread(void *vargp) {
   // Wait some time before starting up the outstream handling
   sleep(2);
 
-  if ((status = soundio_outstream_start(outstream))) {
+  status = soundio_outstream_start(outstream);
+  if (status != EXIT_SUCCESS) {
     log_err("unable to stitch_start output device: %s",
             soundio_strerror(status));
+    return NULL;
   }
 
   c->is_active = true;
@@ -479,6 +483,7 @@ static int get_matching_device_index(StitchContext *c,
 
 int stitch_set_dtmf(StitchContext *c, DtmfContext *d) {
   c->dtmf_context = d;
+  return EXIT_SUCCESS;
 }
 
 int stitch_get_default_input_index(StitchContext *c) {
@@ -530,6 +535,7 @@ void stitch_free(StitchContext *c) {
   }
 }
 
+/*
 enum SoundIoBackend stitch_get_backend_from_label(char *label) {
   if (strcmp("none", label) == 0 ||
       strcmp("", label) == 0) {
@@ -551,3 +557,4 @@ enum SoundIoBackend stitch_get_backend_from_label(char *label) {
   log_err("Invalid backend: %s", label);
   return -EINVAL;
 }
+*/

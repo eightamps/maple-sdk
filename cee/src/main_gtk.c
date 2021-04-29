@@ -3,7 +3,6 @@
 //
 #include "gtk/application.h"
 #include "log.h"
-#include <stdio.h>
 #include <string.h>
 
 static const char *APP_TITLE = "Demo App";

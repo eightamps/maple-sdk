@@ -17,9 +17,9 @@
  * @return int sample_count
  */
 static int get_sample_count_for(int sample_rate, int char_count) {
-  float duration_ms = ((char_count * DTMF_MS_PER_ENTRY) +
+  float duration_ms = (float)((char_count * DTMF_MS_PER_ENTRY) +
                        ((char_count - 1) * DTMF_MS_PER_SPACE));
-  return (int)(sample_rate * (duration_ms * 0.001f));
+  return (int)((float)sample_rate * (duration_ms * 0.001f));
 }
 
 char *test_dtmf_null_numbers(void) {
@@ -98,7 +98,8 @@ char *test_dtmf_sample_multiple(void) {
   dtmf_set_sample_rate(c, 1000);
   float sample = 0.0f;
   dtmf_next_sample(c, &sample);
-  muAssert(c->sample_count == 1500, "Expected duration");
+  int sample_count = get_sample_count_for(1000, 2);
+  muAssert(c->sample_count == sample_count, "Expected duration");
   dtmf_free(c);
   return NULL;
 }
@@ -110,7 +111,8 @@ char *test_dtmf_large_sample_rate(void) {
   float sample = 0.0f;
   dtmf_next_sample(c, &sample);
   muAssert(0 == floats_match_as_str(0.0f, sample), "Expected sample");
-  muAssert(c->sample_count == 22050, "Expected duration");
+  int sample_count = get_sample_count_for(44100, 1);
+  muAssert(c->sample_count == sample_count, "Expected duration");
   dtmf_free(c);
   return NULL;
 }
@@ -122,7 +124,8 @@ char *test_dtmf_large_sample_rate_multiple(void) {
   float sample = 0.0f;
   dtmf_next_sample(c, &sample);
   muAssert(0 == floats_match_as_str(0.0f, sample), "Expected sample");
-  muAssert(c->sample_count == 66150, "Expected duration");
+  int sample_count = get_sample_count_for(44100, 2);
+  muAssert(c->sample_count == sample_count, "Expected duration");
   dtmf_free(c);
   return NULL;
 }
@@ -169,7 +172,7 @@ char *test_dtmf_entry_and_padding(void) {
   c->sample_index = 100;
   float sample = 0.0f;
   dtmf_next_sample(c, &sample);
-  int matched = floats_match_as_str(sample, -1.16);
+  int matched = floats_match_as_str(sample, -1.16f);
   muAssert(0 == matched, "Expected sample");
   muAssert(c->entry_sample_count == 1000, "Expected complete");
   muAssert(c->padding_sample_count == 1000, "Expected complete");

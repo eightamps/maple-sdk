@@ -38,7 +38,7 @@ static void show_status(PhonyViewContext *c, int status) {
     char *content = malloc(64);
     sprintf(content, "status: %d", status);
     size_t len = strlen(content);
-    gtk_text_buffer_set_text(b, content, len);
+    gtk_text_buffer_set_text(b, content, (gint)len);
     free(content);
   }
 }
