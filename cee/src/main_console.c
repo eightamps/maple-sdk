@@ -28,39 +28,38 @@ void catch_sigterm(void) {
 }
 
 int phony_example(void) {
+  log_info("phony_example starting");
+
   PhonyContext *c = phony_new();
+  if (c == NULL) {
+    log_err("unable to instantiate phony context");
+    return -ENOMEM; // No memory
+  }
+
   phony_context = c;
 
-  log_info("phony_example starting");
   int status = phony_open_maple(c);
   if (status < 0) {
     log_err("phony_open_maple failed with status: %d", status);
     return status;
   }
-  log_info("phony_open_maple succeeded");
 
   // Give the system some time to establish HID connections.
   sleep(1);
 
-  log_info("phony_example dialing");
   status = phony_dial(c, DEFAULT_8A_PHONE_NUMBER);
   if (status < 0) {
     log_err("phony_dial failed with status: %d", status);
     return status;
   }
-  log_info("phony_dial succeeded");
 
-  log_info("phony_example about to sleep");
   sleep(30);
-  log_info("phony_example finished sleeping");
 
-  log_info("phony_hang_up starting now");
   status = phony_hang_up(c);
   if (status != EXIT_SUCCESS) {
     log_err("phony_hang_up failed with: %d", status);
   }
 
-  log_info("phony_free releasing resources");
   phony_free(c);
 
   log_info("phony_example exiting now with 0 success");
