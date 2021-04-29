@@ -57,7 +57,7 @@ int phony_example(void) {
   log_info("phony_hang_up starting now");
   status = phony_hang_up(c);
   if (status != EXIT_SUCCESS) {
-    log_err("phony_hang_up failed with: %d\n", status);
+    log_err("phony_hang_up failed with: %d", status);
   }
 
   log_info("phony_free releasing resources");

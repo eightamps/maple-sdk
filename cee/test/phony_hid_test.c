@@ -7,31 +7,6 @@
 #include "minunit.h"
 #include <string.h>
 
-
-/*
-static uint8_t struct_to_out_report_fake(PhonyHidOutReport *r) {
-  printf("struct_to_out_report with:\n");
-  printf("host_avail: %d\n", r->host_avail);
-  printf("off_hook: %d\n", r->off_hook);
-  uint8_t state = 0;
-
-  if (r->off_hook) {
-    r->host_avail = true; // We always become available if we're going off hook.
-    state = state | (2<<0);
-  } else {
-    state &= ~(2 << 0);
-  }
-
-  if (r->host_avail) {
-    state = state | (1<<0);
-  } else {
-    state &= ~(1 << 0);
-  }
-  printf("output: 0x%02x\n", state);
-  return state;
-}
-*/
-
 char *test_hid_in_report_to_struct(void) {
   PhonyHidInReport *in = calloc(sizeof(struct PhonyHidInReport), 1);
   muAssert(in != NULL, "Expected in report");

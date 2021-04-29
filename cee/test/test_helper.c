@@ -2,9 +2,10 @@
 // Created by lukebayes on 4/25/21.
 //
 
-#include "test_helper.h"
+#include "log.h"
 #include "stdio.h"
 #include "string.h"
+#include "test_helper.h"
 
 /**
  * Returns 0 if both floats convert to the same 3 digit string value using
@@ -24,7 +25,7 @@ int floats_match_as_str(float a, float b) {
 
   int result = strncmp(a_str, b_str, len);
   if (0 != result) {
-    fprintf(stderr, "floats_match_as_str failed with a: %s vs b: %s\n", a_str,
+    log_err("floats_match_as_str failed with a: %s vs b: %s", a_str,
             b_str);
   }
 

@@ -44,7 +44,7 @@ static void activate_callback(GtkApplication *native_app, gpointer user_data) {
 ApplicationContext *application_new(void) {
   ApplicationContext *app = malloc(sizeof(ApplicationContext));
   if (app == NULL) {
-    printf("Could not allocate ApplicationContext struct\n");
+    log_err("Could not allocate ApplicationContext struct");
     exit(1);
   }
 

@@ -48,7 +48,7 @@ static void dial_clicked(__attribute__((unused)) GtkWidget *widget,
   PhonyViewContext *c = data;
   GtkEntryBuffer *b = gtk_entry_get_buffer(c->phone_number_view);
   const char *text = gtk_entry_buffer_get_text(b);
-  printf("dial_clicked with: %s\n", text);
+  log_info("dial_clicked with: %s", text);
 
   show_status(c, phony_dial(c->phony, text));
 }
@@ -88,12 +88,12 @@ static int phony_state_changed_idle_handler(void *varg) {
   switch (pc->state) {
   case PHONY_LINE_NOT_FOUND:
   case PHONY_DEVICE_NOT_FOUND:
-    printf("LINE OR DEVICE NOT FOUND\n");
+    log_err("LINE OR DEVICE NOT FOUND");
     update_buttons(c, PV_SHOW_DIAL);
     disable_buttons(c);
     break;
   case PHONY_RINGING:
-    printf("ring ring, ring ring\n");
+    log_info("ring ring, ring ring");
     break;
   case PHONY_READY:
     update_buttons(c, PV_SHOW_DIAL);

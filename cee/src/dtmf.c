@@ -83,7 +83,7 @@ int dtmf_set_sample_rate(DtmfContext *c, int sample_rate) {
 struct DtmfContext *dtmf_new() {
   DtmfContext *c = calloc(sizeof(DtmfContext), 1);
   if (c == NULL) {
-    fprintf(stderr, "dtmf_new cannot allocate\n");
+    log_err("dtmf_new cannot allocate");
     return NULL;
   }
   c->sample_rate = DTMF_DEFAULT_SAMPLE_RATE;
@@ -165,8 +165,8 @@ int dtmf_next_sample(DtmfContext *c, float *sample) {
       (float)c->sample_rate,
       (float)c->sample_index);
   *sample = result;
-  // printf("RESULT: %.6f\n", result);
-  // printf("SAMPLE: %.6f\n", **sample);
+  // log_info("RESULT: %.6f", result);
+  // log_info("SAMPLE: %.6f", **sample);
   c->sample_index++;
   return EXIT_SUCCESS;
 }
