@@ -26,7 +26,6 @@ char *allTests(void) {
   muRunTest(test_dtmf_entry_and_padding);
   muRunTest(test_dtmf_double_dial);
 
-  /*
   // PhonyHid tests
   // muRunTest(test_phony_hid_open); // TODO(lbayes): mock the service
   muRunTest(test_phony_hid_new);
@@ -41,8 +40,8 @@ char *allTests(void) {
   muRunTest(test_stitch_init);
 
   // Stitcher tests
-  // muRunTest(test_stitcher_new);
-  // muRunTest(test_stitcher_init);
+  muRunTest(test_stitcher_new);
+  muRunTest(test_stitcher_init);
 
   // FFT tests
   muRunTest(test_fft_empty);
@@ -53,8 +52,6 @@ char *allTests(void) {
   // TODO(lbayes): Running the following test throws errors in console, need
   //  to investigate instantiating GTK widgets without a window context.
   // muRunTest(test_phone_view_new);
-
-   */
 
   return NULL;
 }
