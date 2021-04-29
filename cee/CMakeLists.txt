@@ -20,8 +20,6 @@ set(AppSources
         src/phony.h
         src/phony_hid.c
         src/phony_hid.h
-        src/stitcher.c
-        src/stitcher.h
         src/stitch.c
         src/stitch.h
         )
@@ -44,8 +42,6 @@ set(TestSources
         test/phony_hid_test.h
         test/phony_test.c
         test/phony_test.h
-        test/stitcher_test.c
-        test/stitcher_test.h
         test/test_helper.c
         test/test_helper.h
         test/stitch_test.c

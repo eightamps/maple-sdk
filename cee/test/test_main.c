@@ -4,7 +4,6 @@
 #include "phone_view_test.h"
 #include "phony_hid_test.h"
 #include "phony_test.h"
-#include "stitcher_test.h"
 #include "stitch_test.h"
 
 char *allTests(void) {
@@ -38,10 +37,6 @@ char *allTests(void) {
   muRunTest(test_stitch_new);
   muRunTest(test_stitch_init_null);
   muRunTest(test_stitch_init);
-
-  // Stitcher tests
-  muRunTest(test_stitcher_new);
-  muRunTest(test_stitcher_init);
 
   // FFT tests
   muRunTest(test_fft_empty);
