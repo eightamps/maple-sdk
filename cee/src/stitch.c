@@ -14,6 +14,12 @@ static int min_int(int a, int b) {
   return (a < b) ? a : b;
 }
 
+StitchContext *stitch_new_with_label(const char *label) {
+  StitchContext *c = stitch_new();
+  c->label = label;
+  return c;
+}
+
 StitchContext *stitch_new(void) {
   StitchContext *c = calloc(sizeof(StitchContext), 1);
   if (c == NULL) {
@@ -247,84 +253,6 @@ int stitch_init(StitchContext *c) {
   return status;
 }
 
-  /*
-  int in_device_index;
-  if (c->in_device_index) {
-    bool found = false;
-    for (int i = 0; i < soundio_input_device_count(soundio); i += 1) {
-      struct SoundIoDevice *device = soundio_get_input_device(soundio, i);
-      if (device->is_raw == c->in_raw &&
-          strcmp(device->id, c->in_device_index) == 0) {
-        in_device_index = i;
-        found = true;
-        soundio_device_unref(device);
-        break;
-      }
-      soundio_device_unref(device);
-    }
-    if (!found) {
-      log_err("Invalid input device id: %s", c->in_device_index);
-      c->thread_exit_status = -EINVAL;
-      return NULL;
-    }
-  } else {
-    int default_in_device_index = soundio_default_input_device_index(soundio);
-    if (default_in_device_index < 0) {
-      log_err("No default input device found, try specifying a device id.");
-      c->thread_exit_status = -EINVAL;
-      return NULL;
-    }
-
-    in_device_index = default_in_device_index;
-  }
-
-  int out_device_index;
-
-  if (c->out_device_index) {
-    bool found = false;
-    for (int i = 0; i < soundio_output_device_count(soundio); i += 1) {
-      struct SoundIoDevice *device = soundio_get_output_device(soundio, i);
-      if (device->is_raw == c->out_raw &&
-          strcmp(device->id, c->out_device_index) == 0) {
-        out_device_index = i;
-        found = true;
-        soundio_device_unref(device);
-        break;
-      }
-      soundio_device_unref(device);
-    }
-    if (!found) {
-      log_err("Invalid output device id: %s", c->out_device_index);
-      c->thread_exit_status = -EINVAL;
-      return NULL;
-    }
-  } else {
-    int default_out_device_index = soundio_default_output_device_index(soundio);
-    if (default_out_device_index < 0) {
-      log_err("No default output device found");
-    }
-
-    out_device_index = default_out_device_index;
-  }
-
-  struct SoundIoDevice *out_device = soundio_get_output_device(soundio,
-                                                               out_device_index);
-  if (!out_device) {
-    log_err("could not get output device: out of memory");
-    c->thread_exit_status = -ENOMEM;
-    return NULL;
-  }
-
-  struct SoundIoDevice *in_device = soundio_get_input_device(soundio,
-                                                             in_device_index);
-  if (!in_device) {
-    log_err("could not get input device: out of memory");
-    c->thread_exit_status = -ENOMEM;
-    return NULL;
-  }
-
- */
-
 static void *stitch_start_thread(void *vargp) {
   StitchContext *c = vargp;
   int status;
@@ -336,8 +264,8 @@ static void *stitch_start_thread(void *vargp) {
       c->out_device_index);
 
   log_info("---------------------------------------------");
-  log_info("stitch input device name: %s", in_device->name);
-  log_info("stitch output device name: %s", out_device->name);
+  log_info("stitch %s input device name: %s", c->label, in_device->name);
+  log_info("stitch %s output device name: %s", c->label, out_device->name);
 
   soundio_device_sort_channel_layouts(out_device);
   const struct SoundIoChannelLayout *layout = soundio_best_matching_channel_layout(

@@ -110,7 +110,7 @@ static void configure_dtmf(DtmfContext *c) {
 static float get_sample_for(float freq_1, float freq_2, float sample_rate,
     float sample_index) {
   // Apply the first tone
-  sample_rate = sample_rate * 4;
+  sample_rate = sample_rate * DTMF_SAMPLE_RATE_MULTIPLIER;
   float incr1 = TWO_PI / (sample_rate / freq_1);
   float sample = (sinf(incr1 * sample_index) * 0.7f);
 

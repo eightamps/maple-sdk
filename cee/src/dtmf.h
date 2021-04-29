@@ -13,6 +13,7 @@
 #define DTMF_DEFAULT_SAMPLE_RATE 44100
 #define DTMF_MS_PER_ENTRY 500
 #define DTMF_MS_PER_SPACE 500
+#define DTMF_SAMPLE_RATE_MULTIPLIER 4
 
 
 typedef struct DtmfContext {

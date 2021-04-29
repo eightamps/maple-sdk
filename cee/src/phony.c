@@ -48,7 +48,7 @@ PhonyContext *phony_new(void) {
   c->hid_context = hc;
 
   // Initialize Stitch contexts
-  StitchContext *to_phone = stitch_new();
+  StitchContext *to_phone = stitch_new_with_label("to_phone");
   if (to_phone == NULL) {
     phony_free(c);
     return NULL;
@@ -56,7 +56,7 @@ PhonyContext *phony_new(void) {
   stitch_init(to_phone);
   c->to_phone = to_phone;
 
-  StitchContext *from_phone = stitch_new();
+  StitchContext *from_phone = stitch_new_with_label("from_phone");
   if (from_phone == NULL) {
     phony_free(c);
     return NULL;

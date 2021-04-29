@@ -45,14 +45,9 @@ static int prioritized_sample_rates[] = {
     48000,
 };
 
-typedef struct StitchDevice {
-  int index;
-  char *id;
-  char *name;
-}StitchDevice;
-
 typedef struct StitchContext {
   struct SoundIo *soundio;
+  char *label;
   DtmfContext *dtmf_context;
   pthread_t thread_id;
   int thread_exit_status;
@@ -67,6 +62,7 @@ typedef struct StitchContext {
   struct SoundIoRingBuffer *ring_buffer;
 }StitchContext;
 
+StitchContext *stitch_new_with_label(const char *label);
 StitchContext *stitch_new(void);
 int stitch_init(StitchContext *c);
 
