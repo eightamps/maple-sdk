@@ -22,9 +22,9 @@ StitchContext *stitch_new(void) {
   }
   c->is_initialized = false;
   // c->backend = SoundIoBackendAlsa;
-  c->backend = SoundIoBackendPulseAudio;
-  // c->backend = SoundIoBackendNone;
-  c->input_latency = 0.6; // ms
+  // c->backend = SoundIoBackendPulseAudio;
+  c->backend = SoundIoBackendNone;
+  c->input_latency = 0.04; // ms
   return c;
 }
 
@@ -425,8 +425,8 @@ static void *stitch_start_thread(void *vargp) {
     return NULL;
   }
 
-  int capacity = c->input_latency * 3 * instream->sample_rate *
-                 instream->bytes_per_frame;
+  int capacity = (c->input_latency * instream->sample_rate *
+                 instream->bytes_per_frame) * 40;
 
   // int capacity = (c->input_latency * 2) * instream->sample_rate *
                  // instream->bytes_per_frame;

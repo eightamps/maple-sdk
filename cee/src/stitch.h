@@ -40,8 +40,8 @@ static enum SoundIoFormat prioritized_formats[] = {
 };
 
 static int prioritized_sample_rates[] = {
-    44100,
     24000,
+    44100,
     48000,
 };
 
