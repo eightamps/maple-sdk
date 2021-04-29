@@ -48,12 +48,13 @@ set(TestSources
         test/stitch_test.h
         )
 
-
 set(VendorLibs
         ${PROJECT_SOURCE_DIR}/vendor/kissfft/libkissfft-float.so
-        # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio.so
+        # Custom built soundio for win32 only
+        # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.so
         )
 
+# FFT library will be used to validate generated DTMF signals
 # link_directories(${CMAKE_BINARY_DIR}}/vendor/kissfft)
 
 link_libraries(
@@ -65,14 +66,14 @@ link_libraries(
         )
 
 # Build artifacts
-add_library(maple-dev STATIC ${AppSources} ${VendorLibs})
+add_library(maple-lib STATIC ${AppSources} ${VendorLibs})
 add_executable(maple-console src/main_console.c ${AppSources} ${VendorLibs})
 add_executable(maple-gtk src/main_gtk.c
         ${AppSources}
         ${GtkSources}
         ${VendorLibs}
         )
-add_executable(maple-test test/test_main.c
+add_executable(maple-test test/main_test.c
         ${AppSources}
         ${GtkSources}
         ${TestSources}

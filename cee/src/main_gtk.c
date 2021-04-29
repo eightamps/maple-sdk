@@ -4,7 +4,6 @@
 #include "gtk/application.h"
 #include "log.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 static const char *APP_TITLE = "Demo App";
@@ -24,6 +23,4 @@ int main(int argc, char *argv[]) {
     log_info("ERROR: ApplicationContext exiting with status: %d (FAILURE)", status);
   }
   return status;
-
-  return EXIT_SUCCESS;
 }

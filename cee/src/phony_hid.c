@@ -316,18 +316,13 @@ int phony_hid_close(struct PhonyHidContext *c) {
     return status;
   }
 
-  /*
-  if (c->in_report->line_in_use) {
-    status = phony_hid_set_off_hook(c, false);
-    if (status != EXIT_SUCCESS) {
-      log_err("phony_hid_close failed to hang up an open line");
-    }
-  }
-  */
-
   libusb_device_handle *dev_h = c->device_handle;
   if (dev_h != NULL) {
     /*
+     * TODO(lbayes): Figure out if this happens automatically after a reset.
+     * Was getting segfaults and hangs on exit, when attempting to release
+     * the libusb device interface, followed by (or even preceded by) a call
+     * to reset the device.
     if (c->is_interface_claimed) {
       status = libusb_release_interface(dev_h, MAPLE_PHONE_INTERFACE);
       if (status != 0) {
