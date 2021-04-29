@@ -28,7 +28,7 @@ StitchContext *stitch_new(void) {
   }
   c->is_initialized = false;
   c->backend = SoundIoBackendNone;
-  c->input_latency = 0.04f; // ms
+  c->input_latency = STITCH_DEFAULT_LATENCY_MS;
   return c;
 }
 
@@ -352,9 +352,8 @@ static void *stitch_start_thread(void *vargp) {
     return NULL;
   }
 
-  int capacity = (int)(c->input_latency * (float)instream->sample_rate *
-      (float)instream->bytes_per_frame) * 40;
-
+  int capacity = (c->input_latency * instream->sample_rate *
+      instream->bytes_per_frame) * STITCH_BUFFER_CAPACITY_MULTIPLIER;
   // int capacity = (c->input_latency * 2) * instream->sample_rate *
                  // instream->bytes_per_frame;
   c->ring_buffer = soundio_ring_buffer_create(soundio, capacity);
@@ -400,6 +399,8 @@ static void *stitch_start_thread(void *vargp) {
   while (c->is_active == true) {
     // NOTE(lbayes): DO NOT use soundio_wait_events here. It is a blocking call!
     // soundio_wait_events(soundio);
+    // NOTE(lbayes): DO NOT cast input to an unsigned int, it will lose the
+    // millisecond precision that sleep does accept (despite other claims).
     sleep(0.04); // 40 ms
   }
 
