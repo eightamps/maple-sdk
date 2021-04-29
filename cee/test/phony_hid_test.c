@@ -71,31 +71,6 @@ char *test_hid_in_report_to_struct(void) {
   muAssert(in->line_in_use == 1, "Expected no line_in_use");
   muAssert(in->polarity == 0, "Expected no polarity");
 
-  /*
-  PhonyHidOutReport *out = calloc(sizeof(struct PhonyHidOutReport), 1);
-  uint8_t result;
-
-  result = struct_to_out_report_fake(out);
-  muAssert(result == 0, "Expected 0");
-
-  out->host_avail = true;
-  result = struct_to_out_report_fake(out);
-  muAssert(result == 0x01, "Expected binary 1");
-
-  out->host_avail = false;
-  result = struct_to_out_report_fake(out);
-  muAssert(result == 0, "Expected 0");
-
-  out->off_hook = true;
-  result = struct_to_out_report_fake(out);
-  muAssert(result == 0x03, "Expected off hook and host avail");
-
-  out->off_hook = false;
-  result = struct_to_out_report_fake(out);
-  muAssert(result == 0x01, "Expected host avail only");
-
-  // muAssert(0, "SDF");
-   */
   free(in);
   return NULL;
 }
@@ -107,7 +82,7 @@ char *test_phony_hid_new(void) {
   return NULL;
 }
 
-// NOTE(lbayes): This test only passes if a Maple board is connect to the USB
+// NOTE(lbayes): This test only passes if a Maple board is connected to the USB
 // bus. It's not clear to me (yet) how best to stub libusb services in C.
 char *test_phony_hid_open(void) {
   PhonyHidContext *c = phony_hid_new();

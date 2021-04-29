@@ -66,9 +66,7 @@ link_libraries(
 
 # Build artifacts
 add_library(maple-dev STATIC ${AppSources} ${VendorLibs})
-add_executable(soundio_example src/main_soundio_example.c ${VendorLibs})
-add_executable(stitch_example src/main_stitch_example.c ${AppSources})
-add_executable(maple src/main.c ${AppSources} ${VendorLibs})
+add_executable(maple-console src/main_console.c ${AppSources} ${VendorLibs})
 add_executable(maple-gtk src/main_gtk.c
         ${AppSources}
         ${GtkSources}
@@ -88,7 +86,6 @@ link_directories(${GTK3_LIBRARY_DIRS})
 add_definitions(${GTK3_CFLAGS_OTHER})
 
 # Add link relevant libraries to targets
-target_link_libraries(maple ${VendorLibs})
+target_link_libraries(maple-console ${VendorLibs})
 target_link_libraries(maple-gtk ${GTK3_LIBRARIES} ${VendorLibs})
 target_link_libraries(maple-test ${GTK3_LIBRARIES} ${VendorLibs})
-target_link_libraries(soundio_example ${VendorLibs})

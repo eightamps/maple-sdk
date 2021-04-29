@@ -15,7 +15,6 @@
 #define DTMF_MS_PER_SPACE 500
 #define DTMF_SAMPLE_RATE_MULTIPLIER 4
 
-
 typedef struct DtmfContext {
   int duration_ms;
   int entry_ms;

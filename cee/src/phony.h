@@ -9,7 +9,6 @@
 #include "stitch.h"
 #include "dtmf.h"
 
-
 typedef enum PhonyState {
   PHONY_NOT_READY = 0,
   PHONY_READY,
@@ -19,7 +18,6 @@ typedef enum PhonyState {
   PHONY_LINE_IN_USE,
   PHONY_DEVICE_NOT_FOUND,
 }PhonyState;
-
 
 typedef void (*phony_state_changed)(void *varg);
 
@@ -103,8 +101,5 @@ void phony_free(PhonyContext *c);
  * @return const char *label
  */
 const char *phony_state_to_str(int state);
-
-//
-int phony_in_report_to_struct(PhonyHidInReport *in_report, uint8_t value);
 
 #endif //MAPLE_PHONY_H

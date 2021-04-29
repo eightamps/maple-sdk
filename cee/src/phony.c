@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 const char *phony_state_to_str(int state) {
   switch (state) {
@@ -153,7 +154,7 @@ static void *phony_poll_for_updates(void *varg) {
   }
 }
 
-static int phony_begin_polling(PhonyContext *c) {
+static int begin_polling(PhonyContext *c) {
   return pthread_create(&c->thread_id, NULL, phony_poll_for_updates, c);
 }
 
@@ -165,13 +166,15 @@ int phony_open_device(PhonyContext *c, int vid, int pid) {
   PhonyHidContext *hc = c->hid_context;
   phony_hid_set_vendor_id(hc, vid);
   phony_hid_set_product_id(hc, pid);
-  return phony_begin_polling(c);
+  return begin_polling(c);
 }
 
 int phony_open_maple(PhonyContext *c) {
   // Default VID/PID are already set in phony_hid.h
   log_info("phony_open_maple called");
-  return phony_begin_polling(c);
+  int status = begin_polling(c);
+  sleep(1);
+  return status;
 }
 
 int phony_take_off_hook(PhonyContext *c) {
