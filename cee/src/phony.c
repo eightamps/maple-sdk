@@ -172,9 +172,7 @@ int phony_open_device(PhonyContext *c, int vid, int pid) {
 int phony_open_maple(PhonyContext *c) {
   // Default VID/PID are already set in phony_hid.h
   log_info("phony_open_maple called");
-  int status = begin_polling(c);
-  sleep(1);
-  return status;
+  return begin_polling(c);
 }
 
 int phony_take_off_hook(PhonyContext *c) {

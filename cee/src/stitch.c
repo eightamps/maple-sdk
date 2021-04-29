@@ -27,8 +27,6 @@ StitchContext *stitch_new(void) {
     return NULL;
   }
   c->is_initialized = false;
-  // c->backend = SoundIoBackendAlsa;
-  // c->backend = SoundIoBackendPulseAudio;
   c->backend = SoundIoBackendNone;
   c->input_latency = 0.04; // ms
   return c;
@@ -377,7 +375,6 @@ static void *stitch_start_thread(void *vargp) {
                    // outstream->bytes_per_frame;
   memset(buf, 0x0, fill_count);
   // soundio_ring_buffer_advance_write_ptr(c->ring_buffer, fill_count);
-  // soundio_ring_buffer_advance_write_ptr(c->ring_buffer, fill_count);
 
   if ((status = soundio_instream_start(instream))) {
     log_err("unable to stitch_start input device: %s",
@@ -385,6 +382,7 @@ static void *stitch_start_thread(void *vargp) {
     return NULL;
   }
 
+  // Wait some time before starting up the outstream handling
   sleep(2);
 
   if ((status = soundio_outstream_start(outstream))) {
@@ -398,7 +396,7 @@ static void *stitch_start_thread(void *vargp) {
   while (c->is_active == true) {
     // NOTE(lbayes): DO NOT use soundio_wait_events here. It is a blocking call!
     // soundio_wait_events(soundio);
-    sleep(0.04);
+    sleep(0.04); // 40 ms
   }
 
   log_info("stitch thread finishing");

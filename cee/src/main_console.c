@@ -1,7 +1,6 @@
 #include "log.h"
 #include "phony.h"
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -39,6 +38,9 @@ int phony_example(void) {
     return status;
   }
   log_info("phony_open_maple succeeded");
+
+  // Give the system some time to establish HID connections.
+  sleep(1);
 
   log_info("phony_example dialing");
   status = phony_dial(c, DEFAULT_8A_PHONE_NUMBER);
@@ -106,6 +108,6 @@ int stitch_example(void) {
 
 int main() {
   catch_sigterm();
-  // return stitch_example();
   return phony_example();
+  // return stitch_example();
 }
