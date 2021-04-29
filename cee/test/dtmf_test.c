@@ -41,7 +41,7 @@ char *test_dtmf_empty_numbers(void) {
 
 char *test_dtmf_next_sample_without_dial(void) {
   DtmfContext *c = dtmf_new();
-  float sample;
+  float sample = 0.0f;
   int status = dtmf_next_sample(c, &sample);
   muAssert(status == -EINVAL, "Expected failure status");
   dtmf_free(c);
@@ -51,7 +51,7 @@ char *test_dtmf_next_sample_without_dial(void) {
 char *test_dtmf_duration_single(void) {
   DtmfContext *c = dtmf_new();
   dtmf_dial(c, "5");
-  float sample;
+  float sample = 0.0f;
   int status = dtmf_next_sample(c, &sample);
 
   int floats_match = floats_match_as_str(sample, 0.0f);
@@ -65,7 +65,7 @@ char *test_dtmf_duration_single(void) {
 char *test_dtmf_duration_multiple(void) {
   DtmfContext *c = dtmf_new();
   dtmf_dial(c, "510");
-  float sample;
+  float sample = 0.0f;
   int status = dtmf_next_sample(c, &sample);
   muAssert(0 == status, "Expected status");
   muAssert(c->duration_ms == 2500, "Expected duration");
@@ -77,7 +77,7 @@ char *test_dtmf_sample_count(void) {
   DtmfContext *c = dtmf_new();
   dtmf_dial(c, "5");
   dtmf_set_sample_rate(c, 1000);
-  float sample;
+  float sample = 0.0f;
   dtmf_next_sample(c, &sample);
   dtmf_next_sample(c, &sample);
   dtmf_next_sample(c, &sample);
@@ -96,7 +96,7 @@ char *test_dtmf_sample_multiple(void) {
   DtmfContext *c = dtmf_new();
   dtmf_dial(c, "51");
   dtmf_set_sample_rate(c, 1000);
-  float sample;
+  float sample = 0.0f;
   dtmf_next_sample(c, &sample);
   muAssert(c->sample_count == 1500, "Expected duration");
   dtmf_free(c);
@@ -107,7 +107,7 @@ char *test_dtmf_large_sample_rate(void) {
   DtmfContext *c = dtmf_new();
   dtmf_dial(c, "5");
   dtmf_set_sample_rate(c, 44100);
-  float sample;
+  float sample = 0.0f;
   dtmf_next_sample(c, &sample);
   muAssert(0 == floats_match_as_str(0.0f, sample), "Expected sample");
   muAssert(c->sample_count == 22050, "Expected duration");
@@ -119,7 +119,7 @@ char *test_dtmf_large_sample_rate_multiple(void) {
   DtmfContext *c = dtmf_new();
   dtmf_dial(c, "51");
   dtmf_set_sample_rate(c, 44100);
-  float sample;
+  float sample = 0.0f;
   dtmf_next_sample(c, &sample);
   muAssert(0 == floats_match_as_str(0.0f, sample), "Expected sample");
   muAssert(c->sample_count == 66150, "Expected duration");
@@ -131,7 +131,7 @@ char *test_dtmf_large_sample_rate_three(void) {
   DtmfContext *c = dtmf_new();
   dtmf_dial(c, "510");
   dtmf_set_sample_rate(c, 44100);
-  float sample;
+  float sample = 0.0f;
   dtmf_next_sample(c, &sample);
   int sample_count = get_sample_count_for(44100, 3);
   muAssert(c->sample_count == sample_count, "Expected duration");
@@ -151,12 +151,12 @@ char *test_dtmf_sample_index(void) {
   dtmf_dial(c, "510");
   dtmf_set_sample_rate(c, 1000);
   c->sample_index = 974;
-  float sample;
+  float sample = 0.0f;
   int status = dtmf_next_sample(c, &sample);
-  int matched = floats_match_as_str(sample, 0.778f);
+  int matched = floats_match_as_str(sample, 0.0f);
   muAssert(0 == matched, "Expected sample");
   muAssert(0 == status, "Expected status");
-  muAssert(0 == floats_match_as_str(0.778f, sample), "Expected sample");
+  muAssert(0 == floats_match_as_str(0.0f, sample), "Expected sample");
   muAssert(c->is_active == true, "Expected active");
   dtmf_free(c);
   return NULL;
@@ -167,7 +167,7 @@ char *test_dtmf_entry_and_padding(void) {
   dtmf_dial(c, "510");
   dtmf_set_sample_rate(c, 2000);
   c->sample_index = 100;
-  float sample;
+  float sample = 0.0f;
   dtmf_next_sample(c, &sample);
   int matched = floats_match_as_str(sample, -1.16);
   muAssert(0 == matched, "Expected sample");
@@ -184,4 +184,6 @@ char *test_dtmf_double_dial(void) {
   dtmf_dial(c, "954");
   dtmf_dial(c, "8");
   muAssert(strcmp(c->entries, "5109548") == 0, "Expected concat");
+  dtmf_free(c);
+  return NULL;
 }

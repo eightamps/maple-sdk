@@ -96,6 +96,7 @@ char *test_hid_in_report_to_struct(void) {
 
   // muAssert(0, "SDF");
    */
+  free(in);
   return NULL;
 }
 
