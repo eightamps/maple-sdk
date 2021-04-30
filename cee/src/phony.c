@@ -236,21 +236,19 @@ int phony_dial(PhonyContext *c, const char *numbers) {
   }
 
   // Send the numbers to the DTMF service.
-  dtmf_dial(c->dtmf_context, numbers);
-
-  // if (c->state == PHONY_READY) {
-    // Take the phone off hook!
-    int status = phony_take_off_hook(c);
-    if (status != EXIT_SUCCESS) {
-      log_err("failed to take off hook with: %d", status);
-      return status;
-    }
-    log_info("Successfully requested phony_take_off_hook");
+  int status = dtmf_dial(c->dtmf_context, numbers);
+  if (status != EXIT_SUCCESS) {
+    log_err("phony_dial failed to generate DTMF tones");
     return status;
-    // } else if (c->state == PHONY_LINE_IN_USE) {
-    // TODO(lbayes): Update DTMF state and send dial tones to in-progress call.
-    // log_err("NOT YET IMPLEMENTED");
-  //}
+  }
+
+  status = phony_take_off_hook(c);
+  if (status != EXIT_SUCCESS) {
+    log_err("failed to take off hook with: %d", status);
+    return status;
+  }
+  log_info("phony_dial exited successfully");
+  return status;
 }
 
 PhonyState phony_get_state(PhonyContext *c) {

@@ -60,6 +60,20 @@ static void hangup_clicked(__attribute__((unused)) GtkWidget *widget,
   show_status(c, status);
 }
 
+static void del_clicked(GtkWidget *widget, gpointer data) {
+  log_info("del clicked");
+  PhonyViewContext *c = data;
+  GtkEntryBuffer *b = gtk_entry_get_buffer(c->phone_number_view);
+  const char *text = gtk_entry_buffer_get_text(b);
+  size_t len = strlen(text);
+  if (len > 0) {
+    len = len -= 1;
+    char *new_text = malloc(len);
+    strncpy(new_text, text, len);
+    gtk_entry_buffer_set_text(b, new_text, len);
+  }
+}
+
 static void update_button(GtkWidget *btn, bool show) {
   gtk_widget_set_visible(btn, show);
   gtk_widget_set_sensitive(btn, show);
@@ -145,6 +159,7 @@ struct PhonyViewContext *phone_view_new(PhonyContext *model) {
   GtkBox *row_4 = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
   GtkBox *row_5 = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
   GtkBox *row_6 = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
+  GtkBox *row_7 = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
 
   gtk_box_pack_start(box, GTK_WIDGET(row_1), gtk_true(), gtk_true(), padding);
   gtk_box_pack_start(box, GTK_WIDGET(row_2), gtk_true(), gtk_true(), padding);
@@ -152,6 +167,7 @@ struct PhonyViewContext *phone_view_new(PhonyContext *model) {
   gtk_box_pack_start(box, GTK_WIDGET(row_4), gtk_true(), gtk_true(), padding);
   gtk_box_pack_start(box, GTK_WIDGET(row_5), gtk_true(), gtk_true(), padding);
   gtk_box_pack_start(box, GTK_WIDGET(row_6), gtk_true(), gtk_true(), padding);
+  gtk_box_pack_start(box, GTK_WIDGET(row_7), gtk_true(), gtk_true(), padding);
 
   GtkWidget *btn_1 = gtk_button_new_with_label("1");
   GtkWidget *btn_2 = gtk_button_new_with_label("2");
@@ -195,10 +211,14 @@ struct PhonyViewContext *phone_view_new(PhonyContext *model) {
   gtk_box_pack_start(row_5, GTK_WIDGET(hang_up_btn), gtk_true(), gtk_true(),
                      padding);
 
+  GtkButton *del_btn = GTK_BUTTON(gtk_button_new_with_label("Backspace"));
+  gtk_box_pack_start(row_6, GTK_WIDGET(del_btn), gtk_true(), gtk_true(),
+                     padding);
+
   GtkTextView *message_view = GTK_TEXT_VIEW(gtk_text_view_new());
   gtk_text_view_set_editable(message_view, false);
   gtk_text_view_set_monospace(message_view, true);
-  gtk_box_pack_start(row_6, GTK_WIDGET(message_view), gtk_true(), gtk_true(),
+  gtk_box_pack_start(row_7, GTK_WIDGET(message_view), gtk_true(), gtk_true(),
                      padding);
   g_signal_connect(btn_1, "clicked", G_CALLBACK(num_clicked), c);
   g_signal_connect(btn_2, "clicked", G_CALLBACK(num_clicked), c);
@@ -214,6 +234,7 @@ struct PhonyViewContext *phone_view_new(PhonyContext *model) {
   g_signal_connect(btn_hash, "clicked", G_CALLBACK(num_clicked), c);
   g_signal_connect(dial_btn, "clicked", G_CALLBACK(dial_clicked), c);
   g_signal_connect(hang_up_btn, "clicked", G_CALLBACK(hangup_clicked), c);
+  g_signal_connect(del_btn, "clicked", G_CALLBACK(del_clicked), c);
 
   // Connect to the "show" signal, which will trigger when the application
   // is first displayed
