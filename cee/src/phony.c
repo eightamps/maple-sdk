@@ -217,7 +217,22 @@ int phony_dial(PhonyContext *c, const char *numbers) {
   log_info("phony_dial called with %s", numbers);
   if (numbers == NULL || numbers[0] == '\0') {
     log_err("phony_dial called with empty input");
-    return -EINVAL;
+    return -EINVAL; // Invalid argument
+  }
+
+  if (c->state == PHONY_NOT_READY) {
+    log_err("phony_dial cannot be called before opening a connection");
+    return -EPERM; // Operation not permitted
+  }
+
+  if (c->state == PHONY_DEVICE_NOT_FOUND) {
+    log_err("phony_dial cannot proceed without a connected device");
+    return -EPERM; // Operation not permitted
+  }
+
+  if (c->state == PHONY_LINE_NOT_FOUND) {
+    log_err("phony_dial cannot proceed without a usable line");
+    return -EPERM; // Operation not permitted
   }
 
   // Send the numbers to the DTMF service.
