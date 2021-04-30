@@ -12,22 +12,13 @@
 #define APP_WIDTH 300
 #define APP_HEIGHT 400
 
-static void activate_callback(GtkApplication *native_app, gpointer user_data) {
+static void activate_callback(GtkApplication *native_app, gpointer userdata) {
   GtkWidget *window = gtk_application_window_new(native_app);
-  ApplicationContext *app = (ApplicationContext *)user_data;
+  ApplicationContext *app = (ApplicationContext *)userdata;
   gtk_window_set_title(GTK_WINDOW(window), app->title);
   gtk_window_set_default_size(GTK_WINDOW(window), APP_WIDTH, APP_HEIGHT);
 
-  // Create the PhonyContext and related view component
-  PhonyContext *pc = phony_new();
-  app->phony_context = pc;
-
-  int status = phony_open_maple(pc);
-  if (status != EXIT_SUCCESS) {
-    log_err("phony_hid_open failed, but is being ignored for retries");
-  }
-
-  PhonyViewContext *p = phone_view_new(pc);
+  PhonyViewContext *p = phone_view_new(app->phony_context);
   app->phony_view_context = p;
 
   // Add the phone view
@@ -40,6 +31,19 @@ ApplicationContext *application_new(void) {
   if (app == NULL) {
     log_err("Could not allocate ApplicationContext struct");
     exit(1);
+  }
+
+  // Create the PhonyContext and related view component
+  PhonyContext *phony = phony_new();
+  if (phony == NULL) {
+    log_err("Unable to instantiate phony service");
+    exit(-ENOMEM);
+  }
+  app->phony_context = phony;
+
+  int status = phony_open_maple(phony);
+  if (status != EXIT_SUCCESS) {
+    log_err("phony_open_maple failed");
   }
 
   GtkApplication *native_app = gtk_application_new("com.eightamps.term",

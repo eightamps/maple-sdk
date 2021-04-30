@@ -122,6 +122,7 @@ static void *phony_poll_for_updates(void *varg) {
   int status = phony_hid_open(hc);
   if (status != EXIT_SUCCESS) {
     log_err("phony unable to open HID client with status: %d", status);
+    c->state = PHONY_DEVICE_NOT_FOUND;
     return NULL;
   }
 
@@ -235,6 +236,10 @@ int phony_dial(PhonyContext *c, const char *numbers) {
     // TODO(lbayes): Update DTMF state and send dial tones to in-progress call.
     // log_err("NOT YET IMPLEMENTED");
   //}
+}
+
+PhonyState phony_get_state(PhonyContext *c) {
+  return c->state;
 }
 
 void phony_free(PhonyContext *c) {

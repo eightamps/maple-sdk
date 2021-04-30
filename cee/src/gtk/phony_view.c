@@ -60,16 +60,17 @@ static void hangup_clicked(__attribute__((unused)) GtkWidget *widget,
   show_status(c, status);
 }
 
+static void update_button(GtkWidget *btn, bool show) {
+  gtk_widget_set_visible(btn, show);
+  gtk_widget_set_sensitive(btn, show);
+}
+
 static void update_buttons(PhonyViewContext *c, bool show_dial) {
-  log_info("update buttons");
   GtkWidget *dial_btn = GTK_WIDGET(c->dial_btn);
   GtkWidget *hang_up_btn = GTK_WIDGET(c->hang_up_btn);
 
-  gtk_widget_set_visible(dial_btn, show_dial);
-  gtk_widget_set_sensitive(dial_btn, show_dial);
-
-  gtk_widget_set_visible(hang_up_btn, !show_dial);
-  gtk_widget_set_sensitive(hang_up_btn, !show_dial);
+  update_button(dial_btn, show_dial);
+  update_button(hang_up_btn, !show_dial);
 }
 
 static void disable_buttons(PhonyViewContext *c) {
@@ -79,6 +80,16 @@ static void disable_buttons(PhonyViewContext *c) {
 
   gtk_widget_set_sensitive(dial_btn, FALSE);
   gtk_widget_set_sensitive(hang_up_btn, FALSE);
+}
+
+static void box_show_handler(GtkWidget *widget, gpointer data) {
+  PhonyViewContext *c = data;
+  update_buttons(c, PV_SHOW_DIAL);
+  PhonyState state = phony_get_state(c->phony);
+  // We did not get a USB connection, disable the dial button
+  if (state == PHONY_DEVICE_NOT_FOUND) {
+    gtk_widget_set_sensitive(GTK_WIDGET(c->dial_btn), FALSE);
+  }
 }
 
 static int phony_state_changed_idle_handler(void *varg) {
@@ -189,10 +200,6 @@ struct PhonyViewContext *phone_view_new(PhonyContext *model) {
   gtk_text_view_set_monospace(message_view, true);
   gtk_box_pack_start(row_6, GTK_WIDGET(message_view), gtk_true(), gtk_true(),
                      padding);
-  c->message_view = message_view;
-  c->dial_btn = dial_btn;
-  c->hang_up_btn = hang_up_btn;
-
   g_signal_connect(btn_1, "clicked", G_CALLBACK(num_clicked), c);
   g_signal_connect(btn_2, "clicked", G_CALLBACK(num_clicked), c);
   g_signal_connect(btn_3, "clicked", G_CALLBACK(num_clicked), c);
@@ -205,15 +212,22 @@ struct PhonyViewContext *phone_view_new(PhonyContext *model) {
   g_signal_connect(btn_0, "clicked", G_CALLBACK(num_clicked), c);
   g_signal_connect(btn_star, "clicked", G_CALLBACK(num_clicked), c);
   g_signal_connect(btn_hash, "clicked", G_CALLBACK(num_clicked), c);
-
   g_signal_connect(dial_btn, "clicked", G_CALLBACK(dial_clicked), c);
   g_signal_connect(hang_up_btn, "clicked", G_CALLBACK(hangup_clicked), c);
-  c->phone_number_view = entry;
 
+  // Connect to the "show" signal, which will trigger when the application
+  // is first displayed
+  g_signal_connect(box, "show", G_CALLBACK(box_show_handler), c);
+
+  // Set the default phone number
   gtk_entry_set_text(entry, DEFAULT_8A_PHONE_NUMBER);
 
+  // Apply pointers to the context object
+  c->message_view = message_view;
+  c->dial_btn = dial_btn;
+  c->hang_up_btn = hang_up_btn;
+  c->phone_number_view = entry;
   c->widget = GTK_WIDGET(box);
-  update_buttons(c, PV_SHOW_DIAL);
   return c;
 }
 

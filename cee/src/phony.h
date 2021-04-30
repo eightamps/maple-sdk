@@ -92,6 +92,13 @@ int phony_set_state_changed(PhonyContext *c, phony_state_changed callback,
                             void *userdata);
 
 /**
+ * Get the current phony state.
+ * @param *PhonyContext
+ * @return PhonyState
+ */
+PhonyState phony_get_state(PhonyContext *c);
+
+/**
  * Close down and free the provided telephone connection.
  * @param PhonyContext*
  * @return void
