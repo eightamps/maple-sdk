@@ -6,6 +6,7 @@ Right now, we have a handful of primary modules that make telephony work.
 * phony_hid: USB HID state transitions with firmware
 * stitch: Audio device tunneling (e.g., Host mic to Telphone output and
   Telephone input to Host speakers)
+* dtmf: This service does not use threads at all
 
 This design is intended to make it easy to bring up a telephone client and
 manage / track it's changing state over time.
