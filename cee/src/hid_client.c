@@ -23,7 +23,7 @@ int hid_client_open(hid_client_context_t *c) {
   }
 
   libusb_context *usb_ctx = NULL;
-  int status = libusb_init(usb_ctx);
+  int status = libusb_init(&usb_ctx);
   if (status != EXIT_SUCCESS) {
     log_err("Failed to initialise libusb");
     return -ECONNREFUSED; // Connection refused
