@@ -14,4 +14,8 @@ typedef struct {
 typedef struct {
 }libusb_device;
 
+void libusb_fake_set_next_result(int result);
+int libusb_init(libusb_context *c);
+void libusb_exit(libusb_context *c);
+
 #endif //MAPLE_LIBUSB_FAKE_H

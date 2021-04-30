@@ -62,6 +62,10 @@ char *test_hid_client_open(void) {
   status = hid_client_open(c);
   muAssert(status == EXIT_SUCCESS, "Expected success");
 
+  libusb_fake_set_next_result(-EINVAL);
+  status = hid_client_open(c);
+  muAssert(status == -ECONNREFUSED, "Expected transformed error");
+
   hid_client_free(c);
   return NULL;
 }
