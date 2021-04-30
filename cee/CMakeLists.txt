@@ -3,12 +3,6 @@ project(maple C)
 
 set(CMAKE_C_STANDARD 11)
 
-option(TEST_MODE "Activate TEST_MODE" OFF)
-
-if(TEST_MODE)
-        add_definitions(-DTEST_MODE)
-endif()
-
 include_directories(src)
 include_directories(test)
 include_directories(vendor/kissfft)
@@ -94,3 +88,5 @@ add_definitions(${GTK3_CFLAGS_OTHER})
 target_link_libraries(maple-console ${VendorLibs})
 target_link_libraries(maple-gtk ${GTK3_LIBRARIES} ${VendorLibs})
 target_link_libraries(maple-test ${GTK3_LIBRARIES} ${VendorLibs})
+
+target_compile_definitions(maple-test PRIVATE TEST_MODE=1)
