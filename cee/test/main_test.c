@@ -7,10 +7,6 @@
 #include "phony_view_test.h"
 #include "stitch_test.h"
 
-#define STRING2(x) #x
-#define STRING(x) STRING2(x)
-#pragma message "LOG_LEVEL = " STRING(LOG_LEVEL)
-
 char *allTests(void) {
 
   // Begin the test suite
@@ -18,6 +14,9 @@ char *allTests(void) {
 
   // HID Client tests
   muRunTest(test_hid_client_new);
+  muRunTest(test_hid_client_set_vid);
+  muRunTest(test_hid_client_set_pid);
+  muRunTest(test_hid_client_open);
 
   // DTMF tests
   muRunTest(test_dtmf_duration_multiple);
