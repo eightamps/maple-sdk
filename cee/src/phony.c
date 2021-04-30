@@ -38,7 +38,7 @@ PhonyContext *phony_new(void) {
   }
 
   // Initialize Hid context
-  PhonyHidContext *hc = phony_hid_new();
+  phony_hid_context_t *hc = phony_hid_new();
   if (hc == NULL) {
     phony_free(c);
     return NULL;
@@ -117,7 +117,7 @@ static int phony_stop_audio(PhonyContext *c) {
 
 static void *phony_poll_for_updates(void *varg) {
   PhonyContext *c = varg;
-  PhonyHidContext *hc = c->hid_context;
+  phony_hid_context_t *hc = c->hid_context;
   log_info("Phony begin polling...");
   int status = phony_hid_open(hc);
   if (status != EXIT_SUCCESS) {
@@ -131,7 +131,7 @@ static void *phony_poll_for_updates(void *varg) {
   while (c->is_looping) {
     log_info("phony waiting for HID report");
     phony_hid_get_report(hc);
-    PhonyHidInReport *ir = hc->in_report;
+    phony_hid_in_report_t *ir = hc->in_report;
     if (ir->ring) {
       c->state = PHONY_RINGING;
     } else if (ir->line_in_use) {
@@ -177,7 +177,7 @@ static int phony_join(PhonyContext *c) {
 }
 
 int phony_open_device(PhonyContext *c, int vid, int pid) {
-  PhonyHidContext *hc = c->hid_context;
+  phony_hid_context_t *hc = c->hid_context;
   phony_hid_set_vendor_id(hc, vid);
   phony_hid_set_product_id(hc, pid);
   return begin_polling(c);

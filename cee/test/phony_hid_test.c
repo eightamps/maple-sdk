@@ -8,7 +8,7 @@
 #include <string.h>
 
 char *test_hid_in_report_to_struct(void) {
-  PhonyHidInReport *in = calloc(sizeof(struct PhonyHidInReport), 1);
+  phony_hid_in_report_t *in = calloc(sizeof(phony_hid_in_report_t), 1);
   muAssert(in != NULL, "Expected in report");
 
   phony_hid_in_report_to_struct(in, 0x01);
@@ -51,7 +51,7 @@ char *test_hid_in_report_to_struct(void) {
 }
 
 char *test_phony_hid_new(void) {
-  PhonyHidContext *c = phony_hid_new();
+  phony_hid_context_t *c = phony_hid_new();
   muAssert(c != NULL, "Expected Not Null");
   phony_hid_free(c);
   return NULL;
@@ -60,7 +60,7 @@ char *test_phony_hid_new(void) {
 // NOTE(lbayes): This test only passes if a Maple board is connected to the USB
 // bus. It's not clear to me (yet) how best to stub libusb services in C.
 char *test_phony_hid_open(void) {
-  PhonyHidContext *c = phony_hid_new();
+  phony_hid_context_t *c = phony_hid_new();
   int status = phony_hid_open(c);
   muAssert(status >= 0, "Expected valid status from phony_hid_open");
   muAssert(c->is_open, "Expected is_open");

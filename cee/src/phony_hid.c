@@ -15,7 +15,7 @@
 
 const static int INFINITE_TIMEOUT = 0; /* timeout in ms, or zero for infinite */
 
-static uint8_t struct_to_out_report(PhonyHidOutReport *r) {
+static uint8_t struct_to_out_report(phony_hid_out_report_t *r) {
   log_info("struct_to_out_report with:");
   log_info("host_avail: %d", r->host_avail);
   log_info("off_hook: %d", r->off_hook);
@@ -37,7 +37,7 @@ static uint8_t struct_to_out_report(PhonyHidOutReport *r) {
   return state;
 }
 
-int phony_hid_in_report_to_struct(PhonyHidInReport *in_report, uint8_t value) {
+int phony_hid_in_report_to_struct(phony_hid_in_report_t *in_report, uint8_t value) {
   in_report->loop = (value >> 0) & 1;
   in_report->ring = (value >> 1) & 1;
   in_report->line_not_found = (value >> 2) & 1;
@@ -62,7 +62,7 @@ int phony_hid_in_report_to_struct(PhonyHidInReport *in_report, uint8_t value) {
   return EXIT_SUCCESS;
 }
 
-static int interrupt_transfer(struct PhonyHidContext *c, uint8_t addr,
+static int interrupt_transfer(phony_hid_context_t *c, uint8_t addr,
                               unsigned char *data, uint8_t len) {
   int r = EXIT_SUCCESS;
   int transferred = 0;
@@ -90,12 +90,12 @@ static int interrupt_transfer(struct PhonyHidContext *c, uint8_t addr,
   return r;
 }
 
-static int phony_hid_set_report(struct PhonyHidContext *c) {
+static int phony_hid_set_report(phony_hid_context_t *c) {
   uint8_t addr = PHONY_ENDPOINT_OUT;
   uint8_t len = 2 + 1; // 3 bytes + 1 address byte?
   unsigned char data[len];
   memset(data, 0x0, len);
-  PhonyHidOutReport *out = c->out_report;
+  phony_hid_out_report_t *out = c->out_report;
   log_info("out_report->host_avail: %d", out->host_avail);
   log_info("out_report->off_hook: %d", out->off_hook);
   data[2] = struct_to_out_report(out);
@@ -103,7 +103,7 @@ static int phony_hid_set_report(struct PhonyHidContext *c) {
   return interrupt_transfer(c, addr, data, len);
 }
 
-int phony_hid_get_report(struct PhonyHidContext *c) {
+int phony_hid_get_report(phony_hid_context_t *c) {
   int status;
   uint8_t addr = PHONY_ENDPOINT_IN;
   uint8_t len = 1 + 1; // 3 bytes + 1 address byte?
@@ -119,8 +119,8 @@ int phony_hid_get_report(struct PhonyHidContext *c) {
   return status;
 }
 
-struct PhonyHidContext *phony_hid_new(void) {
-  struct PhonyHidContext *c = calloc(sizeof(struct PhonyHidContext), 1);
+phony_hid_context_t *phony_hid_new(void) {
+  phony_hid_context_t *c = calloc(sizeof(phony_hid_context_t), 1);
   if (c == NULL) {
     log_err("phony_hid_new unable to allocate");
     return NULL;
@@ -128,12 +128,12 @@ struct PhonyHidContext *phony_hid_new(void) {
   // Configure default vid and pid
   c->vendor_id = 0x0;
   c->product_id = 0x0;
-  c->in_report = calloc(sizeof(PhonyHidInReport), 1);
-  c->out_report = calloc(sizeof(PhonyHidOutReport), 1);
+  c->in_report = calloc(sizeof(phony_hid_in_report_t), 1);
+  c->out_report = calloc(sizeof(phony_hid_out_report_t), 1);
   return c;
 }
 
-int phony_hid_set_vendor_id(struct PhonyHidContext *c, int vid) {
+int phony_hid_set_vendor_id(phony_hid_context_t *c, int vid) {
   if (c == NULL) {
     log_err("phony_hid_set_vendor_id requires a valid context");
     return EINVAL; // Invalid argument
@@ -142,7 +142,7 @@ int phony_hid_set_vendor_id(struct PhonyHidContext *c, int vid) {
   return 0;
 }
 
-int phony_hid_set_product_id(struct PhonyHidContext *c, int pid) {
+int phony_hid_set_product_id(phony_hid_context_t *c, int pid) {
   if (c == NULL) {
     log_err("phony_hid_set_product_id requires a valid context");
     return EINVAL; // Invalid argument
@@ -151,7 +151,7 @@ int phony_hid_set_product_id(struct PhonyHidContext *c, int pid) {
   return 0;
 }
 
-static int auto_detach_kernel(struct PhonyHidContext *c) {
+static int auto_detach_kernel(phony_hid_context_t *c) {
   libusb_device_handle *dev_h = c->device_handle;
   int status = libusb_set_auto_detach_kernel_driver(dev_h, 1);
   if (status != 0) {
@@ -162,7 +162,7 @@ static int auto_detach_kernel(struct PhonyHidContext *c) {
   return status;
 }
 
-static int claim_interface(struct PhonyHidContext *c, int interface) {
+static int claim_interface(phony_hid_context_t *c, int interface) {
   libusb_device_handle *dev_h = c->device_handle;
   int status = libusb_claim_interface(dev_h, interface);
   if (status < 0) {
@@ -174,7 +174,7 @@ static int claim_interface(struct PhonyHidContext *c, int interface) {
   return status;
 }
 
-static int find_device(struct PhonyHidContext *c, int vid, int pid) {
+static int find_device(phony_hid_context_t *c, int vid, int pid) {
   int status = EXIT_SUCCESS;
   libusb_context *lusb_ctx = c->lusb_context;
   struct libusb_device_handle *dev_h = NULL;
@@ -208,7 +208,7 @@ static int find_device(struct PhonyHidContext *c, int vid, int pid) {
 }
 
 /*
-static int get_config_descriptors(struct PhonyHidContext *c) {
+static int get_config_descriptors(phony_hid_context_t *c) {
   int status = EXIT_SUCCESS;
   libusb_context *lusb_ctx = c->lusb_context;
   struct libusb_config_descriptor *config = {0};
@@ -266,7 +266,7 @@ static int get_config_descriptors(struct PhonyHidContext *c) {
 }
 */
 
-int phony_hid_open(struct PhonyHidContext *c) {
+int phony_hid_open(phony_hid_context_t *c) {
   if (c->is_open) {
     return EXIT_SUCCESS;
   }
@@ -311,7 +311,7 @@ int phony_hid_open(struct PhonyHidContext *c) {
   return status;
 }
 
-int phony_hid_close(struct PhonyHidContext *c) {
+int phony_hid_close(phony_hid_context_t *c) {
   int status = EXIT_SUCCESS;
   if (!c->is_open) {
     return status;
@@ -351,19 +351,19 @@ int phony_hid_close(struct PhonyHidContext *c) {
   return status;
 }
 
-int phony_hid_set_hostavail(struct PhonyHidContext *c, bool is_hostavail) {
+int phony_hid_set_hostavail(phony_hid_context_t *c, bool is_hostavail) {
   log_info("phony_hid_set_hostavail to: %d", is_hostavail);
   c->out_report->host_avail = is_hostavail;
   return phony_hid_set_report(c);
 }
 
-int phony_hid_set_off_hook(struct PhonyHidContext *c, bool is_offhook) {
+int phony_hid_set_off_hook(phony_hid_context_t *c, bool is_offhook) {
   log_info("phony_Hid_set_offhook to: %d", is_offhook);
   c->out_report->off_hook = is_offhook;
   return phony_hid_set_report(c);
 }
 
-void phony_hid_free(struct PhonyHidContext *c) {
+void phony_hid_free(phony_hid_context_t *c) {
   if (c != NULL) {
     phony_hid_close(c);
 

@@ -31,7 +31,7 @@ typedef struct PhonyContext {
   PhonyState state;
   phony_state_changed state_changed;
   void *userdata;
-  PhonyHidContext *hid_context;
+  phony_hid_context_t *hid_context;
   DtmfContext  *dtmf_context;
   StitchContext *to_phone;
   StitchContext *from_phone;

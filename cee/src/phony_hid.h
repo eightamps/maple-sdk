@@ -8,7 +8,7 @@
 #include <libusb-1.0/libusb.h>
 #include <stdbool.h>
 
-typedef struct PhonyHidInReport {
+typedef struct {
   uint8_t loop; // 0
   uint8_t ring; // 1
   uint8_t line_not_found; // 2
@@ -17,18 +17,18 @@ typedef struct PhonyHidInReport {
   uint8_t unused__;
   uint8_t last_b__;
   uint8_t state;
-} PhonyHidInReport;
+}phony_hid_in_report_t;
 
-typedef struct PhonyHidOutReport {
+typedef struct {
   uint8_t host_avail; // 0
   uint8_t off_hook; // 1
   uint8_t unused__;
   uint8_t last_b__;
-} PhonyHidOutReport;
+}phony_hid_out_report_t;
 
-typedef struct PhonyHidContext {
-  struct PhonyHidOutReport *out_report;
-  struct PhonyHidInReport *in_report;
+typedef struct {
+  phony_hid_out_report_t *out_report;
+  phony_hid_in_report_t *in_report;
   bool is_open;
   bool is_interface_claimed;
   int vendor_id;
@@ -38,31 +38,31 @@ typedef struct PhonyHidContext {
   libusb_device *device;
   struct libusb_config_descriptor *config_descriptor;
   struct libusb_device_descriptor *device_descriptor;
-}PhonyHidContext;
+}phony_hid_context_t;
 
 /**
  * Create a new HID client context.
  *
- * @return PhonyHidContext*
+ * @return phony_hid_context_t*
  */
-struct PhonyHidContext *phony_hid_new(void);
+phony_hid_context_t *phony_hid_new(void);
 
-int phony_hid_in_report_to_struct(PhonyHidInReport *in_report, uint8_t value);
+int phony_hid_in_report_to_struct(phony_hid_in_report_t *in_report, uint8_t value);
 
-int phony_hid_set_vendor_id(struct PhonyHidContext *c, int vid);
+int phony_hid_set_vendor_id(phony_hid_context_t *c, int vid);
 
-int phony_hid_set_product_id(struct PhonyHidContext *c, int pid);
+int phony_hid_set_product_id(phony_hid_context_t *c, int pid);
 
-int phony_hid_open(struct PhonyHidContext *c);
+int phony_hid_open(phony_hid_context_t *c);
 
-int phony_hid_get_report(struct PhonyHidContext *c);
+int phony_hid_get_report(phony_hid_context_t *c);
 
-int phony_hid_set_off_hook(struct PhonyHidContext *c, bool is_offhook);
+int phony_hid_set_off_hook(phony_hid_context_t *c, bool is_offhook);
 
-int phony_hid_set_hostavail(struct PhonyHidContext *c, bool is_hostavail);
+int phony_hid_set_hostavail(phony_hid_context_t *c, bool is_hostavail);
 
-int phony_hid_close(struct PhonyHidContext *c);
+int phony_hid_close(phony_hid_context_t *c);
 
-void phony_hid_free(struct PhonyHidContext *c);
+void phony_hid_free(phony_hid_context_t *c);
 
 #endif // MAPLE_PHONY_HID_H
