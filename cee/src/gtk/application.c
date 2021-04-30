@@ -32,7 +32,6 @@ static void activate_callback(GtkApplication *native_app, gpointer user_data) {
 
   // Add the phone view
   gtk_container_add(GTK_CONTAINER(window), p->widget);
-
   gtk_widget_show_all(window);
 }
 
