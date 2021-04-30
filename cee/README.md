@@ -40,4 +40,4 @@ directions](https://askubuntu.com/questions/355565/how-do-i-install-the-latest-v
 
 ## Development Notes
 For anyone who is interested, I'm keeping a log of notes as this software is 
-developed in [this directory](/notes).
+developed in [this directory](notes/).
