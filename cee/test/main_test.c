@@ -1,14 +1,23 @@
 #include "dtmf_test.h"
+#include "hid_client_test.h"
 #include "kissfft_test.h"
 #include "minunit.h"
-#include "phone_view_test.h"
 #include "phony_hid_test.h"
 #include "phony_test.h"
+#include "phony_view_test.h"
 #include "stitch_test.h"
 
+#define STRING2(x) #x
+#define STRING(x) STRING2(x)
+#pragma message "LOG_LEVEL = " STRING(LOG_LEVEL)
+
 char *allTests(void) {
+
   // Begin the test suite
   muSuiteStart();
+
+  // HID Client tests
+  muRunTest(test_hid_client_new);
 
   // DTMF tests
   muRunTest(test_dtmf_duration_multiple);

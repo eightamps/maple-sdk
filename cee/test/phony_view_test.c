@@ -2,7 +2,7 @@
 // Created by lukebayes on 4/21/21.
 //
 
-#include "phone_view_test.h"
+#include "phony_view_test.h"
 #include "gtk/phony_view.h"
 #include "minunit.h"
 

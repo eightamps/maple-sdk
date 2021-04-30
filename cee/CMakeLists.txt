@@ -22,6 +22,8 @@ set(AppSources
         src/phony_hid.h
         src/stitch.c
         src/stitch.h
+        src/hid_client.c
+        src/hid_client.h
         )
 
 set(GtkSources
@@ -36,8 +38,8 @@ set(TestSources
         test/dtmf_test.h
         test/kissfft_test.c
         test/kissfft_test.h
-        test/phone_view_test.c
-        test/phone_view_test.h
+        test/phony_view_test.c
+        test/phony_view_test.h
         test/phony_hid_test.c
         test/phony_hid_test.h
         test/phony_test.c
@@ -46,6 +48,8 @@ set(TestSources
         test/test_helper.h
         test/stitch_test.c
         test/stitch_test.h
+        test/hid_client_test.c
+        test/hid_client_test.h
         )
 
 set(VendorLibs

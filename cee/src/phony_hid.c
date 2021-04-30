@@ -4,9 +4,10 @@
 
 #include "phony_hid.h"
 #include "log.h"
+#include <errno.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #define MAPLE_PHONE_INTERFACE             2
 #define PHONY_ENDPOINT_IN                 0x81
