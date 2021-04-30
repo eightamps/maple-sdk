@@ -44,6 +44,8 @@ set(TestSources
         test/stitch_test.h
         test/hid_client_test.c
         test/hid_client_test.h
+        test/fakes/libusb_fake.c
+        test/fakes/libusb_fake.h
         )
 
 set(VendorLibs
