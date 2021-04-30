@@ -10,15 +10,15 @@
 
 #define APP_TITLE_LEN 256
 
-typedef struct ApplicationContext {
+typedef struct {
   char title[APP_TITLE_LEN];
   void *native_app;
-  PhonyContext *phony_context;
-  PhonyViewContext *phony_view_context;
-} ApplicationContext;
+  phony_context_t *phony_context;
+  phony_view_context_t *phony_view_context;
+}application_context_t;
 
-ApplicationContext *application_new(void);
-int application_run(ApplicationContext *app, int argc, char *argv[]);
-void application_free(ApplicationContext *c);
+application_context_t *application_new(void);
+int application_run(application_context_t *app, int argc, char *argv[]);
+void application_free(application_context_t *c);
 
 #endif //MAPLE_APPLICATION_H

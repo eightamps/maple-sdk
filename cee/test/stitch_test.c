@@ -7,7 +7,7 @@
 #include "stitch.h"
 
 char *test_stitch_new(void) {
-  StitchContext *c = stitch_new();
+  stitch_context_t *c = stitch_new();
   muAssert(c != NULL, "Expected context");
   stitch_free(c);
   return NULL;
@@ -20,7 +20,7 @@ char *test_stitch_init_null(void) {
 }
 
 char *test_stitch_init(void) {
-  StitchContext *c = stitch_new();
+  stitch_context_t *c = stitch_new();
   int status = stitch_init(c);
 
   muAssert(status == EXIT_SUCCESS, "Expected success init");

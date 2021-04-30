@@ -11,13 +11,13 @@
 #define PV_SHOW_DIAL TRUE
 #define PV_SHOW_HANG_UP FALSE
 
-static void update(PhonyViewContext *c) {
+static void update(phony_view_context_t *c) {
   gtk_widget_queue_draw(GTK_WIDGET(c->phone_number_view));
 }
 
 static void num_clicked(GtkWidget *widget, gpointer data) {
   GtkButton *btn = GTK_BUTTON(widget);
-  PhonyViewContext *c = data;
+  phony_view_context_t *c = data;
   GtkEntry *entry = c->phone_number_view;
 
   const gchar *label = gtk_button_get_label(btn);
@@ -28,7 +28,7 @@ static void num_clicked(GtkWidget *widget, gpointer data) {
   update(c);
 }
 
-static void show_status(PhonyViewContext *c, int status) {
+static void show_status(phony_view_context_t *c, int status) {
   GtkTextView *m = c->message_view;
   GtkTextBuffer *b = gtk_text_view_get_buffer(m);
 
@@ -45,7 +45,7 @@ static void show_status(PhonyViewContext *c, int status) {
 
 static void dial_clicked(__attribute__((unused)) GtkWidget *widget,
                          gpointer data) {
-  PhonyViewContext *c = data;
+  phony_view_context_t *c = data;
   GtkEntryBuffer *b = gtk_entry_get_buffer(c->phone_number_view);
   const char *text = gtk_entry_buffer_get_text(b);
   log_info("dial_clicked with: %s", text);
@@ -55,14 +55,14 @@ static void dial_clicked(__attribute__((unused)) GtkWidget *widget,
 
 static void hangup_clicked(__attribute__((unused)) GtkWidget *widget,
                            gpointer data) {
-  PhonyViewContext *c = data;
+  phony_view_context_t *c = data;
   int status = phony_hang_up(c->phony);
   show_status(c, status);
 }
 
 static void del_clicked(GtkWidget *widget, gpointer data) {
   log_info("del clicked");
-  PhonyViewContext *c = data;
+  phony_view_context_t *c = data;
   GtkEntryBuffer *b = gtk_entry_get_buffer(c->phone_number_view);
   const char *text = gtk_entry_buffer_get_text(b);
   size_t len = strlen(text);
@@ -79,7 +79,7 @@ static void update_button(GtkWidget *btn, bool show) {
   gtk_widget_set_sensitive(btn, show);
 }
 
-static void update_buttons(PhonyViewContext *c, bool show_dial) {
+static void update_buttons(phony_view_context_t *c, bool show_dial) {
   GtkWidget *dial_btn = GTK_WIDGET(c->dial_btn);
   GtkWidget *hang_up_btn = GTK_WIDGET(c->hang_up_btn);
 
@@ -87,7 +87,7 @@ static void update_buttons(PhonyViewContext *c, bool show_dial) {
   update_button(hang_up_btn, !show_dial);
 }
 
-static void disable_buttons(PhonyViewContext *c) {
+static void disable_buttons(phony_view_context_t *c) {
   log_info("disable buttons");
   GtkWidget *dial_btn = GTK_WIDGET(c->dial_btn);
   GtkWidget *hang_up_btn = GTK_WIDGET(c->hang_up_btn);
@@ -97,7 +97,7 @@ static void disable_buttons(PhonyViewContext *c) {
 }
 
 static void box_show_handler(GtkWidget *widget, gpointer data) {
-  PhonyViewContext *c = data;
+  phony_view_context_t *c = data;
   update_buttons(c, PV_SHOW_DIAL);
   PhonyState state = phony_get_state(c->phony);
   // We did not get a USB connection, disable the dial button
@@ -107,8 +107,8 @@ static void box_show_handler(GtkWidget *widget, gpointer data) {
 }
 
 static int phony_state_changed_idle_handler(void *varg) {
-  PhonyViewContext *c = varg;
-  PhonyContext *pc = c->phony;
+  phony_view_context_t *c = varg;
+  phony_context_t *pc = c->phony;
   // Only do work on state transitions.
   switch (pc->state) {
   case PHONY_LINE_NOT_FOUND:
@@ -139,10 +139,10 @@ static void phony_state_changed_handler(void *varg) {
   g_idle_add(&phony_state_changed_idle_handler, varg);
 }
 
-struct PhonyViewContext *phone_view_new(PhonyContext *model) {
-  PhonyViewContext *c = calloc(sizeof(PhonyViewContext), 1);
+phony_view_context_t *phone_view_new(phony_context_t *model) {
+  phony_view_context_t *c = calloc(sizeof(phony_view_context_t), 1);
   if (c == NULL) {
-    log_err("Failed to allocate PhonyViewContext");
+    log_err("Failed to allocate phony_view_context_t");
     return NULL;
   }
 
@@ -252,7 +252,7 @@ struct PhonyViewContext *phone_view_new(PhonyContext *model) {
   return c;
 }
 
-void phony_view_free(PhonyViewContext *c) {
+void phony_view_free(phony_view_context_t *c) {
   if (c != NULL) {
     free(c);
   }

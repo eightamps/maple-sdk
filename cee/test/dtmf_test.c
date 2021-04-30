@@ -23,7 +23,7 @@ static int get_sample_count_for(int sample_rate, int char_count) {
 }
 
 char *test_dtmf_null_numbers(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   int status = dtmf_dial(c, NULL);
   muAssert(status == -EINVAL, "Expected invalid argument");
   dtmf_free(c);
@@ -31,8 +31,8 @@ char *test_dtmf_null_numbers(void) {
 }
 
 char *test_dtmf_empty_numbers(void) {
-  // DtmfContext *c = dtmf_new("", 1000);
-  DtmfContext *c = dtmf_new();
+  // dtmf_context_t *c = dtmf_new("", 1000);
+  dtmf_context_t *c = dtmf_new();
   int status = dtmf_dial(c, "");
   muAssert(status == -EINVAL, "Expected invalid argument");
   dtmf_free(c);
@@ -40,7 +40,7 @@ char *test_dtmf_empty_numbers(void) {
 }
 
 char *test_dtmf_next_sample_without_dial(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   float sample = 0.0f;
   int status = dtmf_next_sample(c, &sample);
   muAssert(status == -EINVAL, "Expected failure status");
@@ -49,7 +49,7 @@ char *test_dtmf_next_sample_without_dial(void) {
 }
 
 char *test_dtmf_duration_single(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   dtmf_dial(c, "5");
   float sample = 0.0f;
   int status = dtmf_next_sample(c, &sample);
@@ -63,7 +63,7 @@ char *test_dtmf_duration_single(void) {
 }
 
 char *test_dtmf_duration_multiple(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   dtmf_dial(c, "510");
   float sample = 0.0f;
   int status = dtmf_next_sample(c, &sample);
@@ -74,7 +74,7 @@ char *test_dtmf_duration_multiple(void) {
 }
 
 char *test_dtmf_sample_count(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   dtmf_dial(c, "5");
   dtmf_set_sample_rate(c, 1000);
   float sample = 0.0f;
@@ -93,7 +93,7 @@ char *test_dtmf_sample_count(void) {
 }
 
 char *test_dtmf_sample_multiple(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   dtmf_dial(c, "51");
   dtmf_set_sample_rate(c, 1000);
   float sample = 0.0f;
@@ -105,7 +105,7 @@ char *test_dtmf_sample_multiple(void) {
 }
 
 char *test_dtmf_large_sample_rate(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   dtmf_dial(c, "5");
   dtmf_set_sample_rate(c, 44100);
   float sample = 0.0f;
@@ -118,7 +118,7 @@ char *test_dtmf_large_sample_rate(void) {
 }
 
 char *test_dtmf_large_sample_rate_multiple(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   dtmf_dial(c, "51");
   dtmf_set_sample_rate(c, 44100);
   float sample = 0.0f;
@@ -131,7 +131,7 @@ char *test_dtmf_large_sample_rate_multiple(void) {
 }
 
 char *test_dtmf_large_sample_rate_three(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   dtmf_dial(c, "510");
   dtmf_set_sample_rate(c, 44100);
   float sample = 0.0f;
@@ -150,7 +150,7 @@ char *test_dtmf_large_sample_rate_three(void) {
 }
 
 char *test_dtmf_sample_index(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   dtmf_dial(c, "510");
   dtmf_set_sample_rate(c, 1000);
   c->sample_index = 974;
@@ -166,7 +166,7 @@ char *test_dtmf_sample_index(void) {
 }
 
 char *test_dtmf_entry_and_padding(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   dtmf_dial(c, "510");
   dtmf_set_sample_rate(c, 2000);
   c->sample_index = 100;
@@ -181,7 +181,7 @@ char *test_dtmf_entry_and_padding(void) {
 }
 
 char *test_dtmf_double_dial(void) {
-  DtmfContext *c = dtmf_new();
+  dtmf_context_t *c = dtmf_new();
   dtmf_dial(c, "510");
   dtmf_set_sample_rate(c, 1000);
   dtmf_dial(c, "954");

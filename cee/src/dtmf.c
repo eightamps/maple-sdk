@@ -11,13 +11,13 @@
 
 static const float TWO_PI = M_PI * 2.0f;
 
-typedef struct DtmfToneInfo {
+typedef struct {
   const int char_code;
   int tone1;
   int tone2;
-}DtmfToneInfo;
+}dtmf_tone_info_t;
 
-static DtmfToneInfo DtmfTones[] = {
+static dtmf_tone_info_t DtmfTones[] = {
     {'0', 1336, 941}, // underscore-ish?
     {'1', 1209, 697}, // recording icon?
     {'2', 1336, 697}, // abcd
@@ -36,11 +36,11 @@ static DtmfToneInfo DtmfTones[] = {
     {'D', 1633, 941},
 };
 
-static const int dtmf_tones_count = sizeof(DtmfTones) / sizeof(DtmfToneInfo);
+static const int dtmf_tones_count = sizeof(DtmfTones) / sizeof(dtmf_tone_info_t);
 
-static DtmfToneInfo *get_tone_info(int char_code) {
+static dtmf_tone_info_t *get_tone_info(int char_code) {
   for (int i = 0; i < dtmf_tones_count; i++) {
-    DtmfToneInfo *tone_info = &DtmfTones[i];
+    dtmf_tone_info_t *tone_info = &DtmfTones[i];
     if (char_code == tone_info->char_code) {
       return tone_info;
     }
@@ -48,7 +48,7 @@ static DtmfToneInfo *get_tone_info(int char_code) {
   return NULL;
 }
 
-int dtmf_dial(DtmfContext *c, const char *values) {
+int dtmf_dial(dtmf_context_t *c, const char *values) {
   if (values == NULL || strlen(values) < 1) {
     log_err("dtmf_new values must not be empty");
     return -EINVAL;
@@ -73,14 +73,14 @@ int dtmf_dial(DtmfContext *c, const char *values) {
   return EXIT_SUCCESS;
 }
 
-int dtmf_set_sample_rate(DtmfContext *c, int sample_rate) {
+int dtmf_set_sample_rate(dtmf_context_t *c, int sample_rate) {
   c->sample_rate = sample_rate;
   log_info("dtmf_set_sample_rate with: %d", c->sample_rate);
   return EXIT_SUCCESS;
 }
 
-struct DtmfContext *dtmf_new() {
-  DtmfContext *c = calloc(sizeof(DtmfContext), 1);
+dtmf_context_t *dtmf_new() {
+  dtmf_context_t *c = calloc(sizeof(dtmf_context_t), 1);
   if (c == NULL) {
     log_err("dtmf_new cannot allocate");
     return NULL;
@@ -92,7 +92,7 @@ struct DtmfContext *dtmf_new() {
   return c;
 }
 
-static void configure_dtmf(DtmfContext *c) {
+static void configure_dtmf(dtmf_context_t *c) {
   int values_count = (int)strlen(c->entries);
   float sample_rate = (float)c->sample_rate;
   float duration_ms = (float)((values_count * c->entry_ms) +
@@ -120,7 +120,7 @@ static float get_sample_for(float freq_1, float freq_2, float sample_rate,
   return sample;
 }
 
-int dtmf_next_sample(DtmfContext *c, float *sample) {
+int dtmf_next_sample(dtmf_context_t *c, float *sample) {
   if (!c->is_active) {
     log_err("dtmf_next_sample must follow dtmf_dial call");
     return -EINVAL;
@@ -157,7 +157,7 @@ int dtmf_next_sample(DtmfContext *c, float *sample) {
 
   // We're inside of an entry, get the DTMF signal sample
   int entry = (int)c->entries[entry_index];
-  DtmfToneInfo *tones = get_tone_info(entry);
+  dtmf_tone_info_t *tones = get_tone_info(entry);
   float result = get_sample_for(
       (float)tones->tone1,
       (float)tones->tone2,
@@ -170,7 +170,7 @@ int dtmf_next_sample(DtmfContext *c, float *sample) {
   return EXIT_SUCCESS;
 }
 
-void dtmf_free(DtmfContext *c) {
+void dtmf_free(dtmf_context_t *c) {
   if (c != NULL) {
     if (c->entries != NULL) {
       free(c->entries);

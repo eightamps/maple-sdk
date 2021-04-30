@@ -27,30 +27,30 @@ typedef void (*phony_state_changed)(void *varg);
 /**
  * Represents a telephone connection.
  */
-typedef struct PhonyContext {
+typedef struct {
   PhonyState state;
   phony_state_changed state_changed;
   void *userdata;
   phony_hid_context_t *hid_context;
-  DtmfContext  *dtmf_context;
-  StitchContext *to_phone;
-  StitchContext *from_phone;
+  dtmf_context_t  *dtmf_context;
+  stitch_context_t *to_phone;
+  stitch_context_t *from_phone;
   pthread_t thread_id;
   bool is_looping;
-}PhonyContext;
+}phony_context_t;
 
 /**
  * Create a new context for a telephone connection.
- * @return PhonyContext*
+ * @return phony_context_t*
  */
-PhonyContext *phony_new(void);
+phony_context_t *phony_new(void);
 
 /**
  * Initialize a telephone connection with the provided VendorId and ProductId
  * @param PhonyContext*
  * @return int Status code
  */
-int phony_open_device(PhonyContext *c, int vid, int pid);
+int phony_open_device(phony_context_t *c, int vid, int pid);
 
 /**
  * Initialize a new telephone connection with the first Maple device found on
@@ -58,7 +58,7 @@ int phony_open_device(PhonyContext *c, int vid, int pid);
  * @param c
  * @return
  */
-int phony_open_maple(PhonyContext *c);
+int phony_open_maple(phony_context_t *c);
 
 /**
  * Dial the provided number using the provided phony context.
@@ -66,29 +66,29 @@ int phony_open_maple(PhonyContext *c);
  * @param numbers to dial
  * @return int Status code
  */
-int phony_dial(PhonyContext *phony, const char *numbers);
+int phony_dial(phony_context_t *phony, const char *numbers);
 
 /**
  * Take the line off hook.
  * @param phony
  * @return
  */
-int phony_take_off_hook(PhonyContext *phony);
+int phony_take_off_hook(phony_context_t *phony);
 
 /**
  * Close down the open line.
  * @param PhonyContext*
  * @return int Status code
  */
-int phony_hang_up(PhonyContext *phony);
+int phony_hang_up(phony_context_t *phony);
 
 /**
- * Set a callback that will be called whenever the PhonyContext state changes.
+ * Set a callback that will be called whenever the phony_context_t state changes.
  * @param *PhonyContext
  * @param *phony_state_changed
  * @return int Status code
  */
-int phony_set_state_changed(PhonyContext *c, phony_state_changed callback,
+int phony_set_state_changed(phony_context_t *c, phony_state_changed callback,
                             void *userdata);
 
 /**
@@ -96,14 +96,14 @@ int phony_set_state_changed(PhonyContext *c, phony_state_changed callback,
  * @param *PhonyContext
  * @return PhonyState
  */
-PhonyState phony_get_state(PhonyContext *c);
+PhonyState phony_get_state(phony_context_t *c);
 
 /**
  * Close down and free the provided telephone connection.
  * @param PhonyContext*
  * @return void
  */
-void phony_free(PhonyContext *c);
+void phony_free(phony_context_t *c);
 
 /**
  * Get a human readable label from an Phony state value.

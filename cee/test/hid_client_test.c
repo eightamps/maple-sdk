@@ -11,7 +11,7 @@
 #define MAPLE_PID 0x8a01
 
 char *test_hid_client_new(void) {
-  HidClientContext *c = hid_client_new();
+  hid_client_context_t *c = hid_client_new();
   muAssert(c != NULL, "Expected context");
 
   hid_client_free(c);
@@ -22,7 +22,7 @@ char *test_hid_client_set_vid(void) {
   int status = hid_client_set_vid(NULL, EIGHT_AMPS_VID);
   muAssert(status == -EINVAL, "Expected Invalid argument");
 
-  HidClientContext *c = hid_client_new();
+  hid_client_context_t *c = hid_client_new();
   int vid = hid_client_get_vid(c);
   muAssert(vid == 0x0, "Expected default vid");
 
@@ -40,7 +40,7 @@ char *test_hid_client_set_pid(void) {
   int status = hid_client_set_pid(NULL, MAPLE_PID);
   muAssert(status == -EINVAL, "Expected Invalid argument");
 
-  HidClientContext *c = hid_client_new();
+  hid_client_context_t *c = hid_client_new();
   int pid = hid_client_get_pid(c);
   muAssert(pid == 0x0, "Expected default pid");
 
@@ -58,7 +58,7 @@ char *test_hid_client_open(void) {
   int status = hid_client_open(NULL);
   muAssert(status == -EINVAL, "Expected Invalid argument");
 
-  HidClientContext *c = hid_client_new();
+  hid_client_context_t *c = hid_client_new();
   status = hid_client_open(c);
   muAssert(status == EXIT_SUCCESS, "Expected success");
 

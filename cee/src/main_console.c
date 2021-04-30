@@ -6,8 +6,8 @@
 
 #define DEFAULT_8A_PHONE_NUMBER "7273392258"
 
-static PhonyContext *phony_context;
-static StitchContext *stitch_context;
+static phony_context_t *phony_context;
+static stitch_context_t *stitch_context;
 
 void sig_term_handler(int a, siginfo_t *t, void *b) {
   if (phony_context != NULL) {
@@ -30,7 +30,7 @@ void catch_sigterm(void) {
 int phony_example(void) {
   log_info("phony_example starting");
 
-  PhonyContext *c = phony_new();
+  phony_context_t *c = phony_new();
   if (c == NULL) {
     log_err("unable to instantiate phony context");
     return -ENOMEM; // No memory
@@ -67,7 +67,7 @@ int phony_example(void) {
 }
 
 int stitch_example(void) {
-  StitchContext *c = stitch_new_with_label("example");
+  stitch_context_t *c = stitch_new_with_label("example");
   stitch_context = c;
   if (c == NULL) {
     log_err("Failed creation");

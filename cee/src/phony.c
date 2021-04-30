@@ -30,9 +30,9 @@ const char *phony_state_to_str(int state) {
   }
 }
 
-PhonyContext *phony_new(void) {
+phony_context_t *phony_new(void) {
   // Initialize Phony context
-  PhonyContext *c = calloc(sizeof(PhonyContext), 1);
+  phony_context_t *c = calloc(sizeof(phony_context_t), 1);
   if (c == NULL) {
     return NULL;
   }
@@ -47,7 +47,7 @@ PhonyContext *phony_new(void) {
   c->hid_context = hc;
 
   // Initialize Stitch contexts
-  StitchContext *to_phone = stitch_new_with_label("to_phone");
+  stitch_context_t *to_phone = stitch_new_with_label("to_phone");
   if (to_phone == NULL) {
     phony_free(c);
     return NULL;
@@ -55,7 +55,7 @@ PhonyContext *phony_new(void) {
   stitch_init(to_phone);
   c->to_phone = to_phone;
 
-  StitchContext *from_phone = stitch_new_with_label("from_phone");
+  stitch_context_t *from_phone = stitch_new_with_label("from_phone");
   if (from_phone == NULL) {
     phony_free(c);
     return NULL;
@@ -63,7 +63,7 @@ PhonyContext *phony_new(void) {
   stitch_init(from_phone);
   c->from_phone = from_phone;
 
-  DtmfContext *dc = dtmf_new();
+  dtmf_context_t *dc = dtmf_new();
   if (dc == NULL) {
     dtmf_free(dc);
     return NULL;
@@ -72,9 +72,9 @@ PhonyContext *phony_new(void) {
   return c;
 }
 
-static int phony_swap_audio(PhonyContext *c) {
+static int phony_swap_audio(phony_context_t *c) {
   int in_index, out_index;
-  StitchContext *sc;
+  stitch_context_t *sc;
 
   // Set up the FROM PHONE audio signals
   sc = c->from_phone;
@@ -109,14 +109,14 @@ static int phony_swap_audio(PhonyContext *c) {
   return EXIT_SUCCESS;
 }
 
-static int phony_stop_audio(PhonyContext *c) {
+static int phony_stop_audio(phony_context_t *c) {
   stitch_stop(c->from_phone);
   stitch_stop(c->to_phone);
   return EXIT_SUCCESS;
 }
 
 static void *phony_poll_for_updates(void *varg) {
-  PhonyContext *c = varg;
+  phony_context_t *c = varg;
   phony_hid_context_t *hc = c->hid_context;
   log_info("Phony begin polling...");
   int status = phony_hid_open(hc);
@@ -168,27 +168,27 @@ static void *phony_poll_for_updates(void *varg) {
   return NULL;
 }
 
-static int begin_polling(PhonyContext *c) {
+static int begin_polling(phony_context_t *c) {
   return pthread_create(&c->thread_id, NULL, phony_poll_for_updates, c);
 }
 
-static int phony_join(PhonyContext *c) {
+static int phony_join(phony_context_t *c) {
   return pthread_join(c->thread_id, NULL);
 }
 
-int phony_open_device(PhonyContext *c, int vid, int pid) {
+int phony_open_device(phony_context_t *c, int vid, int pid) {
   phony_hid_context_t *hc = c->hid_context;
   phony_hid_set_vendor_id(hc, vid);
   phony_hid_set_product_id(hc, pid);
   return begin_polling(c);
 }
 
-int phony_open_maple(PhonyContext *c) {
+int phony_open_maple(phony_context_t *c) {
   log_info("phony_open_maple called");
   return phony_open_device(c, PHONY_EIGHT_AMPS_VID, PHONY_MAPLE_V3_PID);
 }
 
-int phony_take_off_hook(PhonyContext *c) {
+int phony_take_off_hook(phony_context_t *c) {
   log_info("phony_take_off_hook called");
   // if (c->state == PHONY_READY) {
     int status = phony_hid_set_off_hook(c->hid_context, true);
@@ -204,7 +204,7 @@ int phony_take_off_hook(PhonyContext *c) {
   // return -EINVAL;
 }
 
-int phony_hang_up(PhonyContext *c) {
+int phony_hang_up(phony_context_t *c) {
     log_info("phony_hang_up called");
     int status = phony_hid_set_off_hook(c->hid_context, false);
     if (status != EXIT_SUCCESS) {
@@ -213,7 +213,7 @@ int phony_hang_up(PhonyContext *c) {
     return status;
 }
 
-int phony_dial(PhonyContext *c, const char *numbers) {
+int phony_dial(phony_context_t *c, const char *numbers) {
   log_info("phony_dial called with %s", numbers);
   if (numbers == NULL || numbers[0] == '\0') {
     log_err("phony_dial called with empty input");
@@ -251,11 +251,11 @@ int phony_dial(PhonyContext *c, const char *numbers) {
   return status;
 }
 
-PhonyState phony_get_state(PhonyContext *c) {
+PhonyState phony_get_state(phony_context_t *c) {
   return c->state;
 }
 
-void phony_free(PhonyContext *c) {
+void phony_free(phony_context_t *c) {
   if (c != NULL) {
     // Hang up if we're in a call.
     if (c->state == PHONY_LINE_IN_USE) {
@@ -285,7 +285,7 @@ void phony_free(PhonyContext *c) {
   }
 }
 
-int phony_set_state_changed(PhonyContext *c, phony_state_changed callback,
+int phony_set_state_changed(phony_context_t *c, phony_state_changed callback,
                             void *userdata) {
   if (c->state_changed != NULL) {
     log_err("phony_set_state_changed cannot accept a second "

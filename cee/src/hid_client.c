@@ -6,8 +6,8 @@
 #include "hid_client.h"
 #include <stdlib.h>
 
-HidClientContext *hid_client_new(void) {
-  HidClientContext *c = calloc(sizeof(HidClientContext), 1);
+hid_client_context_t *hid_client_new(void) {
+  hid_client_context_t *c = calloc(sizeof(hid_client_context_t), 1);
   if (c == NULL) {
     log_err("hid_client_new failed to allocated");
     return NULL;
@@ -16,7 +16,7 @@ HidClientContext *hid_client_new(void) {
   return c;
 }
 
-int hid_client_open(HidClientContext *c) {
+int hid_client_open(hid_client_context_t *c) {
   if (c == NULL) {
     log_err("hid_client_open requires valid context");
     return -EINVAL;
@@ -25,7 +25,7 @@ int hid_client_open(HidClientContext *c) {
   return EXIT_SUCCESS;
 }
 
-int hid_client_set_vid(HidClientContext *c, int vid) {
+int hid_client_set_vid(hid_client_context_t *c, int vid) {
   if (c == NULL) {
     log_err("hid_client_set_vid requires valid context");
     return -EINVAL;
@@ -34,7 +34,7 @@ int hid_client_set_vid(HidClientContext *c, int vid) {
   return EXIT_SUCCESS;
 }
 
-int hid_client_get_vid(HidClientContext *c) {
+int hid_client_get_vid(hid_client_context_t *c) {
   if (c == NULL) {
     log_err("hid_client_get_vid requires valid context");
     return -EINVAL;
@@ -42,7 +42,7 @@ int hid_client_get_vid(HidClientContext *c) {
   return c->vid;
 }
 
-int hid_client_set_pid(HidClientContext *c, int pid) {
+int hid_client_set_pid(hid_client_context_t *c, int pid) {
   if (c == NULL) {
     log_err("hid_client_set_pid requires valid context");
     return -EINVAL;
@@ -51,7 +51,7 @@ int hid_client_set_pid(HidClientContext *c, int pid) {
   return EXIT_SUCCESS;
 }
 
-int hid_client_get_pid(HidClientContext *c) {
+int hid_client_get_pid(hid_client_context_t *c) {
   if (c == NULL) {
     log_err("hid_client_get_pid requires valid context");
     return -EINVAL;
@@ -59,7 +59,7 @@ int hid_client_get_pid(HidClientContext *c) {
   return c->pid;
 }
 
-void hid_client_free(HidClientContext *c) {
+void hid_client_free(hid_client_context_t *c) {
   if (c != NULL) {
     free(c);
   }

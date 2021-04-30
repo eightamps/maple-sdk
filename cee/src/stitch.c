@@ -14,14 +14,14 @@ static int min_int(int a, int b) {
   return (a < b) ? a : b;
 }
 
-StitchContext *stitch_new_with_label(char *label) {
-  StitchContext *c = stitch_new();
+stitch_context_t *stitch_new_with_label(char *label) {
+  stitch_context_t *c = stitch_new();
   c->label = label;
   return c;
 }
 
-StitchContext *stitch_new(void) {
-  StitchContext *c = calloc(sizeof(StitchContext), 1);
+stitch_context_t *stitch_new(void) {
+  stitch_context_t *c = calloc(sizeof(stitch_context_t), 1);
   if (c == NULL) {
     log_err("stitch_new failed to allocate memory");
     return NULL;
@@ -33,9 +33,9 @@ StitchContext *stitch_new(void) {
 }
 
 static void read_callback(struct SoundIoInStream *instream, int frame_count_min, int frame_count_max) {
-  StitchContext *c = instream->userdata;
+  stitch_context_t *c = instream->userdata;
   if (c == NULL) {
-    log_err("read_callback unable to get StitchContext");
+    log_err("read_callback unable to get stitch_context_t");
     return;
   }
   // log_info("<< read_callback with min: %d and max: %d", frame_count_min,
@@ -103,9 +103,9 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
 
 static void write_callback(struct SoundIoOutStream *outstream,
     int frame_count_min, int frame_count_max) {
-  StitchContext *c = outstream->userdata;
+  stitch_context_t *c = outstream->userdata;
   if (c == NULL) {
-    log_err("write_callback unable to get StitchContext");
+    log_err("write_callback unable to get stitch_context_t");
     return;
   }
 
@@ -172,7 +172,7 @@ static void write_callback(struct SoundIoOutStream *outstream,
       break;
     }
 
-    DtmfContext *d = c->dtmf_context;
+    dtmf_context_t *d = c->dtmf_context;
     float *sample = calloc(sizeof(float), 1);
 
     for (int frame = 0; frame < fframe_count; frame += 1) {
@@ -205,7 +205,7 @@ static void write_callback(struct SoundIoOutStream *outstream,
 
 static void underflow_callback(struct SoundIoOutStream *outstream) {
   static int count = 0;
-  StitchContext *c = outstream->userdata;
+  stitch_context_t *c = outstream->userdata;
   log_err("stitch write_underflow count: %d on stream id: %ld", ++count,
           c->thread_id);
   if (count >= 10) {
@@ -216,7 +216,7 @@ static void underflow_callback(struct SoundIoOutStream *outstream) {
   }
 }
 
-int stitch_init(StitchContext *c) {
+int stitch_init(stitch_context_t *c) {
   int status = EXIT_SUCCESS;
   if (c == NULL) {
     log_err("stitch_init requires a non-null context");
@@ -253,7 +253,7 @@ int stitch_init(StitchContext *c) {
 }
 
 static void *stitch_start_thread(void *vargp) {
-  StitchContext *c = vargp;
+  stitch_context_t *c = vargp;
   int status;
   struct SoundIo *soundio = c->soundio;
 
@@ -412,7 +412,7 @@ static void *stitch_start_thread(void *vargp) {
   return NULL;
 }
 
-int stitch_join(StitchContext *c) {
+int stitch_join(stitch_context_t *c) {
   pthread_join(c->thread_id, NULL);
   return c->thread_exit_status;
 }
@@ -428,7 +428,7 @@ static int is_valid_host_device(struct SoundIoDevice *d) {
 
 typedef struct SoundIoDevice *(GetDeviceFunc)(struct SoundIo *s, int index);
 
-static int get_default_device_index(StitchContext *c,
+static int get_default_device_index(stitch_context_t *c,
                                     GetDeviceFunc *get_device,
                                     int device_count,
                                     int default_index) {
@@ -461,10 +461,10 @@ static int get_default_device_index(StitchContext *c,
   return result;
 }
 
-static int get_matching_device_index(StitchContext *c,
-                                    GetDeviceFunc *get_device,
-                                    int device_count,
-                                    char *name) {
+static int get_matching_device_index(stitch_context_t *c,
+                                     GetDeviceFunc *get_device,
+                                     int device_count,
+                                     char *name) {
   struct SoundIoDevice *d;
   int result = -1;
   int index = device_count - 1;
@@ -482,45 +482,45 @@ static int get_matching_device_index(StitchContext *c,
   return result;
 }
 
-int stitch_set_dtmf(StitchContext *c, DtmfContext *d) {
+int stitch_set_dtmf(stitch_context_t *c, dtmf_context_t *d) {
   c->dtmf_context = d;
   return EXIT_SUCCESS;
 }
 
-int stitch_get_default_input_index(StitchContext *c) {
+int stitch_get_default_input_index(stitch_context_t *c) {
   int count = soundio_input_device_count(c->soundio);
   int index = soundio_default_input_device_index(c->soundio);
   return get_default_device_index(c, &soundio_get_input_device, count, index);
 }
 
-int stitch_get_default_output_index(StitchContext *c) {
+int stitch_get_default_output_index(stitch_context_t *c) {
   int count = soundio_output_device_count(c->soundio);
   int index = soundio_default_output_device_index(c->soundio);
   return get_default_device_index(c, &soundio_get_output_device, count, index);
 }
 
-int stitch_get_matching_input_device_index(StitchContext *c, char *name) {
+int stitch_get_matching_input_device_index(stitch_context_t *c, char *name) {
   int count = soundio_input_device_count(c->soundio);
   return get_matching_device_index(c, &soundio_get_input_device, count, name);
 }
 
-int stitch_get_matching_output_device_index(StitchContext *c, char *name) {
+int stitch_get_matching_output_device_index(stitch_context_t *c, char *name) {
   int count = soundio_output_device_count(c->soundio);
   return get_matching_device_index(c, &soundio_get_output_device, count, name);
 }
 
-int stitch_start(StitchContext *c, int in_index, int out_index) {
+int stitch_start(stitch_context_t *c, int in_index, int out_index) {
   c->in_device_index = in_index;
   c->out_device_index = out_index;
   return pthread_create(&c->thread_id, NULL, stitch_start_thread, c);
 }
 
-int stitch_stop(StitchContext *c) {
+int stitch_stop(stitch_context_t *c) {
   c->is_active = false;
   return stitch_join(c);
 }
 
-void stitch_free(StitchContext *c) {
+void stitch_free(stitch_context_t *c) {
   if (c != NULL) {
     if (c->is_active) {
       c->is_active = false;

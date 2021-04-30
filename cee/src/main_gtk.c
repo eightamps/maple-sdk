@@ -8,18 +8,18 @@
 static const char *APP_TITLE = "Demo App";
 
 int main(int argc, char *argv[]) {
-  log_info("Configuring ApplicationContext");
-  ApplicationContext *app = application_new();
+  log_info("Configuring application_context_t");
+  application_context_t *app = application_new();
   memcpy(app->title, APP_TITLE, strlen(APP_TITLE) + 1);
-  log_info("Running ApplicationContext");
+  log_info("Running application_context_t");
   int status = application_run(app, argc, argv);
 
   application_free(app);
 
   if (status == 0) {
-    log_info("Exiting ApplicationContext with status: 0 (SUCCESS)");
+    log_info("Exiting application_context_t with status: 0 (SUCCESS)");
   } else {
-    log_info("ERROR: ApplicationContext exiting with status: %d (FAILURE)", status);
+    log_info("ERROR: application_context_t exiting with status: %d (FAILURE)", status);
   }
   return status;
 }

@@ -14,11 +14,11 @@
 
 static void activate_callback(GtkApplication *native_app, gpointer userdata) {
   GtkWidget *window = gtk_application_window_new(native_app);
-  ApplicationContext *app = (ApplicationContext *)userdata;
+  application_context_t *app = (application_context_t *)userdata;
   gtk_window_set_title(GTK_WINDOW(window), app->title);
   gtk_window_set_default_size(GTK_WINDOW(window), APP_WIDTH, APP_HEIGHT);
 
-  PhonyViewContext *p = phone_view_new(app->phony_context);
+  phony_view_context_t *p = phone_view_new(app->phony_context);
   app->phony_view_context = p;
 
   // Add the phone view
@@ -26,15 +26,15 @@ static void activate_callback(GtkApplication *native_app, gpointer userdata) {
   gtk_widget_show_all(window);
 }
 
-ApplicationContext *application_new(void) {
-  ApplicationContext *app = malloc(sizeof(ApplicationContext));
+application_context_t *application_new(void) {
+  application_context_t *app = malloc(sizeof(application_context_t));
   if (app == NULL) {
-    log_err("Could not allocate ApplicationContext struct");
+    log_err("Could not allocate application_context_t struct");
     exit(1);
   }
 
-  // Create the PhonyContext and related view component
-  PhonyContext *phony = phony_new();
+  // Create the phony_context_t and related view component
+  phony_context_t *phony = phony_new();
   if (phony == NULL) {
     log_err("Unable to instantiate phony service");
     exit(-ENOMEM);
@@ -54,12 +54,12 @@ ApplicationContext *application_new(void) {
   return app;
 }
 
-int application_run(ApplicationContext *app, int argc, char *argv[]) {
+int application_run(application_context_t *app, int argc, char *argv[]) {
   GApplication *native_app = G_APPLICATION(app->native_app);
   return g_application_run(native_app, argc, argv);
 }
 
-void application_free(ApplicationContext *c) {
+void application_free(application_context_t *c) {
   if (c != NULL) {
 
     phony_view_free(c->phony_view_context);
