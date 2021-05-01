@@ -34,10 +34,11 @@ char *allTests(void) {
   muRunTest(test_dtmf_double_dial);
 
   // PhonyHid tests
-  // muRunTest(test_phony_hid_open); // TODO(lbayes): mock the service
+  // muRunTest(test_phony_hid_open_not_found); // TODO(lbayes): mock the service
   muRunTest(test_phony_hid_new);
   muRunTest(test_hid_in_report_to_struct);
-  muRunTest(test_phony_hid_open);
+  muRunTest(test_phony_hid_open_not_found);
+  muRunTest(test_phony_hid_libusb_error_codes);
 
   // Phony tests
   muRunTest(test_phony_state);

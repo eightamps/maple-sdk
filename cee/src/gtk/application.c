@@ -61,7 +61,6 @@ int application_run(application_context_t *app, int argc, char *argv[]) {
 
 void application_free(application_context_t *c) {
   if (c != NULL) {
-
     phony_view_free(c->phony_view_context);
     phony_free(c->phony_context);
 

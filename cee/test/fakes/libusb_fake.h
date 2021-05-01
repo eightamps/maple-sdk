@@ -13,6 +13,20 @@ typedef struct {
 typedef struct libusb_device_handle {
 }libusb_device_handle;
 
+typedef struct libusb_config_descriptor {
+  uint8_t  bLength;
+  uint8_t  bDescriptorType;
+  uint16_t wTotalLength;
+  uint8_t  bNumInterfaces;
+  uint8_t  bConfigurationValue;
+  uint8_t  iConfiguration;
+  uint8_t  bmAttributes;
+  uint8_t  MaxPower;
+  const struct libusb_interface *interface;
+  const unsigned char *extra;
+  int extra_length;
+}libusb_config_descriptor;
+
 typedef struct libusb_device_descriptor {
   uint16_t idVendor;
   uint16_t idProduct;
@@ -75,6 +89,36 @@ enum libusb_error {
   LIBUSB_ERROR_OTHER = -99,
 };
 
+/** \ingroup libusb_asyncio
+ * Transfer status codes */
+enum libusb_transfer_status {
+  /** Transfer completed without error. Note that this does not indicate
+   * that the entire amount of requested data was transferred. */
+  LIBUSB_TRANSFER_COMPLETED,
+
+  /** Transfer failed */
+  LIBUSB_TRANSFER_ERROR,
+
+  /** Transfer timed out */
+  LIBUSB_TRANSFER_TIMED_OUT,
+
+  /** Transfer was cancelled */
+  LIBUSB_TRANSFER_CANCELLED,
+
+  /** For bulk/interrupt endpoints: halt condition detected (endpoint
+   * stalled). For control endpoints: control request not supported. */
+  LIBUSB_TRANSFER_STALL,
+
+  /** Device was disconnected */
+  LIBUSB_TRANSFER_NO_DEVICE,
+
+  /** Device sent more data than requested */
+  LIBUSB_TRANSFER_OVERFLOW
+
+  /* NB! Remember to update libusb_error_name()
+     when adding new status codes here. */
+};
+
 // Fake-only functions
 void libusb_fake_set_next_result(int result);
 
@@ -94,6 +138,8 @@ uint8_t libusb_get_device_address(libusb_device *dev);
 int libusb_get_device_descriptor(libusb_device *dev,
                                  libusb_device_descriptor *desc);
 int libusb_reset_device(libusb_device_handle *devh);
+int libusb_get_config_descriptor(libusb_device *dev, uint8_t config_index,
+                                 libusb_config_descriptor **config);
 
 void libusb_exit(libusb_context *c);
 #endif //MAPLE_LIBUSB_FAKE_H

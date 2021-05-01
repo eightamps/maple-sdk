@@ -5,6 +5,7 @@
 #include "phony_hid.h"
 #include "phony_hid_test.h"
 #include "minunit.h"
+#include "test_helper.h"
 #include <string.h>
 
 char *test_hid_in_report_to_struct(void) {
@@ -57,11 +58,40 @@ char *test_phony_hid_new(void) {
   return NULL;
 }
 
-char *test_phony_hid_open(void) {
+char *test_phony_hid_open_not_found(void) {
   phony_hid_context_t *c = phony_hid_new();
   int status = phony_hid_open(c);
   // Until we configure the fake to return a device and device_handle.
-  muAssert(status == LIBUSB_ERROR_NOT_FOUND, "Expected Not found");
+  muAssert(status == PHONY_HID_ERROR_NOT_FOUND, "Expected Not found");
   phony_hid_free(c);
+  return NULL;
+}
+
+char *test_phony_hid_libusb_error_codes(void) {
+  // Ensure we have mapped LIBUSB error (and status, and transfer) codes to
+  // the expected PHONY_HID status code AND resulting user message.
+  LUSB_STATUS_MSG(LIBUSB_SUCCESS, "PHONY_HID_SUCCESS");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_NOT_SUPPORTED, "PHONY_HID_ERROR_NOT_SUPPORTED");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_NO_MEM, "PHONY_HID_ERROR_NO_MEM");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_INTERRUPTED, "PHONY_HID_ERROR_INTERRUPTED");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_PIPE, "PHONY_HID_ERROR_PIPE");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_OVERFLOW, "PHONY_HID_ERROR_OVERFLOW");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_TIMEOUT, "PHONY_HID_ERROR_TIMEOUT");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_BUSY, "PHONY_HID_ERROR_BUSY");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_NOT_FOUND, "PHONY_HID_ERROR_NOT_FOUND");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_NO_DEVICE, "PHONY_HID_ERROR_NO_DEVICE");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_ACCESS, "PHONY_HID_ERROR_ACCESS");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_INVALID_PARAM, "PHONY_HID_ERROR_INVALID_PARAM");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_IO, "PHONY_HID_ERROR_IO");
+  LUSB_STATUS_MSG(LIBUSB_ERROR_OTHER, "PHONY_HID_ERROR_OTHER");
+
+  // Transfer codes
+  LUSB_STATUS_MSG(LIBUSB_TRANSFER_COMPLETED, "PHONY_HID_SUCCESS");
+  LUSB_STATUS_MSG(LIBUSB_TRANSFER_ERROR, "PHONY_HID_TRANSFER_ERROR");
+  LUSB_STATUS_MSG(LIBUSB_TRANSFER_OVERFLOW, "PHONY_HID_TRANSFER_OVERFLOW");
+  LUSB_STATUS_MSG(LIBUSB_TRANSFER_TIMED_OUT, "PHONY_HID_TRANSFER_TIMED_OUT");
+  LUSB_STATUS_MSG(LIBUSB_TRANSFER_CANCELLED, "PHONY_HID_TRANSFER_CANCELLED");
+  LUSB_STATUS_MSG(LIBUSB_TRANSFER_STALL, "PHONY_HID_TRANSFER_STALL");
+  LUSB_STATUS_MSG(LIBUSB_TRANSFER_NO_DEVICE, "PHONY_HID_TRANSFER_NO_DEVICE");
   return NULL;
 }

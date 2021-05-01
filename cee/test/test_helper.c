@@ -7,6 +7,15 @@
 #include "string.h"
 #include "test_helper.h"
 
+int chars_match(const char *a, const char *b) {
+  int result = strcmp(a, b);
+  if (0 != result) {
+    fprintf(stderr, "Expected chars to match, but were instead:\n");
+    fprintf(stderr, "[%s] and [%s]", a, b);
+  }
+  return result;
+}
+
 /**
  * Returns 0 if both floats convert to the same 3 digit string value using
  * snprintf.
@@ -25,7 +34,7 @@ int floats_match_as_str(float a, float b) {
 
   int result = strncmp(a_str, b_str, len);
   if (0 != result) {
-    log_err("floats_match_as_str failed with a: %s vs b: %s", a_str,
+    fprintf(stderr, "floats_match_as_str failed with a: %s vs b: %s", a_str,
             b_str);
   }
 
