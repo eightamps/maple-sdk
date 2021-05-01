@@ -5,8 +5,12 @@
 #ifndef MAPLE_PHONY_HID_H
 #define MAPLE_PHONY_HID_H
 
-#include <libusb-1.0/libusb.h>
 #include <stdbool.h>
+#ifndef TEST_MODE
+#include <libusb-1.0/libusb.h>
+#else
+#include "fakes/libusb_fake.h"
+#endif
 
 typedef struct {
   uint8_t loop; // 0

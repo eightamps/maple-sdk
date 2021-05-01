@@ -78,7 +78,7 @@ enum libusb_error {
 // Fake-only functions
 void libusb_fake_set_next_result(int result);
 
-int libusb_init(libusb_context **c);
+int libusb_init(libusb_context **context);
 int libusb_interrupt_transfer(struct libusb_device_handle *devh,
     unsigned char endpoint, unsigned char *data, int length, int *transferred,
     unsigned int timeout);

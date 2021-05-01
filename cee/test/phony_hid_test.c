@@ -57,14 +57,11 @@ char *test_phony_hid_new(void) {
   return NULL;
 }
 
-// NOTE(lbayes): This test only passes if a Maple board is connected to the USB
-// bus. It's not clear to me (yet) how best to stub libusb services in C.
 char *test_phony_hid_open(void) {
   phony_hid_context_t *c = phony_hid_new();
   int status = phony_hid_open(c);
-  muAssert(status >= 0, "Expected valid status from phony_hid_open");
-  muAssert(c->is_open, "Expected is_open");
-
+  // Until we configure the fake to return a device and device_handle.
+  muAssert(status == LIBUSB_ERROR_NOT_FOUND, "Expected Not found");
   phony_hid_free(c);
   return NULL;
 }

@@ -11,7 +11,10 @@ void libusb_fake_set_next_result(int result) {
   next_result = result;
 }
 
-int libusb_init(libusb_context **c) {
+int libusb_init(libusb_context **context) {
+  struct libusb_context *ctx;
+  ctx = calloc(sizeof(libusb_context), 1);
+  *context = (libusb_context *)ctx;
   return next_result;
 }
 
