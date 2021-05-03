@@ -45,50 +45,88 @@ set(TestSources
         test/hid_client_test.c
         test/hid_client_test.h
         test/fakes/libusb_fake.c
-        test/fakes/libusb_fake.h
+        # test/fakes/libusb_fake.h
         )
 
 set(VendorLibs
         ${PROJECT_SOURCE_DIR}/vendor/kissfft/libkissfft-float.so
-        # Custom built soundio for win32 only
-        # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.so
         )
 
 # FFT library will be used to validate generated DTMF signals
 # link_directories(${CMAKE_BINARY_DIR}}/vendor/kissfft)
 
-link_libraries(
-        usb-1.0
-        soundio
-        hidapi-libusb
+# Build environment for Windows DLL
+if (MINGW32)
+    set(CMAKE_SYSTEM_NAME Windows)
+    set(CMAKE_C_COMPILER i686-w64-mingw32-gcc)
+    set(CMAKE_CXX_COMPILER i686-w64-mingw32-g++)
+    set(CMAKE_RC_COMPILER i686-w64-mingw32-windres)
+    set(CMAKE_RANLIB i686-w64-mingw32-ranlib)
+
+    set(VendorLibs
+            ${VendorLibs}
+            # Custom built soundio for win32 only
+            # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
+            )
+
+    link_libraries(
         m
         pthread
+        ${PROJECT_SOURCE_DIR}/vendor/libusb/MinGW32/static/libusb-1.0.a
         )
 
-# Build artifacts
-add_library(maple-lib STATIC ${AppSources} ${VendorLibs})
-add_executable(maple-console src/main_console.c ${AppSources} ${VendorLibs})
-add_executable(maple-gtk src/main_gtk.c
+    add_library(maple-sdk.dll STATIC ${AppSources} ${VendorLibs})
+
+    # target_link_libraries(maple-sdk.dll
+            # -static-libgcc
+            # -static-libsoundio
+            # )
+
+    set_target_properties(maple-sdk.dll
+            PROPERTIES
+            PREFIX ""
+            SUFFIX ""
+            LINK_FLAGS "-Wl,-add-stdcall-alias"
+            POSITION_INDEPENDENT_CODE 0 # this is to avoid MinGW warning;
+            )
+
+    include_directories(${PROJECT_SOURCE_DIR}/vendor/libusb/include)
+    include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
+
+    add_executable(maple.exe src/main_win32.c)
+else()
+
+    link_libraries(
+        usb-1.0
+        soundio
+        m
+        pthread
+    )
+
+    # Build non-Windows artifacts
+    add_library(maple-sdk STATIC ${AppSources} ${VendorLibs})
+    add_executable(maple-console src/main_console.c ${AppSources} ${VendorLibs})
+    add_executable(maple-gtk src/main_gtk.c
         ${AppSources}
         ${GtkSources}
         ${VendorLibs}
         )
-add_executable(maple-test test/main_test.c
+    add_executable(maple-test test/main_test.c
         ${AppSources}
         ${GtkSources}
         ${TestSources}
         )
 
-# Configure GTK+-3.0
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-include_directories(${GTK3_INCLUDE_DIRS})
-link_directories(${GTK3_LIBRARY_DIRS})
-add_definitions(${GTK3_CFLAGS_OTHER})
+    # Configure GTK+-3.0
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+    include_directories(${GTK3_INCLUDE_DIRS})
+    link_directories(${GTK3_LIBRARY_DIRS})
+    add_definitions(${GTK3_CFLAGS_OTHER})
 
-# Add link relevant libraries to targets
-target_link_libraries(maple-console ${VendorLibs})
-target_link_libraries(maple-gtk ${GTK3_LIBRARIES} ${VendorLibs})
-target_link_libraries(maple-test ${GTK3_LIBRARIES} ${VendorLibs})
-
-target_compile_definitions(maple-test PRIVATE TEST_MODE=1)
+    # Add link relevant libraries to targets
+    target_link_libraries(maple-console ${VendorLibs})
+    target_link_libraries(maple-gtk ${GTK3_LIBRARIES} ${VendorLibs})
+    target_link_libraries(maple-test ${GTK3_LIBRARIES} ${VendorLibs})
+    target_compile_definitions(maple-test PRIVATE TEST_MODE=1)
+endif()

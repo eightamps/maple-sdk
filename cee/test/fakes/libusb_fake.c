@@ -82,6 +82,13 @@ int libusb_claim_interface(libusb_device_handle *devh, int interface_number) {
   return LIBUSB_SUCCESS;
 }
 
+int libusb_release_interface(libusb_device_handle *devh, int interface_number) {
+  return LIBUSB_SUCCESS;
+}
+
+void libusb_close(libusb_device_handle *devh) {
+}
+
 libusb_device_handle * libusb_open_device_with_vid_pid(libusb_context *ctx,
                                                        uint16_t vid, uint16_t
                                                        pid) {

@@ -129,6 +129,7 @@ int libusb_interrupt_transfer(struct libusb_device_handle *devh,
 const char * libusb_error_name(int code);
 int libusb_set_auto_detach_kernel_driver(libusb_device_handle *devh,
                                          int enable);
+int libusb_release_interface(libusb_device_handle *devh, int interface_number);
 int libusb_claim_interface(libusb_device_handle *devh, int interface_number);
 libusb_device_handle * libusb_open_device_with_vid_pid(libusb_context *ctx,
     uint16_t vid, uint16_t pid);
@@ -141,5 +142,6 @@ int libusb_reset_device(libusb_device_handle *devh);
 int libusb_get_config_descriptor(libusb_device *dev, uint8_t config_index,
                                  libusb_config_descriptor **config);
 
+void libusb_close(libusb_device_handle *devh);
 void libusb_exit(libusb_context *c);
 #endif //MAPLE_LIBUSB_FAKE_H
