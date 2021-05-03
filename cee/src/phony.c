@@ -8,6 +8,7 @@
 #include "phony_hid.h"
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 const char *phony_state_to_str(int state) {
   switch (state) {
@@ -73,24 +74,28 @@ static int stop_audio(phony_context_t *c) {
   return EXIT_SUCCESS;
 }
 
-static int set_state(phony_context_t *c, PhonyState state) {
-  PhonyState last_state = c->state;
+static int set_state(phony_context_t *c, phony_state state) {
+  phony_state last_state = c->state;
+  int status;
   if (last_state != state) {
-    log_info("UPDATED PHONY STATE to: %s", phony_state_to_str(c->state));
     c->state = state;
+    log_info("phony changed state to: %s", phony_state_to_str(state));
 
-    if (state == PHONY_LINE_IN_USE) {
-      int status = swap_audio(c);
+    if (PHONY_LINE_IN_USE == state) {
+      log_info("phony transitioning to line in use");
+      status = swap_audio(c);
       if (status != EXIT_SUCCESS) {
-        log_err("FAILED TO SWAP AUDIO with: %d", status);
+        log_err("phony failed to swap audio with: %d", status);
+        // TODO(lbayes): Figure out how to signal this error externally, and
+        //  reset our looping
       }
-
-    } else if (PHONY_LINE_IN_USE == last_state &&
-        PHONY_READY == state) {
+    } else if (PHONY_READY == state &&
+    PHONY_LINE_IN_USE == last_state) {
+      log_info("phony transitioning to ready, from line in use");
       stop_audio(c);
     }
 
-    if (c->state_changed != NULL) {
+    if (PHONY_EXITING != state && c->state_changed != NULL) {
       log_info("calling phony state_changed handler now");
       c->state_changed(c->userdata);
     }
@@ -110,8 +115,8 @@ phony_context_t *phony_new(void) {
     phony_free(c);
     return NULL;
   }
-  set_state(c, PHONY_NOT_READY);
   c->hid_context = hc;
+  set_state(c, PHONY_NOT_READY);
 
   // Initialize Stitch contexts
   stitch_context_t *to_phone = stitch_new_with_label("to_phone");
@@ -119,16 +124,16 @@ phony_context_t *phony_new(void) {
     phony_free(c);
     return NULL;
   }
-  stitch_init(to_phone);
   c->to_phone = to_phone;
+  stitch_init(to_phone);
 
   stitch_context_t *from_phone = stitch_new_with_label("from_phone");
   if (from_phone == NULL) {
     phony_free(c);
     return NULL;
   }
-  stitch_init(from_phone);
   c->from_phone = from_phone;
+  stitch_init(from_phone);
 
   dtmf_context_t *dc = dtmf_new();
   if (dc == NULL) {
@@ -142,21 +147,33 @@ phony_context_t *phony_new(void) {
 static void *phony_poll_for_updates(void *varg) {
   phony_context_t *c = varg;
   phony_hid_context_t *hc = c->hid_context;
-  log_info("Phony begin polling...");
-  int status = phony_hid_open(hc);
-  if (status != EXIT_SUCCESS) {
-    log_err("phony unable to open HID client with status: %s",
-            phony_hid_status_message(status));
-    set_state(c, PHONY_DEVICE_NOT_FOUND);
-    return NULL;
-  }
+  int status;
 
-  PhonyState last_state;
-  c->is_looping = true;
-  while (c->is_looping) {
+  log_info("Phony begin polling with state: %s", phony_state_to_str(c->state));
+  while(c->state != PHONY_EXITING) {
+    if (c->state == PHONY_NOT_READY ||
+        c->state == PHONY_DEVICE_NOT_FOUND) {
+      // Attempt to open the HID connection
+      status = phony_hid_open(hc);
+      if (status == PHONY_HID_SUCCESS) {
+        set_state(c, PHONY_CONNECTED);
+      } else {
+        // log_err("phony unable to open HID client with status: %s",
+        // phony_hid_status_message(status));
+        set_state(c, PHONY_DEVICE_NOT_FOUND);
+        sleep(.250);
+        continue;
+      }
+    }
+
     log_info("----------------------------");
     log_info("phony waiting for HID report");
-    phony_hid_get_report(hc);
+    status = phony_hid_get_report(hc);
+    if (status != PHONY_HID_SUCCESS) {
+      set_state(c, PHONY_DEVICE_NOT_FOUND);
+      continue;
+    }
+
     phony_hid_in_report_t *ir = hc->in_report;
     if (ir->ring) {
       set_state(c, PHONY_RINGING);
@@ -196,12 +213,16 @@ int phony_open_maple(phony_context_t *c) {
 
 int phony_take_off_hook(phony_context_t *c) {
   log_info("phony_take_off_hook called");
-  // if (c->state == PHONY_READY) {
+  if (c->state == PHONY_READY) {
     int status = phony_hid_set_off_hook(c->hid_context, true);
     if (status != EXIT_SUCCESS) {
       log_err("phony_take_off_hook failed with status: %d", status);
     }
     return status;
+  }
+
+  return -EPERM;
+
   // if (c->state == PHONY_OFF_HOOK) {
     // return EXIT_SUCCESS;
   // }
@@ -211,12 +232,15 @@ int phony_take_off_hook(phony_context_t *c) {
 }
 
 int phony_hang_up(phony_context_t *c) {
+  if (PHONY_LINE_IN_USE == c->state) {
     log_info("phony_hang_up called");
     int status = phony_hid_set_off_hook(c->hid_context, false);
     if (status != EXIT_SUCCESS) {
       log_err("phony_hang_up failed with status: %d", status);
     }
     return status;
+  }
+  return -EPERM;
 }
 
 int phony_dial(phony_context_t *c, const char *numbers) {
@@ -257,44 +281,45 @@ int phony_dial(phony_context_t *c, const char *numbers) {
   return status;
 }
 
-PhonyState phony_get_state(phony_context_t *c) {
+phony_state phony_get_state(phony_context_t *c) {
   return c->state;
 }
 
 void phony_free(phony_context_t *c) {
-  if (c != NULL) {
-    // Hang up if we're in a call.
-    if (c->state == PHONY_LINE_IN_USE) {
-      phony_hang_up(c);
-    }
-    if (c->hid_context) {
-      // Let the read thread exit after this call.
-      c->is_looping = false;
-      // Attempt to flip hostavail on device.
-      phony_hid_set_hostavail(c->hid_context, false);
-      pthread_cancel(c->thread_id);
-      // pthread_join(c->thread_id, NULL);
-    }
-    if (c->hid_context != NULL) {
-      phony_hid_free(c->hid_context);
-    }
-    if (c->to_phone != NULL) {
-      stitch_free(c->to_phone);
-    }
-    if (c->from_phone != NULL) {
-      stitch_free(c->from_phone);
-    }
-    if (c->dtmf_context != NULL) {
-      dtmf_free(c->dtmf_context);
-    }
-    free(c);
+  if (c == NULL) {
+    return;
   }
+
+  // Hang up if we're in a call.
+  if (c->state == PHONY_LINE_IN_USE) {
+    phony_hang_up(c);
+  }
+
+  set_state(c, PHONY_EXITING);
+
+  if (c->thread_id) {
+    pthread_cancel(c->thread_id);
+    // phony_join(c);
+  }
+  if (c->hid_context != NULL) {
+    phony_hid_free(c->hid_context);
+  }
+  if (c->to_phone != NULL) {
+    stitch_free(c->to_phone);
+  }
+  if (c->from_phone != NULL) {
+    stitch_free(c->from_phone);
+  }
+  if (c->dtmf_context != NULL) {
+    dtmf_free(c->dtmf_context);
+  }
+  free(c);
 }
 
-int phony_set_state_changed(phony_context_t *c, phony_state_changed callback,
+int phony_on_state_changed(phony_context_t *c, phony_state_changed callback,
                             void *userdata) {
   if (c->state_changed != NULL) {
-    log_err("phony_set_state_changed cannot accept a second "
+    log_err("phony_on_state_changed cannot accept a second "
                     "callback");
     return -EPERM; // Operation not permitted
   }

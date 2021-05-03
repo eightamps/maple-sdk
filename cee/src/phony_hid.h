@@ -125,6 +125,8 @@ int phony_hid_set_off_hook(phony_hid_context_t *c, bool is_offhook);
 
 int phony_hid_set_hostavail(phony_hid_context_t *c, bool is_hostavail);
 
+int phony_hid_reset_device(phony_hid_context_t *c);
+
 int phony_hid_close(phony_hid_context_t *c);
 
 int phony_hid_get_configuration_descriptors(phony_hid_context_t *c);

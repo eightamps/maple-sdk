@@ -12,15 +12,19 @@
 #define PHONY_EIGHT_AMPS_VID 0x335e
 #define PHONY_MAPLE_V3_PID 0x8a01
 
-typedef enum PhonyState {
+typedef enum phony_state {
+  // Firmware provided states:
   PHONY_NOT_READY = 0,
   PHONY_READY,
   PHONY_OFF_HOOK,
   PHONY_RINGING,
   PHONY_LINE_NOT_FOUND,
   PHONY_LINE_IN_USE,
+  // Host-only states:
   PHONY_DEVICE_NOT_FOUND,
-}PhonyState;
+  PHONY_CONNECTED,
+  PHONY_EXITING,
+}phony_state;
 
 typedef void (*phony_state_changed)(void *varg);
 
@@ -28,7 +32,7 @@ typedef void (*phony_state_changed)(void *varg);
  * Represents a telephone connection.
  */
 typedef struct {
-  PhonyState state;
+  phony_state state;
   phony_state_changed state_changed;
   void *userdata;
   phony_hid_context_t *hid_context;
@@ -88,15 +92,15 @@ int phony_hang_up(phony_context_t *phony);
  * @param *phony_state_changed
  * @return int Status code
  */
-int phony_set_state_changed(phony_context_t *c, phony_state_changed callback,
+int phony_on_state_changed(phony_context_t *c, phony_state_changed callback,
                             void *userdata);
 
 /**
  * Get the current phony state.
  * @param *PhonyContext
- * @return PhonyState
+ * @return phony_state
  */
-PhonyState phony_get_state(phony_context_t *c);
+phony_state phony_get_state(phony_context_t *c);
 
 /**
  * Close down and free the provided telephone connection.

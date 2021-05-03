@@ -99,7 +99,7 @@ static void disable_buttons(phony_view_context_t *c) {
 static void box_show_handler(GtkWidget *widget, gpointer data) {
   phony_view_context_t *c = data;
   update_buttons(c, PV_SHOW_DIAL);
-  PhonyState state = phony_get_state(c->phony);
+  phony_state state = phony_get_state(c->phony);
   // We did not get a USB connection, disable the dial button
   log_info("phony_view box_show_handler found: %d\n", state);
   if (state == PHONY_DEVICE_NOT_FOUND) {
@@ -148,7 +148,7 @@ phony_view_context_t *phone_view_new(phony_context_t *model) {
     return NULL;
   }
 
-  phony_set_state_changed(model, phony_state_changed_handler, c);
+  phony_on_state_changed(model, phony_state_changed_handler, c);
 
   c->phony = model;
 

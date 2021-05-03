@@ -135,7 +135,11 @@ static int interrupt_transfer(phony_hid_context_t *c, uint8_t addr,
 
   r = libusb_interrupt_transfer(dev_h, addr, data, len, &transferred,
                                 INFINITE_TIMEOUT);
-  if (r < 0) {
+  if (r == LIBUSB_ERROR_NO_DEVICE ||
+      r == LIBUSB_ERROR_IO) {
+    phony_hid_close(c);
+    return r;
+  } else if (r != LIBUSB_SUCCESS) {
     log_err("Interrupt read error %d %s", r, libusb_error_name(r));
     return r;
   } else {
@@ -195,7 +199,6 @@ phony_hid_context_t *phony_hid_new(void) {
   c->product_id = 0x0;
   c->in_report = calloc(sizeof(phony_hid_in_report_t), 1);
   c->out_report = calloc(sizeof(phony_hid_out_report_t), 1);
-
   return c;
 }
 
@@ -246,8 +249,8 @@ static int find_device(phony_hid_context_t *c, int vid, int pid) {
   dev_h = libusb_open_device_with_vid_pid(lusb_ctx, vid, pid);
 
   if (dev_h == NULL) {
-    log_err("failed to find hid device with vid: 0x%02x and pid: 0x%02x",
-            vid, pid);
+    // log_err("failed to find hid device with vid: 0x%02x and pid: 0x%02x",
+            // vid, pid);
     return PHONY_HID_ERROR_NOT_FOUND;
   }
 
@@ -340,18 +343,20 @@ int phony_hid_open(phony_hid_context_t *c) {
 
   int status;
 
-  libusb_context *lusb_ctx = NULL;
-  status = libusb_init(&lusb_ctx);
-  if (status != PHONY_HID_SUCCESS) {
-    log_err("Failed to initialise libusb");
-    goto out;
+  if (c->lusb_context == NULL) {
+    libusb_context *lusb_ctx = NULL;
+    status = libusb_init(&lusb_ctx);
+    if (status != PHONY_HID_SUCCESS) {
+      log_err("Failed to initialise libusb");
+      goto out;
+    }
+    c->lusb_context = lusb_ctx;
   }
-  c->lusb_context = lusb_ctx;
 
   status = find_device(c, c->vendor_id, c->product_id);
   if (status != PHONY_HID_SUCCESS) {
-    log_err("Could not open HID device at vid 0x%02x and pid "
-                    "0x%02x", c->vendor_id, c->product_id);
+    // log_err("Could not open HID device at vid 0x%02x and pid "
+                    // "0x%02x", c->vendor_id, c->product_id);
     goto out;
   }
   log_info("Successfully found the expected HID device");
@@ -379,42 +384,43 @@ int phony_hid_open(phony_hid_context_t *c) {
 }
 
 int phony_hid_close(phony_hid_context_t *c) {
-  int status = PHONY_HID_SUCCESS;
-  if (!c->is_open) {
-    return status;
-  }
-
-  libusb_device_handle *dev_h = c->device_handle;
-  if (dev_h != NULL) {
-    /*
-     * TODO(lbayes): Figure out if this happens automatically after a reset.
-     * Was getting segfaults and hangs on exit, when attempting to release
-     * the libusb device interface, followed by (or even preceded by) a call
-     * to reset the device.
-    if (c->is_interface_claimed) {
-      status = libusb_release_interface(dev_h, MAPLE_PHONE_INTERFACE);
-      if (status != 0) {
-        log_err("libusb_release_interface error %d", status);
+  if (c->is_open) {
+    libusb_device_handle *dev_h = c->device_handle;
+    if (dev_h != NULL) {
+      if (c->is_interface_claimed) {
+        int status = libusb_release_interface(dev_h, MAPLE_PHONE_INTERFACE);
+        if (status != 0) {
+          log_err("libusb_release_interface error %d", status);
+        }
       }
-    }
-     */
 
-    // NOTE(lbayes): Ignore error, it's logged in the called method and any
-    // failures here should not impact subsequent calls.
-    status = libusb_reset_device(c->device_handle);
-    if (status != LIBUSB_SUCCESS) {
-      log_err("phony_hid_reset_device error %d %s", status,
-              libusb_error_name(status));
-    } else {
-      log_info("Successfully reset_device");
+      // NOTE(lbayes): We cannot close the libusb device because we just reset
+      libusb_close(dev_h);
+      c->is_open = false;
     }
-
-    // NOTE(lbayes): We cannot close the libusb device because we just reset
-    // libusb_close(dev_h);
-    libusb_exit(c->lusb_context);
   }
   log_info("Exiting now");
-  return status;
+  return PHONY_HID_SUCCESS;
+}
+
+int phony_hid_reset_device(phony_hid_context_t *c) {
+  if (c->is_open) {
+    libusb_device_handle *dev_h = c->device_handle;
+    if (dev_h != NULL) {
+      log_info("phony_hid reset device now");
+      int status = libusb_reset_device(c->device_handle);
+      if (status != LIBUSB_SUCCESS) {
+        log_err("phony_hid reset_device error %d %s", status,
+                libusb_error_name(status));
+      } else {
+        log_info("phony_hid successfully reset device");
+      }
+
+      c->is_open = false;
+    }
+  }
+
+  return PHONY_HID_SUCCESS;
 }
 
 int phony_hid_set_hostavail(phony_hid_context_t *c, bool is_hostavail) {
@@ -431,8 +437,11 @@ int phony_hid_set_off_hook(phony_hid_context_t *c, bool is_offhook) {
 
 void phony_hid_free(phony_hid_context_t *c) {
   if (c != NULL) {
-    phony_hid_close(c);
+    phony_hid_reset_device(c);
 
+    if (c->lusb_context) {
+      libusb_exit(c->lusb_context);
+    }
     if (c->in_report != NULL) {
       free(c->in_report);
     }
