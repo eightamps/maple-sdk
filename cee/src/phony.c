@@ -30,49 +30,7 @@ const char *phony_state_to_str(int state) {
   }
 }
 
-phony_context_t *phony_new(void) {
-  // Initialize Phony context
-  phony_context_t *c = calloc(sizeof(phony_context_t), 1);
-  if (c == NULL) {
-    return NULL;
-  }
-
-  // Initialize Hid context
-  phony_hid_context_t *hc = phony_hid_new();
-  if (hc == NULL) {
-    phony_free(c);
-    return NULL;
-  }
-  c->state = PHONY_NOT_READY;
-  c->hid_context = hc;
-
-  // Initialize Stitch contexts
-  stitch_context_t *to_phone = stitch_new_with_label("to_phone");
-  if (to_phone == NULL) {
-    phony_free(c);
-    return NULL;
-  }
-  stitch_init(to_phone);
-  c->to_phone = to_phone;
-
-  stitch_context_t *from_phone = stitch_new_with_label("from_phone");
-  if (from_phone == NULL) {
-    phony_free(c);
-    return NULL;
-  }
-  stitch_init(from_phone);
-  c->from_phone = from_phone;
-
-  dtmf_context_t *dc = dtmf_new();
-  if (dc == NULL) {
-    dtmf_free(dc);
-    return NULL;
-  }
-  c->dtmf_context = dc;
-  return c;
-}
-
-static int phony_swap_audio(phony_context_t *c) {
+static int swap_audio(phony_context_t *c) {
   int in_index, out_index;
   stitch_context_t *sc;
 
@@ -109,10 +67,76 @@ static int phony_swap_audio(phony_context_t *c) {
   return EXIT_SUCCESS;
 }
 
-static int phony_stop_audio(phony_context_t *c) {
+static int stop_audio(phony_context_t *c) {
   stitch_stop(c->from_phone);
   stitch_stop(c->to_phone);
   return EXIT_SUCCESS;
+}
+
+static int set_state(phony_context_t *c, PhonyState state) {
+  PhonyState last_state = c->state;
+  if (last_state != state) {
+    log_info("UPDATED PHONY STATE to: %s", phony_state_to_str(c->state));
+    c->state = state;
+
+    if (state == PHONY_LINE_IN_USE) {
+      int status = swap_audio(c);
+      if (status != EXIT_SUCCESS) {
+        log_err("FAILED TO SWAP AUDIO with: %d", status);
+      }
+
+    } else if (PHONY_LINE_IN_USE == last_state &&
+        PHONY_READY == state) {
+      stop_audio(c);
+    }
+
+    if (c->state_changed != NULL) {
+      log_info("calling phony state_changed handler now");
+      c->state_changed(c->userdata);
+    }
+  }
+}
+
+phony_context_t *phony_new(void) {
+  // Initialize Phony context
+  phony_context_t *c = calloc(sizeof(phony_context_t), 1);
+  if (c == NULL) {
+    return NULL;
+  }
+
+  // Initialize Hid context
+  phony_hid_context_t *hc = phony_hid_new();
+  if (hc == NULL) {
+    phony_free(c);
+    return NULL;
+  }
+  set_state(c, PHONY_NOT_READY);
+  c->hid_context = hc;
+
+  // Initialize Stitch contexts
+  stitch_context_t *to_phone = stitch_new_with_label("to_phone");
+  if (to_phone == NULL) {
+    phony_free(c);
+    return NULL;
+  }
+  stitch_init(to_phone);
+  c->to_phone = to_phone;
+
+  stitch_context_t *from_phone = stitch_new_with_label("from_phone");
+  if (from_phone == NULL) {
+    phony_free(c);
+    return NULL;
+  }
+  stitch_init(from_phone);
+  c->from_phone = from_phone;
+
+  dtmf_context_t *dc = dtmf_new();
+  if (dc == NULL) {
+    dtmf_free(dc);
+    return NULL;
+  }
+  c->dtmf_context = dc;
+  return c;
 }
 
 static void *phony_poll_for_updates(void *varg) {
@@ -121,47 +145,29 @@ static void *phony_poll_for_updates(void *varg) {
   log_info("Phony begin polling...");
   int status = phony_hid_open(hc);
   if (status != EXIT_SUCCESS) {
-    log_err("phony unable to open HID client with status: %d", status);
-    c->state = PHONY_DEVICE_NOT_FOUND;
+    log_err("phony unable to open HID client with status: %s",
+            phony_hid_status_message(status));
+    set_state(c, PHONY_DEVICE_NOT_FOUND);
     return NULL;
   }
 
   PhonyState last_state;
   c->is_looping = true;
   while (c->is_looping) {
+    log_info("----------------------------");
     log_info("phony waiting for HID report");
     phony_hid_get_report(hc);
     phony_hid_in_report_t *ir = hc->in_report;
     if (ir->ring) {
-      c->state = PHONY_RINGING;
+      set_state(c, PHONY_RINGING);
     } else if (ir->line_in_use) {
-      c->state = PHONY_LINE_IN_USE;
+      set_state(c, PHONY_LINE_IN_USE);
     } else if (!ir->loop || ir->line_not_found) {
-      c->state = PHONY_LINE_NOT_FOUND;
+      set_state(c, PHONY_LINE_NOT_FOUND);
     } else if (ir->loop) {
-      c->state = PHONY_READY;
+      set_state(c, PHONY_READY);
     } else {
-      c->state = PHONY_NOT_READY;
-    }
-
-    if (c->state != last_state) {
-      if (c->state_changed != NULL) {
-        log_info("calling phony state_changed handler now");
-        c->state_changed(c->userdata);
-      }
-
-      log_info("UPDATED PHONY STATE to: %s", phony_state_to_str(c->state));
-      if (c->state == PHONY_LINE_IN_USE) {
-        status = phony_swap_audio(c);
-        if (status != EXIT_SUCCESS) {
-          log_err("FAILED TO SWAP AUDIO with: %d", status);
-        }
-      } else if (last_state == PHONY_LINE_IN_USE &&
-          c->state == PHONY_READY) {
-        phony_stop_audio(c);
-      }
-
-      last_state = c->state;
+      set_state(c, PHONY_NOT_READY);
     }
   }
 

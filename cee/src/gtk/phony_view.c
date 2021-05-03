@@ -101,6 +101,7 @@ static void box_show_handler(GtkWidget *widget, gpointer data) {
   update_buttons(c, PV_SHOW_DIAL);
   PhonyState state = phony_get_state(c->phony);
   // We did not get a USB connection, disable the dial button
+  log_info("phony_view box_show_handler found: %d\n", state);
   if (state == PHONY_DEVICE_NOT_FOUND) {
     gtk_widget_set_sensitive(GTK_WIDGET(c->dial_btn), FALSE);
   }
@@ -136,6 +137,7 @@ static int phony_state_changed_idle_handler(void *varg) {
 }
 
 static void phony_state_changed_handler(void *varg) {
+  log_info("phony_view - phony_state_changed_handler");
   g_idle_add(&phony_state_changed_idle_handler, varg);
 }
 
