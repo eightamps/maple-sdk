@@ -108,6 +108,8 @@ int phony_hid_in_report_to_struct(phony_hid_in_report_t *in_report, uint8_t valu
   //  response that indicates loop = true and line_not_found = true, when we
   //  expect to see liu = true. It should not be possible to have liu = true
   //  and line_not_found = true simultaneously. Suspicious of bitshifting logic.
+  //  The problem could be related to the "PACKED" macro in our firmware
+  //  library.
   if (in_report->loop && in_report->line_not_found) {
     in_report->line_not_found = false;
     in_report->line_in_use = true;
