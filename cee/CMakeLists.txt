@@ -108,7 +108,7 @@ else()
         pthread
     )
 
-    find_package(SDL_ttf REQUIRED)
+    # find_package(SDL2_ttf REQUIRED)
 
     # Build non-Windows artifacts
     add_library(maple-sdk STATIC ${AppSources} ${VendorLibs})
@@ -148,7 +148,7 @@ else()
     target_link_libraries(maple-console ${VendorLibs})
     target_link_libraries(maple-gtk ${GTK3_LIBRARIES} ${VendorLibs})
     target_link_libraries(maple-test ${GTK3_LIBRARIES} ${VendorLibs})
-    target_link_libraries(maple-sdl2 SDL2 SDL_ttf)
+    target_link_libraries(maple-sdl2 SDL2 SDL2_ttf)
     target_compile_definitions(maple-test PRIVATE TEST_MODE=1)
 
 endif()
