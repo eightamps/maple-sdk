@@ -249,8 +249,8 @@ static int find_device(phony_hid_context_t *c, int vid, int pid) {
   dev_h = libusb_open_device_with_vid_pid(lusb_ctx, vid, pid);
 
   if (dev_h == NULL) {
-    // log_err("failed to find hid device with vid: 0x%02x and pid: 0x%02x",
-            // vid, pid);
+     log_err("failed to find hid device with vid: 0x%02x and pid: 0x%02x",
+            vid, pid);
     return PHONY_HID_ERROR_NOT_FOUND;
   }
 

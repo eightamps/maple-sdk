@@ -401,7 +401,7 @@ static void *stitch_start_thread(void *vargp) {
     // soundio_wait_events(soundio);
     // NOTE(lbayes): DO NOT cast input to an unsigned int, it will lose the
     // millisecond precision that sleep does accept (despite other claims).
-    sleep(0.04); // 40 ms
+    usleep(40000); // 40 ms
   }
 
   log_info("stitch thread finishing");

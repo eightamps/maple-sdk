@@ -144,7 +144,7 @@ phony_context_t *phony_new(void) {
   return c;
 }
 
-static void *phony_poll_for_updates(void *varg) {
+static void *begin_polling(void *varg) {
   phony_context_t *c = varg;
   phony_hid_context_t *hc = c->hid_context;
   int status;
@@ -159,9 +159,9 @@ static void *phony_poll_for_updates(void *varg) {
         set_state(c, PHONY_CONNECTED);
       } else {
         // log_err("phony unable to open HID client with status: %s",
-        // phony_hid_status_message(status));
+            // phony_hid_status_message(status));
         set_state(c, PHONY_DEVICE_NOT_FOUND);
-        sleep(.250);
+        usleep(500000);
         continue;
       }
     }
@@ -191,10 +191,6 @@ static void *phony_poll_for_updates(void *varg) {
   return NULL;
 }
 
-static int begin_polling(phony_context_t *c) {
-  return pthread_create(&c->thread_id, NULL, phony_poll_for_updates, c);
-}
-
 static int phony_join(phony_context_t *c) {
   return pthread_join(c->thread_id, NULL);
 }
@@ -203,7 +199,7 @@ int phony_open_device(phony_context_t *c, int vid, int pid) {
   phony_hid_context_t *hc = c->hid_context;
   phony_hid_set_vendor_id(hc, vid);
   phony_hid_set_product_id(hc, pid);
-  return begin_polling(c);
+  return pthread_create(&c->thread_id, NULL, begin_polling, c);
 }
 
 int phony_open_maple(phony_context_t *c) {
