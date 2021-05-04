@@ -52,12 +52,16 @@ set(VendorLibs
         ${PROJECT_SOURCE_DIR}/vendor/kissfft/libkissfft-float.so
         )
 
+file(COPY "${PROJECT_SOURCE_DIR}/src/sdl/ttf"
+        DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}src/sdl)
+
 # FFT library will be used to validate generated DTMF signals
 # link_directories(${CMAKE_BINARY_DIR}}/vendor/kissfft)
 
 # Build environment for Windows DLL
 if (MINGW32)
     set(CMAKE_SYSTEM_NAME Windows)
+    # set(MXEPATH /home/lukebayes/Projects/foss/mxe/usr/bin)
     set(CMAKE_C_COMPILER i686-w64-mingw32-gcc)
     set(CMAKE_CXX_COMPILER i686-w64-mingw32-g++)
     set(CMAKE_RC_COMPILER i686-w64-mingw32-windres)
@@ -66,21 +70,18 @@ if (MINGW32)
     set(VendorLibs
             ${VendorLibs}
             # Custom built soundio for win32 only
-            # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
+            ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
+            # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.so
             )
 
     link_libraries(
         m
         pthread
         ${PROJECT_SOURCE_DIR}/vendor/libusb/MinGW32/static/libusb-1.0.a
+        ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
         )
 
     add_library(maple-sdk.dll STATIC ${AppSources} ${VendorLibs})
-
-    # target_link_libraries(maple-sdk.dll
-            # -static-libgcc
-            # -static-libsoundio
-            # )
 
     set_target_properties(maple-sdk.dll
             PROPERTIES
@@ -93,7 +94,11 @@ if (MINGW32)
     include_directories(${PROJECT_SOURCE_DIR}/vendor/libusb/include)
     include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
 
-    add_executable(maple.exe src/main_win32.c)
+    add_executable(maple.exe
+            src/main_win32.c
+            ${AppSources}
+            ${VendorLibs}
+            )
 else()
 
     link_libraries(
@@ -102,6 +107,8 @@ else()
         m
         pthread
     )
+
+    find_package(SDL_ttf REQUIRED)
 
     # Build non-Windows artifacts
     add_library(maple-sdk STATIC ${AppSources} ${VendorLibs})
@@ -116,6 +123,10 @@ else()
         ${GtkSources}
         ${TestSources}
         )
+    add_executable(maple-sdl2 src/main_sdl2.c
+        src/sdl/application.c
+        src/sdl/application.h
+        )
 
     # Configure GTK+-3.0
     find_package(PkgConfig REQUIRED)
@@ -124,9 +135,20 @@ else()
     link_directories(${GTK3_LIBRARY_DIRS})
     add_definitions(${GTK3_CFLAGS_OTHER})
 
+    # Configure SDL2
+    # find_package(PkgConfig REQUIRED)
+    # pkg_check_modules(SDL, REQUIRED sdl2-2.0)
+    # include_directories(${SDL_INCLUDE_DIRS})
+    # link_directories(${SDL_LIBRARY_DIRS})
+    # add_definitions(${SDL_CFLAGS_OTHER})
+    # set(SdlLib sdl2-dev)
+    file(COPY ${CMAKE_SOURCE_DIR}/src/sdl/ttf DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
     # Add link relevant libraries to targets
     target_link_libraries(maple-console ${VendorLibs})
     target_link_libraries(maple-gtk ${GTK3_LIBRARIES} ${VendorLibs})
     target_link_libraries(maple-test ${GTK3_LIBRARIES} ${VendorLibs})
+    target_link_libraries(maple-sdl2 SDL2 SDL_ttf)
     target_compile_definitions(maple-test PRIVATE TEST_MODE=1)
+
 endif()
