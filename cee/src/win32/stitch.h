@@ -5,9 +5,8 @@
 #ifndef MAPLE_STITCH_H
 #define MAPLE_STITCH_H
 
+#include <windows.h>
 #include "dtmf.h"
-#include <pthread.h>
-#include <soundio/soundio.h>
 #include <stdbool.h>
 
 #define STITCH_ASI_TELEPHONE "ASI Telephone"
@@ -20,7 +19,7 @@
 #define STITCH_DEFAULT_LATENCY_MS (float)0.07f
 #define STITCH_OUT_DELAY_SECONDS 2
 
-static enum SoundIoFormat prioritized_formats[] = {
+static enum StitchSoundFormat prioritized_formats[] = {
     SoundIoFormatFloat32NE,
     SoundIoFormatFloat32FE,
     SoundIoFormatS32NE,
@@ -49,7 +48,7 @@ static int prioritized_sample_rates[] = {
 };
 
 typedef struct {
-  struct SoundIo *soundio;
+  // struct SoundIo *soundio;
   char *label;
   dtmf_context_t *dtmf_context;
   pthread_t thread_id;
@@ -61,8 +60,8 @@ typedef struct {
   bool is_active;
   // bool in_raw;
   // bool out_raw;
-  enum SoundIoBackend backend;
-  struct SoundIoRingBuffer *ring_buffer;
+  // enum SoundIoBackend backend;
+  // struct SoundIoRingBuffer *ring_buffer;
 }stitch_context_t;
 
 stitch_context_t *stitch_new_with_label(char *label);

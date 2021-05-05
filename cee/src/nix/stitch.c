@@ -298,7 +298,7 @@ static void *stitch_start_thread(void *vargp) {
   }
   log_info("Starting with sample_rate: %d", *sample_rate);
 
-  enum SoundIoFormat *fmt;
+  enum StitchSoundFormat *fmt;
   for (fmt = prioritized_formats; *fmt != SoundIoFormatInvalid; fmt += 1) {
     if (soundio_device_supports_format(in_device, *fmt) &&
         soundio_device_supports_format(out_device, *fmt)) {

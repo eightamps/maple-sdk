@@ -14,8 +14,6 @@ set(AppSources
         src/phony.h
         src/phony_hid.c
         src/phony_hid.h
-        src/stitch.c
-        src/stitch.h
         src/hid_client.c
         src/hid_client.h
         )
@@ -59,7 +57,51 @@ file(COPY "${PROJECT_SOURCE_DIR}/src/sdl/ttf"
 # link_directories(${CMAKE_BINARY_DIR}}/vendor/kissfft)
 
 # Build environment for Windows DLL
-if (MINGW32)
+if (WIN32)
+    set(CMAKE_SYSTEM_NAME Windows)
+    set(CMAKE_C_COMPILER i686-w64-mingw32-gcc)
+    set(CMAKE_CXX_COMPILER i686-w64-mingw32-g++)
+    set(CMAKE_RC_COMPILER i686-w64-mingw32-windres)
+    set(CMAKE_RANLIB i686-w64-mingw32-ranlib)
+
+    set(AppSources ${AppSources}
+            src/win32/stitch.h
+            src/win32/stitch.c
+            )
+
+    set(VendorLibs
+            ${VendorLibs}
+            # Custom built soundio for win32 only
+            # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
+            # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.so
+            )
+
+    link_libraries(
+            m
+            soundio
+            usb-1.0
+            pthread
+    )
+
+    add_library(maple-sdk.dll STATIC ${AppSources} ${VendorLibs})
+
+    set_target_properties(maple-sdk.dll
+            PROPERTIES
+            PREFIX ""
+            SUFFIX ""
+            LINK_FLAGS "-Wl,-add-stdcall-alias"
+            POSITION_INDEPENDENT_CODE 0 # this is to avoid MinGW warning;
+            )
+
+    include_directories(${PROJECT_SOURCE_DIR}/vendor/libusb/include)
+    include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
+
+    add_executable(maple.exe
+            src/main_win32.c
+            ${AppSources}
+            ${VendorLibs}
+            )
+elseif (MINGW)
     set(CMAKE_SYSTEM_NAME Windows)
     # set(MXEPATH /home/lukebayes/Projects/foss/mxe/usr/bin)
     set(CMAKE_C_COMPILER i686-w64-mingw32-gcc)
@@ -70,16 +112,16 @@ if (MINGW32)
     set(VendorLibs
             ${VendorLibs}
             # Custom built soundio for win32 only
-            ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
+            # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
             # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.so
             )
 
     link_libraries(
-        m
-        pthread
-        ${PROJECT_SOURCE_DIR}/vendor/libusb/MinGW32/static/libusb-1.0.a
-        ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
-        )
+            m
+            pthread
+            usb-1.0
+            soundio
+            )
 
     add_library(maple-sdk.dll STATIC ${AppSources} ${VendorLibs})
 
@@ -101,7 +143,12 @@ if (MINGW32)
             )
 else()
 
-    link_libraries(
+    set(AppSources ${AppSources}
+            src/nix/stitch.h
+            src/nix/stitch.c
+            )
+
+link_libraries(
         usb-1.0
         soundio
         m
