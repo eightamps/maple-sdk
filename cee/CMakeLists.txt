@@ -61,6 +61,11 @@ file(COPY "${PROJECT_SOURCE_DIR}/src/sdl/ttf"
 # Build environment for Windows DLL
 if (WIN32)
     set(CMAKE_SYSTEM_NAME Windows)
+    set(CMAKE_C_COMPILER i686-w64-mingw64-gcc)
+    set(CMAKE_CXX_COMPILER i686-w64-mingw64-g++)
+    set(CMAKE_RC_COMPILER i686-w64-mingw64-windres)
+    set(CMAKE_RANLIB i686-w64-mingw64-ranlib)
+
     # set(CMAKE_C_COMPILER i686-w64-mingw32-gcc)
     # set(CMAKE_CXX_COMPILER i686-w64-mingw32-g++)
     # set(CMAKE_RC_COMPILER i686-w64-mingw32-windres)
@@ -75,15 +80,12 @@ if (WIN32)
 
     set(VendorLibs
             ${VendorLibs}
+            # ${PROJECT_SOURCE_DIR}/vendor/libusb/MINGW64/dll/libusb-1.0.dll
             # ${PROJECT_SOURCE_DIR}/vendor/pthreads-win32/lib/pthreadVC1.dll
             # Custom built soundio for win32 only
             # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
             # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.so
             )
-
-    link_libraries(
-            m
-    )
 
     add_library(maple-sdk.dll STATIC ${AppSources} ${VendorLibs})
 
@@ -95,15 +97,18 @@ if (WIN32)
             POSITION_INDEPENDENT_CODE 0 # this is to avoid MinGW warning;
             )
 
-    include_directories(${PROJECT_SOURCE_DIR}/vendor/libusb/include)
-    include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
-    include_directories(${PROJECT_SOURCE_DIR}/vendor/pthreads-win32/include)
+    include_directories("${PROJECT_SOURCE_DIR}/vendor/libsoundio/include")
+    include_directories("${PROJECT_SOURCE_DIR}/vendor/libusb/MinGW64/dll")
+    add_subdirectory("${PROJECT_SOURCE_DIR}/vendor/libusb")
 
-    add_executable(maple.exe
+    add_executable(maple-example
             src/main_win32.c
             ${AppSources}
             ${VendorLibs}
             )
+
+    target_link_libraries(maple-example libusb)            
+
 elseif (MINGW)
     set(CMAKE_SYSTEM_NAME Windows)
     # set(MXEPATH /home/lukebayes/Projects/foss/mxe/usr/bin)

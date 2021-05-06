@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <thread_wrap.h>
-#include <unistd.h>
+// #include <unistd.h>
 
 const char *phony_state_to_str(int state) {
   switch (state) {

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DATA_MAX_LEN                      128
 #define MAPLE_PHONE_INTERFACE             2
 #define PHONY_ENDPOINT_IN                 0x81
 #define PHONY_ENDPOINT_OUT                0x01
@@ -162,7 +163,7 @@ static int interrupt_transfer(phony_hid_context_t *c, uint8_t addr,
 static int phony_hid_set_report(phony_hid_context_t *c) {
   uint8_t addr = PHONY_ENDPOINT_OUT;
   uint8_t len = 2 + 1; // 3 bytes + 1 address byte?
-  unsigned char data[len];
+  unsigned char data[DATA_MAX_LEN];
   memset(data, 0x0, len);
   phony_hid_out_report_t *out = c->out_report;
   log_info("out_report->host_avail: %d", out->host_avail);
@@ -176,7 +177,7 @@ int phony_hid_get_report(phony_hid_context_t *c) {
   int status;
   uint8_t addr = PHONY_ENDPOINT_IN;
   uint8_t len = 1 + 1; // 3 bytes + 1 address byte?
-  unsigned char data[len];
+  unsigned char data[DATA_MAX_LEN];
   memset(data, 0x0, len);
 
   status = interrupt_transfer(c, addr, data, len);

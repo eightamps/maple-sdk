@@ -4,10 +4,16 @@
 
 #include "dtmf.h"
 #include "log.h"
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#ifdef WIN32
+#define _USE_MATH_DEFINES
+#include <math.h>
+#else
+#include <math.h>
+#endif
+
 
 static const float TWO_PI = M_PI * 2.0f;
 
