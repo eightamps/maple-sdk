@@ -6,6 +6,7 @@
 #include "log.h"
 #include "phony.h"
 #include "phony_hid.h"
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>

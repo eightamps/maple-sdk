@@ -10,12 +10,13 @@ include_directories(vendor/kissfft)
 set(AppSources
         src/dtmf.c
         src/dtmf.h
+        src/hid_client.c
+        src/hid_client.h
         src/phony.c
         src/phony.h
         src/phony_hid.c
         src/phony_hid.h
-        src/hid_client.c
-        src/hid_client.h
+        src/stitch.h
         )
 
 set(GtkSources
@@ -57,7 +58,7 @@ file(COPY "${PROJECT_SOURCE_DIR}/src/sdl/ttf"
 # link_directories(${CMAKE_BINARY_DIR}}/vendor/kissfft)
 
 # Build environment for Windows DLL
-if (WIN32)
+if (WIN32_FALSE)
     set(CMAKE_SYSTEM_NAME Windows)
     set(CMAKE_C_COMPILER i686-w64-mingw32-gcc)
     set(CMAKE_CXX_COMPILER i686-w64-mingw32-g++)
@@ -65,7 +66,6 @@ if (WIN32)
     set(CMAKE_RANLIB i686-w64-mingw32-ranlib)
 
     set(AppSources ${AppSources}
-            src/win32/stitch.h
             src/win32/stitch.c
             )
 
@@ -144,16 +144,15 @@ elseif (MINGW)
 else()
 
     set(AppSources ${AppSources}
-            src/nix/stitch.h
             src/nix/stitch.c
             )
 
-link_libraries(
+    link_libraries(
         usb-1.0
         soundio
         m
         pthread
-    )
+        )
 
     # find_package(SDL2_ttf REQUIRED)
 
@@ -197,5 +196,4 @@ link_libraries(
     target_link_libraries(maple-test ${GTK3_LIBRARIES} ${VendorLibs})
     target_link_libraries(maple-sdl2 SDL2 SDL2_ttf)
     target_compile_definitions(maple-test PRIVATE TEST_MODE=1)
-
 endif()

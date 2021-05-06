@@ -24,11 +24,12 @@ int hid_client_open(hid_client_context_t *c) {
 
   libusb_context *usb_ctx = NULL;
   int status = libusb_init(&usb_ctx);
+  c->usb_context = usb_ctx;
+
   if (status != EXIT_SUCCESS) {
     log_err("Failed to initialise libusb");
     return -ECONNREFUSED; // Connection refused
   }
-  c->usb_context = usb_ctx;
 
   return EXIT_SUCCESS;
 }
@@ -69,7 +70,9 @@ int hid_client_get_pid(hid_client_context_t *c) {
 
 void hid_client_free(hid_client_context_t *c) {
   if (c != NULL) {
+    if (c->usb_context != NULL) {
+      libusb_exit(c->usb_context);
+    }
     free(c);
   }
-
 }

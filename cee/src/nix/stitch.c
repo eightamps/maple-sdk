@@ -6,12 +6,73 @@
 #include "stitch.h"
 #include <errno.h>
 #include <soundio/soundio.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+#define STITCH_SPDIF "PDIF"
+#define STITCH_PULSE_AUDIO "PulseAudio sound server"
+#define STITCH_BUFFER_CAPACITY_MULTIPLIER 30
+#define STITCH_DEFAULT_LATENCY_MS (float)0.07f
+#define STITCH_OUT_DELAY_SECONDS 2
+
+typedef struct {
+    struct SoundIo *soundio;
+    enum SoundIoBackend backend;
+    struct SoundIoRingBuffer *ring_buffer;
+}soundio_platform_t;
+
+static int prioritized_sample_rates[] = {
+        48000,
+        44100,
+        24000,
+};
+
+enum SoundIoFormat prioritized_formats[] = {
+        SoundIoFormatFloat32NE,
+        SoundIoFormatFloat32FE,
+        SoundIoFormatS32NE,
+        SoundIoFormatS32FE,
+        SoundIoFormatS24NE,
+        SoundIoFormatS24FE,
+        SoundIoFormatS16NE,
+        SoundIoFormatS16FE,
+        SoundIoFormatFloat64NE,
+        SoundIoFormatFloat64FE,
+        SoundIoFormatU32NE,
+        SoundIoFormatU32FE,
+        SoundIoFormatU24NE,
+        SoundIoFormatU24FE,
+        SoundIoFormatU16NE,
+        SoundIoFormatU16FE,
+        SoundIoFormatS8,
+        SoundIoFormatU8,
+        SoundIoFormatInvalid,
+};
+
 static int min_int(int a, int b) {
   return (a < b) ? a : b;
+}
+
+stitch_context_t *stitch_new(void) {
+    stitch_context_t *c = calloc(sizeof(stitch_context_t), 1);
+    if (c == NULL) {
+        log_err("stitch_new failed to allocate memory");
+        return NULL;
+    }
+    soundio_platform_t *p = calloc(sizeof(soundio_platform_t), 1);
+    if (p == NULL) {
+        log_err("stitch_new failed to allocate soundio struct");
+        stitch_free(c);
+        return NULL;
+    }
+    p->backend = SoundIoBackendNone;
+
+    c->is_initialized = false;
+    c->platform = p;
+    c->input_latency = STITCH_DEFAULT_LATENCY_MS;
+    return c;
 }
 
 stitch_context_t *stitch_new_with_label(char *label) {
@@ -20,20 +81,9 @@ stitch_context_t *stitch_new_with_label(char *label) {
   return c;
 }
 
-stitch_context_t *stitch_new(void) {
-  stitch_context_t *c = calloc(sizeof(stitch_context_t), 1);
-  if (c == NULL) {
-    log_err("stitch_new failed to allocate memory");
-    return NULL;
-  }
-  c->is_initialized = false;
-  c->backend = SoundIoBackendNone;
-  c->input_latency = STITCH_DEFAULT_LATENCY_MS;
-  return c;
-}
-
 static void read_callback(struct SoundIoInStream *instream, int frame_count_min, int frame_count_max) {
   stitch_context_t *c = instream->userdata;
+  soundio_platform_t *p = c->platform;
   if (c == NULL) {
     log_err("read_callback unable to get stitch_context_t");
     return;
@@ -42,7 +92,7 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
   // frame_count_max);
 
   int status;
-  struct SoundIoRingBuffer *ring_buffer = c->ring_buffer;
+  struct SoundIoRingBuffer *ring_buffer = p->ring_buffer;
   struct SoundIoChannelArea *areas;
   char *write_ptr = soundio_ring_buffer_write_ptr(ring_buffer);
   int free_bytes = soundio_ring_buffer_free_count(ring_buffer);
@@ -104,6 +154,7 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
 static void write_callback(struct SoundIoOutStream *outstream,
     int frame_count_min, int frame_count_max) {
   stitch_context_t *c = outstream->userdata;
+  soundio_platform_t *p = c->platform;
   if (c == NULL) {
     log_err("write_callback unable to get stitch_context_t");
     return;
@@ -112,7 +163,7 @@ static void write_callback(struct SoundIoOutStream *outstream,
   // log_info(">> write_callback with min %d and max: %d",
           // frame_count_min, frame_count_max);
 
-  struct SoundIoRingBuffer *ring_buffer = c->ring_buffer;
+  struct SoundIoRingBuffer *ring_buffer = p->ring_buffer;
   struct SoundIoChannelArea *areas;
   int frames_left;
   int frame_count;
@@ -200,7 +251,7 @@ static void write_callback(struct SoundIoOutStream *outstream,
 
   int advance_bytes = read_count * outstream->bytes_per_frame;
   // log_info("write_callback advance_bytes: %d", advance_bytes);
-  soundio_ring_buffer_advance_read_ptr(c->ring_buffer, advance_bytes);
+  soundio_ring_buffer_advance_read_ptr(p->ring_buffer, advance_bytes);
 }
 
 static void underflow_callback(struct SoundIoOutStream *outstream) {
@@ -235,10 +286,12 @@ int stitch_init(stitch_context_t *c) {
     return -ENOMEM;
   }
 
-  if (c->backend == SoundIoBackendNone) {
+  soundio_platform_t *p = c->platform;
+
+  if (p->backend == SoundIoBackendNone) {
     status = soundio_connect(soundio);
   } else {
-    status = soundio_connect_backend(soundio, c->backend);
+    status = soundio_connect_backend(soundio, p->backend);
   }
   if (status != EXIT_SUCCESS) {
     log_err("stitch_init failed to connect soundio with: %s",
@@ -246,7 +299,7 @@ int stitch_init(stitch_context_t *c) {
   }
 
   soundio_flush_events(soundio);
-  c->soundio = soundio;
+  p->soundio = soundio;
   c->is_initialized = true;
 
   return status;
@@ -254,8 +307,9 @@ int stitch_init(stitch_context_t *c) {
 
 static void *stitch_start_thread(void *vargp) {
   stitch_context_t *c = vargp;
+  soundio_platform_t *p = c->platform;
   int status;
-  struct SoundIo *soundio = c->soundio;
+  struct SoundIo *soundio = p->soundio;
 
   struct SoundIoDevice *in_device = soundio_get_input_device(soundio,
       c->in_device_index);
@@ -298,7 +352,7 @@ static void *stitch_start_thread(void *vargp) {
   }
   log_info("Starting with sample_rate: %d", *sample_rate);
 
-  enum StitchSoundFormat *fmt;
+  enum SoundIoFormat *fmt;
   for (fmt = prioritized_formats; *fmt != SoundIoFormatInvalid; fmt += 1) {
     if (soundio_device_supports_format(in_device, *fmt) &&
         soundio_device_supports_format(out_device, *fmt)) {
@@ -356,7 +410,7 @@ static void *stitch_start_thread(void *vargp) {
       instream->bytes_per_frame) * STITCH_BUFFER_CAPACITY_MULTIPLIER;
   // int capacity = (c->input_latency * 2) * instream->sample_rate *
                  // instream->bytes_per_frame;
-  c->ring_buffer = soundio_ring_buffer_create(soundio, capacity);
+  p->ring_buffer = soundio_ring_buffer_create(soundio, capacity);
 
   log_info("Creating ring_buffer with latency %fs and capacity: %d and "
          " bytes_per_frame: %d",
@@ -364,13 +418,13 @@ static void *stitch_start_thread(void *vargp) {
 
   log_info("outstream->bytes_per_frame: %d", outstream->bytes_per_frame);
 
-  if (!c->ring_buffer) {
+  if (!p->ring_buffer) {
     log_err("unable to create ring buffer: out of memory");
     return NULL;
   }
 
-  char *buf = soundio_ring_buffer_write_ptr(c->ring_buffer);
-  int fill_count = soundio_ring_buffer_free_count(c->ring_buffer);
+  char *buf = soundio_ring_buffer_write_ptr(p->ring_buffer);
+  int fill_count = soundio_ring_buffer_free_count(p->ring_buffer);
   // int fill_count = (int)c->input_latency * outstream->sample_rate *
                    // outstream->bytes_per_frame;
   memset(buf, 0x0, fill_count);
@@ -433,9 +487,10 @@ static int get_default_device_index(stitch_context_t *c,
                                     int device_count,
                                     int default_index) {
   struct SoundIoDevice *d;
+  soundio_platform_t *p = c->platform;
   // TODO(lbayes): Figure out how to get the default_communication device on
   //  Windows.
-  d = get_device(c->soundio, default_index);
+  d = get_device(p->soundio, default_index);
   if (is_valid_host_device(d)) {
     soundio_device_unref(d);
     return default_index;
@@ -448,7 +503,7 @@ static int get_default_device_index(stitch_context_t *c,
       index--;
       continue;
     }
-    d = get_device(c->soundio, index);
+    d = get_device(p->soundio, index);
     if (is_valid_host_device(d)) {
       result = index;
       soundio_device_unref(d);
@@ -465,11 +520,12 @@ static int get_matching_device_index(stitch_context_t *c,
                                      GetDeviceFunc *get_device,
                                      int device_count,
                                      char *name) {
+  soundio_platform_t *p = c->platform;
   struct SoundIoDevice *d;
   int result = -1;
   int index = device_count - 1;
   while (index >= 0) {
-    d = get_device(c->soundio, index);
+    d = get_device(p->soundio, index);
     if ((strstr(d->name, name) != NULL)) {
       result = index;
       soundio_device_unref(d);
@@ -488,24 +544,28 @@ int stitch_set_dtmf(stitch_context_t *c, dtmf_context_t *d) {
 }
 
 int stitch_get_default_input_index(stitch_context_t *c) {
-  int count = soundio_input_device_count(c->soundio);
-  int index = soundio_default_input_device_index(c->soundio);
+  soundio_platform_t *p = c->platform;
+  int count = soundio_input_device_count(p->soundio);
+  int index = soundio_default_input_device_index(p->soundio);
   return get_default_device_index(c, &soundio_get_input_device, count, index);
 }
 
 int stitch_get_default_output_index(stitch_context_t *c) {
-  int count = soundio_output_device_count(c->soundio);
-  int index = soundio_default_output_device_index(c->soundio);
+  soundio_platform_t *p = c->platform;
+  int count = soundio_output_device_count(p->soundio);
+  int index = soundio_default_output_device_index(p->soundio);
   return get_default_device_index(c, &soundio_get_output_device, count, index);
 }
 
 int stitch_get_matching_input_device_index(stitch_context_t *c, char *name) {
-  int count = soundio_input_device_count(c->soundio);
+  soundio_platform_t *p = c->platform;
+  int count = soundio_input_device_count(p->soundio);
   return get_matching_device_index(c, &soundio_get_input_device, count, name);
 }
 
 int stitch_get_matching_output_device_index(stitch_context_t *c, char *name) {
-  int count = soundio_output_device_count(c->soundio);
+  soundio_platform_t *p = c->platform;
+  int count = soundio_output_device_count(p->soundio);
   return get_matching_device_index(c, &soundio_get_output_device, count, name);
 }
 
@@ -526,11 +586,15 @@ void stitch_free(stitch_context_t *c) {
       c->is_active = false;
       stitch_join(c);
     }
-    if (c->ring_buffer) {
-      soundio_ring_buffer_destroy(c->ring_buffer);
-    }
-    if (c->soundio != NULL) {
-      soundio_destroy(c->soundio);
+    if (c->platform) {
+        soundio_platform_t *p = c->platform;
+        if (p->ring_buffer) {
+          soundio_ring_buffer_destroy(p->ring_buffer);
+        }
+        if (p->soundio != NULL) {
+          soundio_destroy(p->soundio);
+        }
+        free(c->platform);
     }
     free(c);
   }
