@@ -21,6 +21,7 @@ typedef struct {
     struct SoundIo *soundio;
     enum SoundIoBackend backend;
     struct SoundIoRingBuffer *ring_buffer;
+    pthread_t thread_id;
 }soundio_platform_t;
 
 static int prioritized_sample_rates[] = {
@@ -257,8 +258,9 @@ static void write_callback(struct SoundIoOutStream *outstream,
 static void underflow_callback(struct SoundIoOutStream *outstream) {
   static int count = 0;
   stitch_context_t *c = outstream->userdata;
+  soundio_platform_t *p = c->platform;
   log_err("stitch write_underflow count: %d on stream id: %ld", ++count,
-          c->thread_id);
+          p->thread_id);
   if (count >= 10) {
     log_err("stitch killing thread now due to underflow conditions");
     c->is_active = false;
@@ -467,7 +469,8 @@ static void *stitch_start_thread(void *vargp) {
 }
 
 int stitch_join(stitch_context_t *c) {
-  pthread_join(c->thread_id, NULL);
+  soundio_platform_t *p = c->platform;
+  pthread_join(p->thread_id, NULL);
   return c->thread_exit_status;
 }
 
@@ -572,7 +575,8 @@ int stitch_get_matching_output_device_index(stitch_context_t *c, char *name) {
 int stitch_start(stitch_context_t *c, int in_index, int out_index) {
   c->in_device_index = in_index;
   c->out_device_index = out_index;
-  return pthread_create(&c->thread_id, NULL, stitch_start_thread, c);
+  soundio_platform_t *p = c->platform;
+  return pthread_create(&p->thread_id, NULL, stitch_start_thread, c);
 }
 
 int stitch_stop(stitch_context_t *c) {

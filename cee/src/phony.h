@@ -8,6 +8,7 @@
 #include "phony_hid.h"
 #include "stitch.h"
 #include "dtmf.h"
+#include <thread_wrap.h>
 
 #define PHONY_EIGHT_AMPS_VID 0x335e
 #define PHONY_MAPLE_V3_PID 0x8a01
@@ -39,7 +40,7 @@ typedef struct {
   dtmf_context_t  *dtmf_context;
   stitch_context_t *to_phone;
   stitch_context_t *from_phone;
-  pthread_t thread_id;
+  thread_wrap_t thread_id;
   bool is_looping;
 }phony_context_t;
 

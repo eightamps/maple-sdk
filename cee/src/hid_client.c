@@ -5,6 +5,7 @@
 #include "log.h"
 #include "hid_client.h"
 #include <stdlib.h>
+#include <errno.h>
 
 hid_client_context_t *hid_client_new(void) {
   hid_client_context_t *c = calloc(sizeof(hid_client_context_t), 1);
@@ -28,7 +29,7 @@ int hid_client_open(hid_client_context_t *c) {
 
   if (status != EXIT_SUCCESS) {
     log_err("Failed to initialise libusb");
-    return -ECONNREFUSED; // Connection refused
+    return -ERROR_CONNECTION_REFUSED; // Connection refused
   }
 
   return EXIT_SUCCESS;

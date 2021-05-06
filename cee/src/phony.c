@@ -6,9 +6,9 @@
 #include "log.h"
 #include "phony.h"
 #include "phony_hid.h"
-#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <thread_wrap.h>
 #include <unistd.h>
 
 const char *phony_state_to_str(int state) {
@@ -162,7 +162,7 @@ static void *begin_polling(void *varg) {
         // log_err("phony unable to open HID client with status: %s",
             // phony_hid_status_message(status));
         set_state(c, PHONY_DEVICE_NOT_FOUND);
-        usleep(500000);
+        sleep(0.5);
         continue;
       }
     }
@@ -193,14 +193,14 @@ static void *begin_polling(void *varg) {
 }
 
 static int phony_join(phony_context_t *c) {
-  return pthread_join(c->thread_id, NULL);
+  return thread_wrap_join(c->thread_id, NULL);
 }
 
 int phony_open_device(phony_context_t *c, int vid, int pid) {
   phony_hid_context_t *hc = c->hid_context;
   phony_hid_set_vendor_id(hc, vid);
   phony_hid_set_product_id(hc, pid);
-  return pthread_create(&c->thread_id, NULL, begin_polling, c);
+  return thread_wrap_create(&c->thread_id, NULL, begin_polling, c);
 }
 
 int phony_open_maple(phony_context_t *c) {
@@ -295,7 +295,7 @@ void phony_free(phony_context_t *c) {
   set_state(c, PHONY_EXITING);
 
   if (c->thread_id) {
-    pthread_cancel(c->thread_id);
+    thread_wrap_cancel(c->thread_id);
     // phony_join(c);
   }
   if (c->hid_context != NULL) {

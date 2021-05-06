@@ -17,7 +17,6 @@
 typedef struct {
   char *label;
   dtmf_context_t *dtmf_context;
-  pthread_t thread_id;
   int thread_exit_status;
   float input_latency;
   int in_device_index;
