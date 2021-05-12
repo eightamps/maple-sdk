@@ -17,6 +17,8 @@ static char *exec_fft(const kiss_fft_cpx in[N],
   muAssert(cfg != NULL, "Expected malloc");
   kiss_fft(cfg, in, out);
   free(cfg);
+
+  return NULL;
 }
 
 char *test_fft_empty(void) {
@@ -30,7 +32,7 @@ char *test_fft_empty(void) {
 
   exec_fft(in, out);
   muAssert(out[0].r == 0.0f, "Expected zero");
-  muAssert(out[NF].r == 0.0f, "Expected zero");
+  muAssert(out[NF - 1].r == 0.0f, "Expected zero");
 
   return NULL;
 }

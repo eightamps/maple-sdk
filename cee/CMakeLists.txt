@@ -10,8 +10,8 @@ include_directories(vendor/kissfft)
 set(AppSources
         src/dtmf.c
         src/dtmf.h
-        src/hid_client.c
-        src/hid_client.h
+        # src/hid_client.c
+        # src/hid_client.h
         src/phony.c
         src/phony.h
         src/phony_hid.c
@@ -41,8 +41,8 @@ set(TestSources
         test/test_helper.h
         test/stitch_test.c
         test/stitch_test.h
-        test/hid_client_test.c
-        test/hid_client_test.h
+        # test/hid_client_test.c
+        # test/hid_client_test.h
         test/fakes/libusb_fake.c
         # test/fakes/libusb_fake.h
         )
@@ -58,85 +58,110 @@ set(VendorLibs
 # link_directories(${CMAKE_BINARY_DIR}}/vendor/kissfft)
 
 # Build environment for Windows DLL
-if (WIN32_FALSE)
+# if (FALSE) # Native WINDOWS
+#     set(CMAKE_SYSTEM_NAME Windows)
+#     set(CMAKE_C_COMPILER i686-w64-mingw32-gcc)
+#     set(CMAKE_CXX_COMPILER i686-w64-mingw32-cpp)
+#     set(CMAKE_RC_COMPILER i686-w64-mingw32-windres)
+#     set(CMAKE_RANLIB i686-w64-mingw32-ranlib)
+#
+#     set(AppSources ${AppSources}
+#             src/win32/stitch.c
+#             )
+#
+#     set(VendorLibs
+#             ${VendorLibs}
+#             # Custom built soundio for win32 only
+#             # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
+#             # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.so
+#             )
+#
+#     link_libraries(
+#             m
+#             soundio
+#             usb-1.0
+#             pthread
+#     )
+#
+#     add_library(maple-sdk.dll STATIC ${AppSources} ${VendorLibs})
+#
+#     set_target_properties(maple-sdk.dll
+#             PROPERTIES
+#             PREFIX ""
+#             SUFFIX ""
+#             LINK_FLAGS "-Wl,-add-stdcall-alias"
+#             POSITION_INDEPENDENT_CODE 0 # this is to avoid MinGW warning;
+#             )
+#
+#     include_directories(${PROJECT_SOURCE_DIR}/vendor/libusb/include)
+#     include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
+#
+# elseif (MINGW) # MINGW
+if (TRUE) # MINGW
     set(CMAKE_SYSTEM_NAME Windows)
-    set(CMAKE_C_COMPILER i686-w64-mingw32-gcc)
-    set(CMAKE_CXX_COMPILER i686-w64-mingw32-g++)
-    set(CMAKE_RC_COMPILER i686-w64-mingw32-windres)
-    set(CMAKE_RANLIB i686-w64-mingw32-ranlib)
+    set(MXEPATH /home/lukebayes/Projects/foss/mxe/usr/bin)
+    set(CMAKE_C_COMPILER /usr/bin/i686-w64-mingw32-gcc)
+    set(CMAKE_CXX_COMPILER /usr/bin/i686-w64-mingw32-g++)
+    set(CMAKE_RC_COMPILER /usr/bin/i686-w64-mingw32-windres)
+    set(CMAKE_RANLIB /usr/bin/i686-w64-mingw32-ranlib)
 
-    set(AppSources ${AppSources}
+    set(AppSources
+            ${AppSources}
             src/win32/stitch.c
             )
 
     set(VendorLibs
             ${VendorLibs}
-            # Custom built soundio for win32 only
-            # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
-            # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.so
+            ${PROJECT_SOURCE_DIR}/vendor/pthread-win32
             )
 
-    link_libraries(
-            m
-            soundio
-            usb-1.0
-            pthread
-    )
-
-    add_library(maple-sdk.dll STATIC ${AppSources} ${VendorLibs})
-
-    set_target_properties(maple-sdk.dll
-            PROPERTIES
-            PREFIX ""
-            SUFFIX ""
-            LINK_FLAGS "-Wl,-add-stdcall-alias"
-            POSITION_INDEPENDENT_CODE 0 # this is to avoid MinGW warning;
-            )
-
-    include_directories(${PROJECT_SOURCE_DIR}/vendor/libusb/include)
-    include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
-
-elseif (MINGW)
-    set(CMAKE_SYSTEM_NAME Windows)
-    # set(MXEPATH /home/lukebayes/Projects/foss/mxe/usr/bin)
-    set(CMAKE_C_COMPILER i686-w64-mingw32-gcc)
-    set(CMAKE_CXX_COMPILER i686-w64-mingw32-g++)
-    set(CMAKE_RC_COMPILER i686-w64-mingw32-windres)
-    set(CMAKE_RANLIB i686-w64-mingw32-ranlib)
-
-    set(VendorLibs
-            ${VendorLibs}
-            # Custom built soundio for win32 only
-            # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.a
-            # ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-win32.so
+    set(LibUsbMingW
+            ${PROJECT_SOURCE_DIR}/vendor/libusb/MinGW32/dll/libusb-1.0.dll
             )
 
     link_libraries(
             m
             pthread
-            usb-1.0
-            soundio
             )
 
-    add_library(maple-sdk.dll STATIC ${AppSources} ${VendorLibs})
+    # add_subdirectory(${PROJECT_SOURCE_DIR}/vendor/pthread-win32)
+    # include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
 
-    set_target_properties(maple-sdk.dll
-            PROPERTIES
-            PREFIX ""
-            SUFFIX ""
-            LINK_FLAGS "-Wl,-add-stdcall-alias"
-            POSITION_INDEPENDENT_CODE 0 # this is to avoid MinGW warning;
-            )
-
-    include_directories(${PROJECT_SOURCE_DIR}/vendor/libusb/include)
-    include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
-
-    add_executable(maple.exe
-            src/main_win32.c
+    add_library(maple-sdk.dll STATIC
+            src/phony.c
             ${AppSources}
             ${VendorLibs}
             )
-else()
+
+    set_target_properties(maple-sdk.dll
+            PROPERTIES
+            PREFIX ""
+            SUFFIX ""
+            LINK_FLAGS "-Wl,-add-stdcall-alias -static-libgcc -DMAPLE_EXPORT_DLL -D_WIN32"
+            POSITION_INDEPENDENT_CODE 0 # this is to avoid MinGW warning;
+            )
+
+    target_include_directories(maple-sdk.dll PUBLIC ${PROJECT_SOURCE_DIR}/vendor/libusb/include)
+    target_include_directories(maple-sdk.dll PUBLIC ${PROJECT_SOURCE_DIR}/vendor/pthread-win32)
+    target_link_libraries(maple-sdk.dll ${LibUsbMingW})
+
+    add_executable(maple-mingw.exe
+            src/main_mingw.c
+            )
+
+    set_target_properties(maple-mingw.exe
+            PROPERTIES
+            PREFIX ""
+            SUFFIX ""
+            LINK_FLAGS "-Wl,-add-stdcall-alias -static-libgcc -DMAPLE_IMPORT_DLL -D_WIN32"
+            POSITION_INDEPENDENT_CODE 0 # this is to avoid MinGW warning;
+            )
+
+    target_include_directories(maple-mingw.exe PUBLIC ${PROJECT_SOURCE_DIR}/vendor/libusb/include)
+    target_include_directories(maple-mingw.exe PUBLIC ${PROJECT_SOURCE_DIR}/vendor/pthread-win32)
+    target_link_libraries(maple-mingw.exe maple-sdk.dll)
+
+else() # Linux/Ubuntu
 
     set(AppSources ${AppSources}
             src/nix/stitch.c

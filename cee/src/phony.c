@@ -101,6 +101,7 @@ static int set_state(phony_context_t *c, phony_state state) {
       c->state_changed(c->userdata);
     }
   }
+  return status;
 }
 
 phony_context_t *phony_new(void) {
@@ -289,15 +290,12 @@ void phony_free(phony_context_t *c) {
 
   // Hang up if we're in a call.
   if (c->state == PHONY_LINE_IN_USE) {
+    pthread_cancel(c->thread_id);
     phony_hang_up(c);
   }
 
   set_state(c, PHONY_EXITING);
 
-  if (c->thread_id) {
-    pthread_cancel(c->thread_id);
-    // phony_join(c);
-  }
   if (c->hid_context != NULL) {
     phony_hid_free(c->hid_context);
   }

@@ -5,6 +5,7 @@
 #include "log.h"
 #include "hid_client.h"
 #include <stdlib.h>
+#include <libusb-1.0/libusb.h>
 
 hid_client_context_t *hid_client_new(void) {
   hid_client_context_t *c = calloc(sizeof(hid_client_context_t), 1);

@@ -8,6 +8,7 @@
 #include "phony_hid.h"
 #include "stitch.h"
 #include "dtmf.h"
+#include "shared.h"
 
 #define PHONY_EIGHT_AMPS_VID 0x335e
 #define PHONY_MAPLE_V3_PID 0x8a01

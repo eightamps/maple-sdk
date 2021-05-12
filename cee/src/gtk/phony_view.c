@@ -67,7 +67,7 @@ static void del_clicked(GtkWidget *widget, gpointer data) {
   const char *text = gtk_entry_buffer_get_text(b);
   size_t len = strlen(text);
   if (len > 0) {
-    len = len -= 1;
+    len = len - 1;
     char *new_text = malloc(len);
     strncpy(new_text, text, len);
     gtk_entry_buffer_set_text(b, new_text, len);
@@ -129,6 +129,8 @@ static int phony_state_changed_idle_handler(void *varg) {
     update_buttons(c, PV_SHOW_HANG_UP);
     break;
   case PHONY_NOT_READY:
+  case PHONY_CONNECTED:
+  case PHONY_EXITING:
     break;
   }
 
