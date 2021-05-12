@@ -51,8 +51,8 @@ set(VendorLibs
         ${PROJECT_SOURCE_DIR}/vendor/kissfft/libkissfft-float.so
         )
 
-file(COPY "${PROJECT_SOURCE_DIR}/src/sdl/ttf"
-        DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}src/sdl)
+# file(COPY "${PROJECT_SOURCE_DIR}/src/sdl/ttf"
+        # DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}src/sdl)
 
 # FFT library will be used to validate generated DTMF signals
 # link_directories(${CMAKE_BINARY_DIR}}/vendor/kissfft)
@@ -96,11 +96,6 @@ if (WIN32_FALSE)
     include_directories(${PROJECT_SOURCE_DIR}/vendor/libusb/include)
     include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
 
-    add_executable(maple.exe
-            src/main_win32.c
-            ${AppSources}
-            ${VendorLibs}
-            )
 elseif (MINGW)
     set(CMAKE_SYSTEM_NAME Windows)
     # set(MXEPATH /home/lukebayes/Projects/foss/mxe/usr/bin)
@@ -154,7 +149,7 @@ else()
         pthread
         )
 
-    # find_package(SDL2_ttf REQUIRED)
+    #find_package(SDL2_ttf REQUIRED)
 
     # Build non-Windows artifacts
     add_library(maple-sdk STATIC ${AppSources} ${VendorLibs})
@@ -169,10 +164,10 @@ else()
         ${GtkSources}
         ${TestSources}
         )
-    add_executable(maple-sdl2 src/main_sdl2.c
-        src/sdl/application.c
-        src/sdl/application.h
-        )
+    # add_executable(maple-sdl2 src/main_sdl2.c
+        # src/sdl/application.c
+        # src/sdl/application.h
+        # )
 
     # Configure GTK+-3.0
     find_package(PkgConfig REQUIRED)
@@ -188,12 +183,12 @@ else()
     # link_directories(${SDL_LIBRARY_DIRS})
     # add_definitions(${SDL_CFLAGS_OTHER})
     # set(SdlLib sdl2-dev)
-    file(COPY ${CMAKE_SOURCE_DIR}/src/sdl/ttf DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    # file(COPY ${CMAKE_SOURCE_DIR}/src/sdl/ttf DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
     # Add link relevant libraries to targets
     target_link_libraries(maple-console ${VendorLibs})
     target_link_libraries(maple-gtk ${GTK3_LIBRARIES} ${VendorLibs})
     target_link_libraries(maple-test ${GTK3_LIBRARIES} ${VendorLibs})
-    target_link_libraries(maple-sdl2 SDL2 SDL2_ttf)
+    # target_link_libraries(maple-sdl2 SDL2 SDL2_ttf)
     target_compile_definitions(maple-test PRIVATE TEST_MODE=1)
 endif()
