@@ -8,6 +8,29 @@ int main(void) {
   log_info("stitch_new returned context: %x", c);
   stitch_init(c);
 
+  /*
+  int in_index = stitch_get_default_input_index(c);
+  if (in_index < 0) {
+    log_err("stitch_get_default_input_index failed with: %d", in_index);
+  } else {
+    log_info("stitch_get_default_input_index returned: %d", in_index);
+  }
+
+  int out_index = stitch_get_default_output_index(c);
+  if (out_index < 0) {
+    log_err("stitch_get_default_input_index failed with: %d", out_index);
+  } else {
+    log_info("stitch_get_default_output_index returned: %d", out_index);
+  }
+  */
+
+  int status = stitch_start(c, -1, -1);
+  if (status != 0) {
+    log_err("stitch_start FAILED: %d", status);
+  } else {
+    log_info("stitch_start returned: %d", status);
+  }
+
   stitch_free(c);
   return 0;
 }

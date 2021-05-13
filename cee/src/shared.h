@@ -22,9 +22,9 @@
 #define EXIT_ON_ERROR(hres, message)  \
               if (FAILED(hres)) { log_err("ERROR[0x%x]: %s", hres, message); \
               goto ExitWithError; }
-#define SAFE_RELEASE(punk)  \
+#define SAFE_FREE(punk)  \
               if ((punk) != NULL)  \
-                { (punk)->Release(); (punk) = NULL; }
+                { free(punk); (punk) = NULL; }
 #endif
 
 #ifdef MAPLE_EXPORT_DLL

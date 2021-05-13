@@ -11,7 +11,10 @@
 #include <audioclient.h>
 
 typedef struct {
-
+  int in_index;
+  int out_index;
+  IMMDevice *in_device;
+  IMMDevice *out_device;
 } stitch_win32_context_t;
 
 // static const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
@@ -48,32 +51,42 @@ DLL_LINK stitch_context_t *stitch_new(void) {
 DLL_LINK int stitch_init(stitch_context_t *c) {
   log_info("win32: stitch_init");
   HRESULT status;
-  IMMDeviceEnumerator *p_enumerator = NULL;
-  IMMDevice *p_device = NULL;
-
   status = CoInitialize(NULL);
   EXIT_ON_ERROR(status, "CoInitialize failed");
-
-  status = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
-    &IID_IMMDeviceEnumerator, (void **)&p_enumerator);
-  EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
-
-  status = IMMDeviceEnumerator_GetDefaultAudioEndpoint(p_enumerator, eRender,
-    eConsole, &p_device);
-  EXIT_ON_ERROR(status, "GetDefaultAudioEndpoint failed");
 
   log_info("STITCH INITIALIZED MOTHAFUCKA!");
 
   goto ExitSuccess;
-
 ExitWithError:
   log_err("stitch_init ExitWithError");
-
+  stitch_free(c);
+  return status;
 ExitSuccess:
+  log_info("stitch_init exiting successfully");
   return EXIT_SUCCESS;
 }
 
 DLL_LINK int stitch_set_dtmf(stitch_context_t *c, dtmf_context_t *d) {
+  return EXIT_SUCCESS;
+}
+
+static int get_default_device(DATADIR datadir, ERole role, IMMDevice **device) {
+  IMMDeviceEnumerator *enumerator = NULL;
+
+  HRESULT status = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL,
+      CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void **)&enumerator);
+  EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
+
+  status = IMMDeviceEnumerator_GetDefaultAudioEndpoint(enumerator, datadir,
+      role, device);
+  EXIT_ON_ERROR(status, "GetDefaultAudioEndpoint failed");
+  log_info("get_default_device returned");
+
+  goto ExitSuccess;
+ExitWithError:
+  log_err("get_default_device ExitWithError");
+ExitSuccess:
+  SAFE_FREE(enumerator);
   return EXIT_SUCCESS;
 }
 
@@ -94,7 +107,38 @@ DLL_LINK int stitch_get_matching_output_device_index(stitch_context_t *c, char *
 }
 
 DLL_LINK int stitch_start(stitch_context_t *c, int in_index, int out_index) {
-  return EXIT_SUCCESS;
+  HRESULT status = EXIT_SUCCESS;
+  IMMDeviceEnumerator *enumerator = NULL;
+  IMMDevice *in_device = NULL;
+  IMMDevice *out_device = NULL;
+
+  status = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+                            &IID_IMMDeviceEnumerator, (void **)&enumerator);
+  EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
+
+  if (in_index == -1) {
+    status = get_default_device(eCapture, eCommunications, &in_device);
+    EXIT_ON_ERROR(status, "Failed to get default capture device");
+  } else {
+    EXIT_ON_ERROR(-100, "stitch_start only supports -1 input index right now");
+  }
+
+  if (out_index = -1) {
+    status = get_default_device(eRender, eCommunications, &in_device);
+    EXIT_ON_ERROR(status, "Failed to get default render device");
+  } else {
+    EXIT_ON_ERROR(-100, "stitch_start only supports -1 output index right now");
+  }
+
+  goto ExitSuccess;
+ExitWithError:
+  log_err("stitch_start ExitWithError %d", status);
+ExitSuccess:
+  log_info("stitch_start exiting successfully");
+  SAFE_FREE(enumerator);
+  SAFE_FREE(in_device);
+  SAFE_FREE(out_device);
+  return status;
 }
 
 DLL_LINK int stitch_stop(stitch_context_t *c) {
@@ -107,11 +151,8 @@ DLL_LINK int stitch_join(stitch_context_t *c) {
 
 DLL_LINK void stitch_free(stitch_context_t *c) {
   if (c != NULL) {
-    if (c->platform != NULL) {
-      free(c->platform);
-    }
-    free(c);
-
+    SAFE_FREE(c->platform);
+    SAFE_FREE(c);
     log_info("stitch_free completed successfully");
   }
 }
