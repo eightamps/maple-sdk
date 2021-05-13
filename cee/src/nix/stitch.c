@@ -56,7 +56,6 @@ static int min_int(int a, int b) {
 }
 
 stitch_context_t *stitch_new(void) {
-  printf("WRONG STICH_NEW\n");
     stitch_context_t *c = calloc(sizeof(stitch_context_t), 1);
     if (c == NULL) {
         log_err("stitch_new failed to allocate memory");

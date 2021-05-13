@@ -1,5 +1,5 @@
 #include "dtmf_test.h"
-#include "hid_client_test.h"
+// #include "hid_client_test.h"
 #include "kissfft_test.h"
 #include "minunit.h"
 #include "phony_hid_test.h"
@@ -13,10 +13,10 @@ char *allTests(void) {
   muSuiteStart();
 
   // HID Client tests
-  muRunTest(test_hid_client_new);
-  muRunTest(test_hid_client_set_vid);
-  muRunTest(test_hid_client_set_pid);
-  muRunTest(test_hid_client_open);
+  // muRunTest(test_hid_client_new);
+  // muRunTest(test_hid_client_set_vid);
+  // muRunTest(test_hid_client_set_pid);
+  // muRunTest(test_hid_client_open);
 
   // DTMF tests
   muRunTest(test_dtmf_duration_multiple);

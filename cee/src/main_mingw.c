@@ -1,12 +1,14 @@
 #include "log.h"
-#include <windows.h>
 #include <stdio.h>
 #include <stitch.h>
 
 int main(void) {
-  printf("Main started\n");
-  stitch_context_t *ptr = stitch_new();
-  printf("PTR: %x\n", ptr);
+  log_info("Main started");
+  stitch_context_t *c = stitch_new_with_label("from_phone");
+  log_info("stitch_new returned context: %x", c);
+  stitch_init(c);
+
+  stitch_free(c);
   return 0;
 }
 

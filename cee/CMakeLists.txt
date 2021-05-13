@@ -97,13 +97,14 @@ set(VendorLibs
 #     include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
 #
 # elseif (MINGW) # MINGW
-if (TRUE) # MINGW
+if (MINGW) # MINGW
     set(CMAKE_SYSTEM_NAME Windows)
     set(MXEPATH /home/lukebayes/Projects/foss/mxe/usr/bin)
     set(CMAKE_C_COMPILER /usr/bin/i686-w64-mingw32-gcc)
     set(CMAKE_CXX_COMPILER /usr/bin/i686-w64-mingw32-g++)
     set(CMAKE_RC_COMPILER /usr/bin/i686-w64-mingw32-windres)
     set(CMAKE_RANLIB /usr/bin/i686-w64-mingw32-ranlib)
+    set(CMAKE_C_STANDARD 11)
 
     set(AppSources
             ${AppSources}
@@ -122,12 +123,15 @@ if (TRUE) # MINGW
     link_libraries(
             m
             pthread
+            ole32
+            oleaut32
             )
 
     # add_subdirectory(${PROJECT_SOURCE_DIR}/vendor/pthread-win32)
     # include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
 
     add_library(maple-sdk.dll STATIC
+            src/win32/dllmain.c
             src/phony.c
             ${AppSources}
             ${VendorLibs}

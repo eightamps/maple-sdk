@@ -48,14 +48,14 @@ typedef struct {
  * Create a new context for a telephone connection.
  * @return phony_context_t*
  */
-phony_context_t *phony_new(void);
+DLL_LINK phony_context_t *phony_new(void);
 
 /**
  * Initialize a telephone connection with the provided VendorId and ProductId
  * @param PhonyContext*
  * @return int Status code
  */
-int phony_open_device(phony_context_t *c, int vid, int pid);
+DLL_LINK int phony_open_device(phony_context_t *c, int vid, int pid);
 
 /**
  * Initialize a new telephone connection with the first Maple device found on
@@ -63,7 +63,7 @@ int phony_open_device(phony_context_t *c, int vid, int pid);
  * @param c
  * @return
  */
-int phony_open_maple(phony_context_t *c);
+DLL_LINK int phony_open_maple(phony_context_t *c);
 
 /**
  * Dial the provided number using the provided phony context.
@@ -71,21 +71,21 @@ int phony_open_maple(phony_context_t *c);
  * @param numbers to dial
  * @return int Status code
  */
-int phony_dial(phony_context_t *phony, const char *numbers);
+DLL_LINK int phony_dial(phony_context_t *phony, const char *numbers);
 
 /**
  * Take the line off hook.
  * @param phony
  * @return
  */
-int phony_take_off_hook(phony_context_t *phony);
+DLL_LINK int phony_take_off_hook(phony_context_t *phony);
 
 /**
  * Close down the open line.
  * @param PhonyContext*
  * @return int Status code
  */
-int phony_hang_up(phony_context_t *phony);
+DLL_LINK int phony_hang_up(phony_context_t *phony);
 
 /**
  * Set a callback that will be called whenever the phony_context_t state changes.
@@ -93,7 +93,7 @@ int phony_hang_up(phony_context_t *phony);
  * @param *phony_state_changed
  * @return int Status code
  */
-int phony_on_state_changed(phony_context_t *c, phony_state_changed callback,
+DLL_LINK int phony_on_state_changed(phony_context_t *c, phony_state_changed callback,
                             void *userdata);
 
 /**
@@ -101,20 +101,20 @@ int phony_on_state_changed(phony_context_t *c, phony_state_changed callback,
  * @param *PhonyContext
  * @return phony_state
  */
-phony_state phony_get_state(phony_context_t *c);
+DLL_LINK phony_state phony_get_state(phony_context_t *c);
 
 /**
  * Close down and free the provided telephone connection.
  * @param PhonyContext*
  * @return void
  */
-void phony_free(phony_context_t *c);
+DLL_LINK void phony_free(phony_context_t *c);
 
 /**
  * Get a human readable label from an Phony state value.
  * @param state
  * @return const char *label
  */
-const char *phony_state_to_str(int state);
+DLL_LINK const char *phony_state_to_str(int state);
 
 #endif //MAPLE_PHONY_H
