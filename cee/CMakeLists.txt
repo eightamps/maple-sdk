@@ -98,17 +98,21 @@ set(VendorLibs
 #
 # elseif (MINGW) # MINGW
 if (MINGW) # MINGW
+    # set(WITH_FUNCTION_X OFF CACHE BOOL "enable X functionality" FORCE)
     set(CMAKE_SYSTEM_NAME Windows)
-    set(MXEPATH /home/lukebayes/Projects/foss/mxe/usr/bin)
+    # set(MXEPATH /home/lukebayes/Projects/foss/mxe/usr/bin)
     set(CMAKE_C_COMPILER /usr/bin/i686-w64-mingw32-gcc)
     set(CMAKE_CXX_COMPILER /usr/bin/i686-w64-mingw32-g++)
     set(CMAKE_RC_COMPILER /usr/bin/i686-w64-mingw32-windres)
     set(CMAKE_RANLIB /usr/bin/i686-w64-mingw32-ranlib)
     set(CMAKE_C_STANDARD 11)
 
+    set(ENABLE_COREAUDIO OFF CACHE BOOL "Disable CoreAudio backend" FORCE)
+    set(ENABLE_JACK OFF CACHE BOOL "Disable Jack backend" FORCE)
+
     set(AppSources
             ${AppSources}
-            src/win32/stitch.c
+            src/nix/stitch.c
             )
 
     set(VendorLibs
@@ -118,6 +122,7 @@ if (MINGW) # MINGW
 
     set(LibUsbMingW
             ${PROJECT_SOURCE_DIR}/vendor/libusb/MinGW32/dll/libusb-1.0.dll
+            ${PROJECT_SOURCE_DIR}/vendor/libsoundio/lib/libsoundio-85d6d9d-win32.a
             )
 
     link_libraries(
@@ -129,6 +134,11 @@ if (MINGW) # MINGW
 
     # add_subdirectory(${PROJECT_SOURCE_DIR}/vendor/pthread-win32)
     # include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
+
+    # list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/vendor/libsoundio/cmake)
+    # add_subdirectory(${PROJECT_SOURCE_DIR}/vendor/libsoundio EXCLUDE_FROM_ALL)
+
+    include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
 
     add_library(maple-sdk.dll STATIC
             src/win32/dllmain.c
