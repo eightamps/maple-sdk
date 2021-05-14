@@ -97,7 +97,7 @@ set(VendorLibs
 #     include_directories(${PROJECT_SOURCE_DIR}/vendor/libsoundio/include)
 #
 # elseif (MINGW) # MINGW
-if (MINGW) # MINGW
+if (FALSE) # MINGW
     set(CMAKE_SYSTEM_NAME Windows)
     set(MXEPATH /home/lukebayes/Projects/foss/mxe/usr/bin)
     set(CMAKE_C_COMPILER /usr/bin/i686-w64-mingw32-gcc)
