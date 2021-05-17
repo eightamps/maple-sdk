@@ -1,5 +1,7 @@
 obj
 bin
+zig-bak
+zig-*
 cmake-build-*
 *csproj.user
 Properties
