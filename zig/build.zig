@@ -22,6 +22,9 @@ pub fn build(b: *std.build.Builder) void {
     lib.setOutputDir("dist");
     lib.linkLibC();
     if (is_windows) {
+        lib.linkSystemLibrary("gdi32");
+        lib.linkSystemLibrary("user32");
+        lib.linkSystemLibrary("kernel32");
         // lib.linkSystemLibrary("combaseapi");
     }
     lib.install();

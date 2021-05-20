@@ -7,13 +7,13 @@ const mm = @cImport({
     @cInclude("combaseapi.h");
 });
 
-usingnamespace std.os.windows;
-// usingnamespace mm;
+// usingnamespace std.os.windows;
+usingnamespace mm;
 
-const DLL_PROCESS_ATTACH = 1;
-const DLL_THREAD_ATTACH = 2;
-const DLL_THREAD_DETACH = 3;
-const DLL_PROCESS_DETACH = 0;
+// const DLL_PROCESS_ATTACH = 1;
+// const DLL_THREAD_ATTACH = 2;
+// const DLL_THREAD_DETACH = 3;
+// const DLL_PROCESS_DETACH = 0;
 
 const DEFAULT_DEVICE_NAME = "[unknown]";
 
@@ -22,7 +22,23 @@ pub export fn hello() i32 {
     return 0;
 }
 
-const CLSID_MMDeviceEnumerator: mm.CLSID = mm.StringFromCLSID(__LIBID_, &mm.MMDeviceEnumerator);
+// extern "user32" fn CoCreateInstance(rclsid: REFCLSID, pUnkOuter: LPUNKNOWN, dwClsContext: DWORD, riid: REFIID, ppv: *LPVOID) c_int;
+
+// HRESULT CoCreateInstance(
+//   REFCLSID  rclsid,
+//   LPUNKNOWN pUnkOuter,
+//   DWORD     dwClsContext,
+//   REFIID    riid,
+//   LPVOID    *ppv
+// );
+
+// extern "user32" stdcallcc fn MessageBoxA(hWnd: ?HANDLE, lpText: ?LPCTSTR, lpCaption: ?LPCTSTR, uType: UINT) c_int;
+
+// extern "user32" stdcallcc fn CoCreateInstance(hWnd: ?HANDLE, lpText: ?LPCTSTR, lpCaption: ?LPCTSTR, uType: UINT) c_int;
+// const CLSID_MMDeviceEnumerator: mm.CLSID = mm.StringFromCLSID(__LIBID_(&mm.MMDeviceEnumerator));
+
+// var CLSID_MMDeviceEnumerator: ?CLSID = null;
+
 // static const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
 // static const IID IID_IAudioClient = __uuidof(IAudioClient);
 // static const IID IID_IAudioRenderClient = __uuidof(IAudioRenderClient);
@@ -33,9 +49,10 @@ pub fn AudioApi() type {
 
         pub fn getDefaultDevice() AudioDevice {
             std.debug.print("YOOOOO\n", .{});
-            var enumerator: ?mm.IMMDeviceEnumerator = null;
+            var enumerator: MMDeviceEnumerator = MMDeviceEnumerator{};
 
-            var status: mm.HRESULT = mm.CoCreateInstance(CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, @ptrCast([*c]?*c_void, &enumerator));
+            var status: HRESULT = CoCreateInstance(CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, &enumerator);
+            // var status: mm.HRESULT = mm.CoCreateInstance(CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, &enumerator);
             // EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
 
             // status = IMMDeviceEnumerator_GetDefaultAudioEndpoint(enumerator, datadir,
@@ -56,7 +73,7 @@ pub const AudioDevice = struct {
 };
 
 // Confirmed that process attach and detach are actually called from a simple C# application.
-pub export fn DllMain(hInstance: HINSTANCE, ul_reason_for_call: DWORD, lpReserved: LPVOID) BOOL {
+pub export fn DllMain(hInstance: std.os.windows.HINSTANCE, ul_reason_for_call: DWORD, lpReserved: LPVOID) BOOL {
     switch (ul_reason_for_call) {
         DLL_PROCESS_ATTACH => {
             std.debug.print("win32.dll PROCESS ATTACH\n", .{});
