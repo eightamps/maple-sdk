@@ -15,6 +15,6 @@ test "hello test" {
 }
 
 test "info test" {
-    const value = info();
-    try std.testing.expectEqual(value, "FROM NIX");
+    const value = platformInfo();
+    try std.testing.expectEqual(value, "LINUX");
 }

@@ -1,11 +1,17 @@
 const std = @import("std");
 
+// Get the windows target tag enum value
+const windows_tag = std.Target.Os.Tag.windows;
+
 // To build for Windows, run:
 // zig build -target x86_64-windows-gnu && wine64 dist/console.exe
 pub fn build(b: *std.build.Builder) void {
     const version = b.version(0, 0, 1);
     var target = b.standardTargetOptions(.{});
     const mode = b.standardReleaseOptions();
+    // Determine if this builder has been asked for a Windows binary.
+    const is_windows = target.os_tag == windows_tag;
+    std.debug.print("Builder is_windows: {s}\n", .{is_windows});
 
     // Build a shared lib
     const lib = b.addSharedLibrary("sdk", "src/main_lib.zig", version);
@@ -15,6 +21,9 @@ pub fn build(b: *std.build.Builder) void {
     lib.setBuildMode(mode);
     lib.setOutputDir("dist");
     lib.linkLibC();
+    if (is_windows) {
+        // lib.linkSystemLibrary("combaseapi");
+    }
     lib.install();
 
     // Build a console client that loads the shared lib statically

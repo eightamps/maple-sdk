@@ -4,8 +4,9 @@ const testing = std.testing;
 
 const ASI_TELEPHONE: []const u8 = "ASI Telephone";
 const WAY2CALL: []const u8 = "Way2Call";
+const DEFAULT_EXCLUDES = ASI_TELEPHONE ++ "|" ++ WAY2CALL;
 
-usingnamespace platform;
+pub const api = platform.AudioApi();
 
 pub const Direction = enum(u8) {
     Capture = 0,
@@ -38,7 +39,7 @@ pub const DefaultCapture = Matcher{
     .role = Role.Communication,
     .direction = Direction.Capture,
     .is_default = true,
-    .not_matches = ASI_TELEPHONE ++ "|" ++ WAY2CALL,
+    .not_matches = DEFAULT_EXCLUDES,
 };
 
 // DefaultRender is a configured Matcher that will not allow devices with
@@ -47,7 +48,7 @@ pub const DefaultRender = Matcher{
     .role = Role.Communication,
     .direction = Direction.Render,
     .is_default = true,
-    .not_matches = ASI_TELEPHONE ++ "|" ++ WAY2CALL,
+    .not_matches = DEFAULT_EXCLUDES,
 };
 
 test "Device Instantiated" {

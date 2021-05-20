@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
-
 set -eo pipefail
+
+###############################################################
+# Yo dawg! I heard you like build scripts, so I made a build
+# script for your build script!
+#
+# ¯\_(⊙_ʖ⊙)_/¯
+#
+###############################################################
 
 TARGET=$1
 
@@ -23,6 +30,10 @@ fi
 if [[ $TARGET == "watch-run" ]]; then
   zig build run
   ${WC} ${WATCH_FILES} -c "zig build run"
+fi
+
+if [[ $TARGET == "watch-run-win" ]]; then
+  ${WC} ${WATCH_FILES} -c "zig build -Dtarget=${WIN_TARGET} && ${WINE} dist/console.exe"
 fi
 
 if [[ $TARGET == "clean" ]]; then
