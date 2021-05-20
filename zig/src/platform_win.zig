@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const mm = @cImport({
+    @cInclude("windows.h");
     @cInclude("mmdeviceapi.h");
     @cInclude("audioclient.h");
     @cInclude("combaseapi.h");
@@ -21,6 +22,11 @@ pub export fn hello() i32 {
     return 0;
 }
 
+const CLSID_MMDeviceEnumerator: mm.CLSID = mm.StringFromCLSID(__LIBID_, &mm.MMDeviceEnumerator);
+// static const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
+// static const IID IID_IAudioClient = __uuidof(IAudioClient);
+// static const IID IID_IAudioRenderClient = __uuidof(IAudioRenderClient);
+
 pub fn AudioApi() type {
     return struct {
         const Self = @This();
@@ -29,7 +35,7 @@ pub fn AudioApi() type {
             std.debug.print("YOOOOO\n", .{});
             var enumerator: ?mm.IMMDeviceEnumerator = null;
 
-            // var status: mm.HRESULT = mm.CoCreateInstance(&mm.CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, @ptrCast([*c]?*c_void, &enumerator));
+            var status: mm.HRESULT = mm.CoCreateInstance(CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, @ptrCast([*c]?*c_void, &enumerator));
             // EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
 
             // status = IMMDeviceEnumerator_GetDefaultAudioEndpoint(enumerator, datadir,
