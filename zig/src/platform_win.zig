@@ -34,6 +34,7 @@ pub export fn hello() i32 {
 
 // extern "user32" stdcallcc fn MessageBoxA(hWnd: ?HANDLE, lpText: ?LPCTSTR, lpCaption: ?LPCTSTR, uType: UINT) c_int;
 
+// extern "user32" stdcallcc fn CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, @ptrCast([*c]?*c_void, &enumerator));
 // extern "user32" stdcallcc fn CoCreateInstance(hWnd: ?HANDLE, lpText: ?LPCTSTR, lpCaption: ?LPCTSTR, uType: UINT) c_int;
 // const CLSID_MMDeviceEnumerator: mm.CLSID = mm.StringFromCLSID(__LIBID_(&mm.MMDeviceEnumerator));
 
@@ -49,9 +50,9 @@ pub fn AudioApi() type {
 
         pub fn getDefaultDevice() AudioDevice {
             std.debug.print("YOOOOO\n", .{});
-            var enumerator: MMDeviceEnumerator = MMDeviceEnumerator{};
+            var enumerator: ?*MMDeviceEnumerator = null;
 
-            var status: HRESULT = CoCreateInstance(CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, &enumerator);
+            var status: HRESULT = CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, @ptrCast([*c]?*c_void, &enumerator));
             // var status: mm.HRESULT = mm.CoCreateInstance(CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, &enumerator);
             // EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
 
