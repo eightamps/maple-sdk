@@ -22,16 +22,16 @@ pub fn build(b: *std.build.Builder) void {
     lib.setOutputDir("dist");
     lib.linkLibC();
     if (is_windows) {
-        lib.linkSystemLibrary("kernel32");
-        lib.linkSystemLibrary("gdi32");
-        lib.linkSystemLibrary("user32");
+        // lib.linkSystemLibrary("kernel32");
+        // lib.linkSystemLibrary("gdi32");
+        // lib.linkSystemLibrary("user32");
 
-        // Trying random windows dlls!
-        lib.linkSystemLibrary("ole32");
-        lib.linkSystemLibrary("oleaut32");
-        lib.linkSystemLibrary("uuid");
-        lib.linkSystemLibrary("comdlg32");
-        lib.linkSystemLibrary("advapi32");
+        // Some other DLLs
+        // lib.linkSystemLibrary("advapi32");
+        // lib.linkSystemLibrary("comdlg32");
+        // lib.linkSystemLibrary("ole32");
+        // lib.linkSystemLibrary("oleaut32");
+        // lib.linkSystemLibrary("uuid");
         // lib.linkSystemLibrary("combaseapi");
     }
     lib.install();

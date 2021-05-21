@@ -1,11 +1,11 @@
 const std = @import("std");
 
 const mm = @cImport({
-    @cDefine("WIN32_LEAN_AND_MEAN", "1");
-    @cInclude("windows.h");
+    // @cDefine("WIN32_LEAN_AND_MEAN", "1");
+    // @cInclude("windows.h");
     @cInclude("mmdeviceapi.h");
-    @cInclude("audioclient.h");
-    @cInclude("combaseapi.h");
+    // @cInclude("audioclient.h");
+    // @cInclude("combaseapi.h");
 });
 
 // usingnamespace std.os.windows;
@@ -49,6 +49,9 @@ pub export fn hello() i32 {
 // static const IID IID_IAudioClient = __uuidof(IAudioClient);
 // static const IID IID_IAudioRenderClient = __uuidof(IAudioRenderClient);
 
+// pub extern fn CoCreateInstance(CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, IID_IMMDeviceEnumerator, &enumerator);
+// pub extern fn CoCreateInstance(rclsid: [*c]const IID, pUnkOuter: LPUNKNOWN, dwClsContext: DWORD, riid: [*c]const IID, ppv: [*c]LPVOID) HRESULT;
+
 pub fn AudioApi() type {
     return struct {
         const Self = @This();
@@ -59,9 +62,10 @@ pub fn AudioApi() type {
             // var enumerator: c_int = 0;
 
             // var c_fact: i32 = 0;
-            var enumerator: [*c]const GUID = undefined; //  = GUID{ .Data1 = 0, .Data2 = 0, .Data3 = 0, .Data4 = 0 };
+            // var enumerator = [*c]LPVOID;
+            var ptr: PVOID = null;
 
-            var status: HRESULT = CoCreateInstance(CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, IID_IMMDeviceEnumerator, enumerator);
+            var status: HRESULT = CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, &ptr);
             // var status: mm.HRESULT = mm.CoCreateInstance(CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, &enumerator);
             // EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
 

@@ -15,6 +15,6 @@ test "hello test" {
 }
 
 test "info test" {
-    const value = platformInfo();
+    const value = platform.info();
     try std.testing.expectEqual(value, "LINUX");
 }
