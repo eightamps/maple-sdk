@@ -1,8 +1,5 @@
 const std = @import("std");
 
-// Get the windows target tag enum value
-const windows_tag = std.Target.Os.Tag.windows;
-
 // To build for Windows, run:
 // zig build -target x86_64-windows-gnu && wine64 dist/console.exe
 pub fn build(b: *std.build.Builder) void {
@@ -10,6 +7,8 @@ pub fn build(b: *std.build.Builder) void {
     var target = b.standardTargetOptions(.{});
     const mode = b.standardReleaseOptions();
     // Determine if this builder has been asked for a Windows binary.
+    // Get the windows target tag enum value
+    const windows_tag = std.Target.Os.Tag.windows;
     const curr_tag = if (target.os_tag != null) target.os_tag else std.builtin.os.tag;
     const is_windows = curr_tag == windows_tag;
     // std.debug.print("std.os.tag: {s}\n", .{std.builtin.os.tag});

@@ -34,7 +34,8 @@ if [[ $TARGET == "watch-run" ]]; then
 fi
 
 if [[ $TARGET == "watch-run-win" ]]; then
-  ${WC} ${WATCH_FILES} -c "zig build -Dtarget=${WIN_TARGET} && ${WINE} dist/console.exe"
+  zig build --watch -Dtarget=${WIN_TARGET} && ${WINE} dist/console.exe
+  # ${WC} ${WATCH_FILES} -c "zig build -Dtarget=${WIN_TARGET} && ${WINE} dist/console.exe"
 fi
 
 if [[ $TARGET == "clean" ]]; then
