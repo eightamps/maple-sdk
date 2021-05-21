@@ -7,12 +7,11 @@ set -eo pipefail
 #
 # ¯\_(⊙_ʖ⊙)_/¯
 #
-# TODO(lbayes): Figure out a nice way to wrap build.zig and
-# get similar functionality to this shell script.
+# TODO(lbayes): Figure out a cleanish way to get something like
+# what this shell script provides from build.zig.
 ###############################################################
 
 TARGET=$1
-
 ZIG=$(which zig)
 ZIG_VERSION=$(zig version)
 WINE=$(which wine64)

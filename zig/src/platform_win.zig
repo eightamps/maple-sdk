@@ -4,12 +4,12 @@ const mm = @cImport({
     // @cDefine("WIN32_LEAN_AND_MEAN", "1");
     // @cInclude("windows.h");
     @cInclude("mmdeviceapi.h");
-    // @cInclude("audioclient.h");
-    // @cInclude("combaseapi.h");
+    @cInclude("audioclient.h");
+    @cInclude("combaseapi.h");
 });
 
-// usingnamespace std.os.windows;
-usingnamespace mm;
+usingnamespace std.os.windows;
+// usingnamespace mm;
 
 // const DLL_PROCESS_ATTACH = 1;
 // const DLL_THREAD_ATTACH = 2;
@@ -22,6 +22,8 @@ pub export fn hello() i32 {
     std.debug.print("api_win:hello\n", .{});
     return 0;
 }
+
+// pub extern fn CoCreateInstance(rclsid: [*c]const IID, pUnkOuter: LPUNKNOWN, dwClsContext: DWORD, riid: [*c]const IID, ppv: [*c]LPVOID) HRESULT;
 
 // extern "user32" fn CoCreateInstance(rclsid: REFCLSID, pUnkOuter: LPUNKNOWN, dwClsContext: DWORD, riid: REFIID, ppv: *LPVOID) c_int;
 
@@ -57,15 +59,10 @@ pub fn AudioApi() type {
         const Self = @This();
 
         pub fn getDefaultDevice() AudioDevice {
-            std.debug.print("YOOOOO\n", .{});
-            // var enumerator: ?*MMDeviceEnumerator = null;
-            // var enumerator: c_int = 0;
+            std.debug.print("getDefaultDevice\n", .{});
+            var ptr: ?*c_void = null;
+            var status: HRESULT = mm.CoCreateInstance(&mm.CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, &ptr);
 
-            // var c_fact: i32 = 0;
-            // var enumerator = [*c]LPVOID;
-            var ptr: PVOID = null;
-
-            var status: HRESULT = CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, &ptr);
             // var status: mm.HRESULT = mm.CoCreateInstance(CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, &enumerator);
             // EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
 
@@ -89,12 +86,12 @@ pub const AudioDevice = struct {
 // Confirmed that process attach and detach are actually called from a simple C# application.
 pub export fn DllMain(hInstance: std.os.windows.HINSTANCE, ul_reason_for_call: DWORD, lpReserved: LPVOID) BOOL {
     switch (ul_reason_for_call) {
-        DLL_PROCESS_ATTACH => {
+        mm.DLL_PROCESS_ATTACH => {
             std.debug.print("win32.dll PROCESS ATTACH\n", .{});
         },
-        DLL_THREAD_ATTACH => {},
-        DLL_THREAD_DETACH => {},
-        DLL_PROCESS_DETACH => {
+        mm.DLL_THREAD_ATTACH => {},
+        mm.DLL_THREAD_DETACH => {},
+        mm.DLL_PROCESS_DETACH => {
             std.debug.print("win32.dll PROCESS DETACH\n", .{});
         },
         else => {},

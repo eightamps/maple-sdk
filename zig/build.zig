@@ -21,18 +21,20 @@ pub fn build(b: *std.build.Builder) void {
     lib.setBuildMode(mode);
     lib.setOutputDir("dist");
     lib.linkLibC();
+    // lib.linkSystemLibrary("c");
     if (is_windows) {
-        // lib.linkSystemLibrary("kernel32");
-        // lib.linkSystemLibrary("gdi32");
-        // lib.linkSystemLibrary("user32");
-
-        // Some other DLLs
-        // lib.linkSystemLibrary("advapi32");
-        // lib.linkSystemLibrary("comdlg32");
-        // lib.linkSystemLibrary("ole32");
-        // lib.linkSystemLibrary("oleaut32");
-        // lib.linkSystemLibrary("uuid");
-        // lib.linkSystemLibrary("combaseapi");
+        // Uncommenting the following, still leaves me with:
+        // "error: undefined symbol: CoCreateInstance"
+        // "error: undefined symbol: CLSID_MMDeviceEnumerator"
+        // "error: undefined symbol: IID_IMMDeviceEnumerator"
+        lib.linkSystemLibrary("kernel32");
+        lib.linkSystemLibrary("gdi32");
+        lib.linkSystemLibrary("user32");
+        lib.linkSystemLibrary("advapi32");
+        lib.linkSystemLibrary("comdlg32");
+        lib.linkSystemLibrary("ole32");
+        lib.linkSystemLibrary("oleaut32");
+        lib.linkSystemLibrary("uuid");
     }
     lib.install();
 
