@@ -2,10 +2,9 @@ const std = @import("std");
 
 const DEFAULT_DEVICE_NAME = "[unknown]";
 
-pub export fn hello() i32 {
-    std.debug.print("api_other:hello\n");
-    return 0;
-}
+pub const AudioDevice = struct {
+    name: []const u8 = DEFAULT_DEVICE_NAME,
+};
 
 pub fn info() []const u8 {
     return "OTHER";
@@ -30,7 +29,3 @@ pub fn AudioApi() type {
         }
     };
 }
-
-pub const AudioDevice = struct {
-    name: []const u8 = DEFAULT_DEVICE_NAME,
-};

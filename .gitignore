@@ -1,8 +1,9 @@
-obj
-bin
-zig-bak
-zig-*
-cmake-build-*
 *csproj.user
+.gdb_history
 Properties
 __pycache__
+bin
+cmake-build-*
+obj
+zig-*
+zig-bak

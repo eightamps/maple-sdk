@@ -18,9 +18,12 @@ usingnamespace std.os.windows;
 
 const DEFAULT_DEVICE_NAME = "[unknown]";
 
-pub export fn hello() i32 {
-    std.debug.print("api_win:hello\n", .{});
-    return 0;
+pub const AudioDevice = struct {
+    name: []const u8 = DEFAULT_DEVICE_NAME,
+};
+
+pub fn info() []const u8 {
+    return "WINDOWS";
 }
 
 // pub extern fn CoCreateInstance(rclsid: [*c]const IID, pUnkOuter: LPUNKNOWN, dwClsContext: DWORD, riid: [*c]const IID, ppv: [*c]LPVOID) HRESULT;
@@ -74,14 +77,6 @@ pub fn AudioApi() type {
         }
     };
 }
-
-pub fn info() []const u8 {
-    return "WINDOWS";
-}
-
-pub const AudioDevice = struct {
-    name: []const u8 = DEFAULT_DEVICE_NAME,
-};
 
 // Confirmed that process attach and detach are actually called from a simple C# application.
 pub export fn DllMain(hInstance: std.os.windows.HINSTANCE, ul_reason_for_call: DWORD, lpReserved: LPVOID) BOOL {
