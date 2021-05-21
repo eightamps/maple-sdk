@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const mm = @cImport({
+    @cDefine("WIN32_LEAN_AND_MEAN", "1");
     @cInclude("windows.h");
     @cInclude("mmdeviceapi.h");
     @cInclude("audioclient.h");
@@ -35,11 +36,15 @@ pub export fn hello() i32 {
 // extern "user32" stdcallcc fn MessageBoxA(hWnd: ?HANDLE, lpText: ?LPCTSTR, lpCaption: ?LPCTSTR, uType: UINT) c_int;
 
 // extern "user32" stdcallcc fn CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, @ptrCast([*c]?*c_void, &enumerator));
-// extern "user32" stdcallcc fn CoCreateInstance(hWnd: ?HANDLE, lpText: ?LPCTSTR, lpCaption: ?LPCTSTR, uType: UINT) c_int;
+
+// extern "user32" fn CoCreateInstance(hWnd: ?HANDLE, lpText: ?LPCTSTR, lpCaption: ?LPCTSTR, uType: UINT) c_int;
 // const CLSID_MMDeviceEnumerator: mm.CLSID = mm.StringFromCLSID(__LIBID_(&mm.MMDeviceEnumerator));
 
 // var CLSID_MMDeviceEnumerator: ?CLSID = null;
 
+// const CLSID_MMDeviceEnumerator: ?CLSID = __uuidof(MMDeviceEnumerator);
+
+// static const CLSID CLSID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
 // static const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
 // static const IID IID_IAudioClient = __uuidof(IAudioClient);
 // static const IID IID_IAudioRenderClient = __uuidof(IAudioRenderClient);
@@ -50,9 +55,13 @@ pub fn AudioApi() type {
 
         pub fn getDefaultDevice() AudioDevice {
             std.debug.print("YOOOOO\n", .{});
-            var enumerator: ?*MMDeviceEnumerator = null;
+            // var enumerator: ?*MMDeviceEnumerator = null;
+            // var enumerator: c_int = 0;
 
-            var status: HRESULT = CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, @ptrCast([*c]?*c_void, &enumerator));
+            // var c_fact: i32 = 0;
+            var enumerator: [*c]const GUID = undefined; //  = GUID{ .Data1 = 0, .Data2 = 0, .Data3 = 0, .Data4 = 0 };
+
+            var status: HRESULT = CoCreateInstance(CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, IID_IMMDeviceEnumerator, enumerator);
             // var status: mm.HRESULT = mm.CoCreateInstance(CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, &enumerator);
             // EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
 

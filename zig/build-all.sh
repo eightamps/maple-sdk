@@ -7,6 +7,8 @@ set -eo pipefail
 #
 # ¯\_(⊙_ʖ⊙)_/¯
 #
+# TODO(lbayes): Figure out a nice way to wrap build.zig and
+# get similar functionality to this shell script.
 ###############################################################
 
 TARGET=$1
