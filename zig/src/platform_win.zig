@@ -29,20 +29,17 @@ pub fn AudioApi() type {
             _ = CoInitialize(null);
 
             // Comment the following 2 lines to get a working Windows build.
-            var ptr: ?*c_void = null;
-            var status: HRESULT = CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, &ptr);
+            var enumerator: ?*c_void = null;
+            var status: HRESULT = CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, &enumerator);
+            std.debug.print("STATUS: {d}\n", .{status});
+            std.debug.print("enumerator: {s}\n", .{enumerator});
 
-            // std.debug.print("getDefaultDevice\n", .{});
-            // _ = CoInitialize(null);
+            // var enumerator = @ptrCast(enumerator, ?IMMDeviceEnumerator);
+            // var devices: ?*c_void = null;
+            // status = IMMDeviceEnumerator.GetDefaultAudioEndpoint(enumerator, EDataFlow.eCommunications, ERole.eCapture, &devices);
 
-            // var ptr: ?*c_void = null;
-            // var status: HRESULT = CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, &ptr);
-
-            // var status: HRESULT = CoCreateInstance(CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, &enumerator);
-            // EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
-
-            // status = IMMDeviceEnumerator_GetDefaultAudioEndpoint(enumerator, datadir,
-            //     role, device);
+            // status = enumerator.GetDefaultAudioEndpoint(datadir, role, device);
+            std.debug.print("STATUS: {d}\n", .{status});
             // EXIT_ON_ERROR(status, "GetDefaultAudioEndpoint failed");
             // log_info("get_default_device returned");
             return AudioDevice{};

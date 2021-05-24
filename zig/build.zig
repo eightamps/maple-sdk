@@ -47,6 +47,7 @@ pub fn build(b: *std.build.Builder) void {
     lib.setTarget(target);
     lib.setBuildMode(mode);
     lib.setOutputDir("dist");
+    lib.force_pic = true;
     linkLibs(lib, is_windows, is_linux);
     // lib.linkSystemLibrary("c");
     lib.install();
