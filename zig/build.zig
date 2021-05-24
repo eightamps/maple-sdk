@@ -1,5 +1,25 @@
 const std = @import("std");
 
+// Create shortcuts to OS tags
+const windows_tag = std.Target.Os.Tag.windows;
+const linux_tag = std.Target.Os.Tag.linux;
+
+fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) void {
+    step.linkLibC();
+    if (is_linux) {
+        step.linkSystemLibrary("pulse");
+    } else if (is_windows) {
+        step.linkSystemLibrary("uuid");
+        step.linkSystemLibrary("ole32");
+        // step.linkSystemLibrary("kernel32");
+        // step.linkSystemLibrary("gdi32");
+        // step.linkSystemLibrary("user32");
+        // step.linkSystemLibrary("advapi32");
+        // step.linkSystemLibrary("comdlg32");
+        // stesteplinkSystemLibrary("oleaut32");
+    }
+}
+
 // To build for Windows, run:
 // zig build -target x86_64-windows-gnu && wine64 dist/console.exe
 pub fn build(b: *std.build.Builder) void {
@@ -7,13 +27,14 @@ pub fn build(b: *std.build.Builder) void {
     var target = b.standardTargetOptions(.{});
     const mode = b.standardReleaseOptions();
     // Determine if this builder has been asked for a Windows binary.
-    // Get the windows target tag enum value
-    const windows_tag = std.Target.Os.Tag.windows;
+
     const curr_tag = if (target.os_tag != null) target.os_tag else std.builtin.os.tag;
     const is_windows = curr_tag == windows_tag;
+    const is_linux = curr_tag == linux_tag;
     // std.debug.print("std.os.tag: {s}\n", .{std.builtin.os.tag});
     std.debug.print("current os tag: {s}\n", .{curr_tag});
     std.debug.print("Builder is_windows: {s}\n", .{is_windows});
+    std.debug.print("Builder is_linux: {s}\n", .{is_linux});
 
     // Build a shared lib
     const lib = b.addSharedLibrary("sdk", "src/main_lib.zig", version);
@@ -22,22 +43,8 @@ pub fn build(b: *std.build.Builder) void {
     lib.setTarget(target);
     lib.setBuildMode(mode);
     lib.setOutputDir("dist");
-    lib.linkLibC();
+    linkLibs(lib, is_windows, is_linux);
     // lib.linkSystemLibrary("c");
-    if (is_windows) {
-        // Uncommenting the following, still leaves me with:
-        // "error: undefined symbol: CoCreateInstance"
-        // "error: undefined symbol: CLSID_MMDeviceEnumerator"
-        // "error: undefined symbol: IID_IMMDeviceEnumerator"
-        lib.linkSystemLibrary("kernel32");
-        lib.linkSystemLibrary("gdi32");
-        lib.linkSystemLibrary("user32");
-        lib.linkSystemLibrary("advapi32");
-        lib.linkSystemLibrary("comdlg32");
-        lib.linkSystemLibrary("ole32");
-        lib.linkSystemLibrary("oleaut32");
-        lib.linkSystemLibrary("uuid");
-    }
     lib.install();
 
     // Build a console client that loads the shared lib statically
@@ -47,10 +54,13 @@ pub fn build(b: *std.build.Builder) void {
     exe.setOutputDir("dist");
     exe.linkLibC();
     // How to make this dynamically link?
+    linkLibs(exe, is_windows, is_linux);
+
     exe.addPackage(.{
         .name = "sdk",
         .path = "src/main_lib.zig",
     });
+
     exe.step.dependOn(&lib.step);
     exe.install();
 
