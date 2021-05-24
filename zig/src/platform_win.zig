@@ -29,14 +29,20 @@ pub fn AudioApi() type {
             _ = CoInitialize(null);
 
             // Comment the following 2 lines to get a working Windows build.
-            var enumerator: ?*c_void = null;
-            var status: HRESULT = CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, &enumerator);
+            var ptr: LPVOID = null;
+            std.debug.print("pre ptr: {s}\n", .{ptr});
+            var status: HRESULT = CoCreateInstance(&CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, &IID_IMMDeviceEnumerator, &ptr);
             std.debug.print("STATUS: {d}\n", .{status});
-            std.debug.print("enumerator: {s}\n", .{enumerator});
+            std.debug.print("post ptr: {s}\n", .{ptr});
 
-            // var enumerator = @ptrCast(enumerator, ?IMMDeviceEnumerator);
+            var ptrValue = @ptrToInt(ptr);
+            std.debug.print("ptrValue: 0x{x}\n", .{ptrValue});
+
+            // var enumerator: IMMDeviceEnumerator = @intToPtr(&IMMDeviceEnumerator, ptrValue);
+
+            // var enumerator2: IMMDeviceEnumerator = @ptrCast(&IMMDeviceEnumerator, &enumerator);
             // var devices: ?*c_void = null;
-            // status = IMMDeviceEnumerator.GetDefaultAudioEndpoint(enumerator, EDataFlow.eCommunications, ERole.eCapture, &devices);
+            // status = enumerator.GetDefaultAudioEndpoint(EDataFlow.eCommunications, ERole.eCapture, &devices);
 
             // status = enumerator.GetDefaultAudioEndpoint(datadir, role, device);
             std.debug.print("STATUS: {d}\n", .{status});

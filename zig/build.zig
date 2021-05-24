@@ -1,8 +1,10 @@
 const std = @import("std");
 
-// Create shortcuts to OS tags
-const windows_tag = std.Target.Os.Tag.windows;
-const linux_tag = std.Target.Os.Tag.linux;
+const BuildTarget = std.build.Target;
+const os_tag = std.Target.Os.Tag;
+
+const windows_tag = os_tag.windows;
+const linux_tag = os_tag.linux;
 
 fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) void {
     step.linkLibC();
@@ -28,7 +30,21 @@ fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) vo
 // zig build -target x86_64-windows-gnu && wine64 dist/console.exe
 pub fn build(b: *std.build.Builder) void {
     const version = b.version(0, 0, 1);
-    var target = b.standardTargetOptions(.{});
+    var target = b.standardTargetOptions(.{
+        // Found whitelist here: https://github.com/andrewrk/zig-sdl/blob/master/build.zig
+        .whitelist = &[_]BuildTarget{
+            .{
+                .cpu_arch = .x86_64,
+                .os_tag = .linux,
+                .abi = .musl,
+            },
+            .{
+                .cpu_arch = .x86_64,
+                .os_tag = .windows,
+                .abi = .gnu,
+            },
+        },
+    });
     const mode = b.standardReleaseOptions();
     // Determine if this builder has been asked for a Windows binary.
 
