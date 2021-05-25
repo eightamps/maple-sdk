@@ -7,6 +7,7 @@ const linux_tag = std.Target.Os.Tag.linux;
 fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) void {
     step.linkLibC();
     if (is_linux) {
+        step.linkSystemLibrary("libusb-1.0");
         step.linkSystemLibrary("pulse");
     } else if (is_windows) {
         step.linkSystemLibrary("uuid");
@@ -17,6 +18,9 @@ fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) vo
         // step.linkSystemLibrary("advapi32");
         // step.linkSystemLibrary("comdlg32");
         // stesteplinkSystemLibrary("oleaut32");
+    } else {
+        // is other
+        std.debug.print("link step for 'other'\n", .{});
     }
 }
 
@@ -74,6 +78,7 @@ pub fn build(b: *std.build.Builder) void {
     var tests = b.addTest("src/main_lib.zig");
     tests.setTarget(target);
     tests.setBuildMode(mode);
+    linkLibs(tests, is_windows, is_linux);
     // QUESTION(lbayes): How do I include multiple files for this test run?
     // e.g.:
     // tests.addFile("src/main_console.zig");
