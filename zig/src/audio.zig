@@ -1,12 +1,10 @@
 const std = @import("std");
-const platform = @import("platform.zig");
+// const platform = @import("platform.zig");
 const testing = std.testing;
 
 const ASI_TELEPHONE: []const u8 = "ASI Telephone";
 const WAY2CALL: []const u8 = "Way2Call";
 const DEFAULT_EXCLUDES = ASI_TELEPHONE ++ "|" ++ WAY2CALL;
-
-pub const api = platform.AudioApi();
 
 pub const Direction = enum(u8) {
     Capture = 0,
