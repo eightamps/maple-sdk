@@ -51,7 +51,7 @@ pub const AudioApi = struct {
                 return error.Fail;
             }
         }
-        // defer enumerator.IUnknown_Release();
+        defer _ = enumerator.IUnknown_Release();
         print("enumerator: {s}\n", .{enumerator});
 
         var device: *IMMDevice = undefined;
@@ -61,42 +61,66 @@ pub const AudioApi = struct {
                 print("DEVICE STATUS: {d}\n", .{status});
                 return error.Fail;
             }
+            if (device == undefined) {
+                print("GetDefaultAudioEndpoint failed to initialize device\n", .{});
+                return error.Fail;
+            }
         }
-        // defer device.IMMDevice_Release(); // No such method
+        defer _ = device.IUnknown_Release();
+        print("---------------------\n", .{});
+        print("default device: {s}\n", .{device});
 
-        var properties: *IPropertyStore = undefined;
+        var audio_client: *IAudioClient = undefined;
         {
-            const status = device.IMMDevice_OpenPropertyStore(STGM_READ, &properties);
+            const status = device.IMMDevice_Activate(
+                IID_IAudioClient,
+                @enumToInt(CLSCTX_ALL),
+                null,
+                @ptrCast(**c_void, &audio_client),
+            );
             if (FAILED(status)) {
-                print("DEVICE PROPS: {d}\n", .{status});
+                print("AudioClient failed {d}\n", .{status});
                 return error.Fail;
             }
         }
+        defer _ = audio_client.IUnknown_Release();
+        print("Audio Clien: {s}\n", .{audio_client});
 
-        var count: u32 = 0;
-        {
-            const status = properties.IPropertyStore_GetCount(&count);
-            if (FAILED(status)) {
-                print("GetCount failed: {d}\n", .{status});
-                return error.Fail;
-            }
-        }
+        // var properties: *IPropertyStore = undefined;
+        // {
+        //     const status = device.IMMDevice_OpenPropertyStore(STGM_READ, &properties);
+        //     if (FAILED(status)) {
+        //         print("DEVICE PROPS: {d}\n", .{status});
+        //         return error.Fail;
+        //     }
+        // }
+        // defer _ = properties.IUnknown_Release();
 
-        var index: u32 = 0;
-        while (index < count - 1) : (index += 1) {
-            var propKey: PROPERTYKEY = undefined;
-            var propValue: PROPVARIANT = undefined;
+        // var count: u32 = 0;
+        // {
+        //     const status = properties.IPropertyStore_GetCount(&count);
+        //     if (FAILED(status)) {
+        //         print("GetCount failed: {d}\n", .{status});
+        //         return error.Fail;
+        //     }
+        // }
 
-            print("index: {d}\n", .{index});
-            const p_status = properties.IPropertyStore_GetAt(index, &propKey);
-            if (FAILED(p_status)) {
-                print("Failed to getAt {x}\n", .{p_status});
-                return error.Fail;
-            }
-            print("Looping propeties with: {s}\n", .{propKey});
-            const v_status = properties.IPropertyStore_GetValue(&propKey, &propValue);
-            print("Found value: {s}\n", .{propValue});
-        }
+        // var index: u32 = 0;
+        // while (index < count - 1) : (index += 1) {
+        //     var propKey: PROPERTYKEY = undefined;
+        //     var propValue: PROPVARIANT = undefined;
+
+        //     print("index: {d}\n", .{index});
+        //     const p_status = properties.IPropertyStore_GetAt(index, &propKey);
+        //     if (FAILED(p_status)) {
+        //         print("Failed to getAt {x}\n", .{p_status});
+        //         return error.Fail;
+        //     }
+
+        //     print("Looping properties with: {s}\n", .{propKey});
+        //     const v_status = properties.IPropertyStore_GetValue(&propKey, &propValue);
+        //     print("Found value: {s}\n", .{propValue});
+        // }
 
         // print("post device: {s}\n", .{device.IMMDevice_GetId()});
 
