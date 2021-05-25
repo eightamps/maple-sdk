@@ -3,6 +3,8 @@ const c = @cImport({
     @cInclude("libusb-1.0/libusb.h");
 });
 
+usingnamespace c;
+
 const print = std.debug.print;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
@@ -17,9 +19,20 @@ pub const HidClient = struct {
 
     vid: u32,
     pid: u32,
-    libusb_context: *c.libusb_context = undefined,
+    libusb_context: *libusb_context = undefined,
 
-    pub fn init(self: HidClient) HidClientStatus {
+    pub fn open(self: HidClient) HidClientStatus {
+        // var usb_ctx: *libusb_context = undefined;
+        // var status = libusb_init(usb_ctx);
+        // defer libusb_exit(usb_ctx);
+
+        // int status = libusb_init(&usb_ctx);
+        // c->usb_context = usb_ctx;
+
+        // if (status != EXIT_SUCCESS) {
+        // log_err("Failed to initialise libusb");
+        // return -ECONNREFUSED; // Connection refused
+        // }
         return HidClientStatus.Success;
     }
 };
@@ -30,7 +43,7 @@ test "HidClient is instantiable" {
         .pid = 0x8a01,
     };
 
-    _ = client.init();
+    _ = client.open();
 
     try expectEqual(client.vid, 0xe335);
     try expectEqual(client.pid, 0x8a01);
