@@ -1,9 +1,8 @@
 const std = @import("std");
-const c = @cImport({
-    @cInclude("libusb-1.0/libusb.h");
-});
-
-usingnamespace c;
+// const libusb = @cImport({
+//     @cInclude("libusb-1.0/libusb.h");
+// });
+// usingnamespace libusb;
 
 const print = std.debug.print;
 const expect = std.testing.expect;
@@ -19,7 +18,7 @@ pub const HidClient = struct {
 
     vid: u32,
     pid: u32,
-    libusb_context: *libusb_context = undefined,
+    // libusb_context: *libusb_context = undefined,
 
     pub fn open(self: HidClient) HidClientStatus {
         // var usb_ctx: *libusb_context = undefined;

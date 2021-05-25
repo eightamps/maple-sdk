@@ -7,3 +7,4 @@ cmake-build-*
 obj
 zig-*
 zig-bak
+zig/vendor/libusb-*
