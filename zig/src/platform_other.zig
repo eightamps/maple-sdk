@@ -14,7 +14,7 @@ pub fn AudioApi() type {
     return struct {
         const Self = @This();
 
-        pub fn getDefaultDevice() AudioDevice {
+        pub fn getDefaultDevice() !AudioDevice {
             std.debug.print("Other getDefaultDevice()\n", .{});
             //var enumerator: ?mm.IMMDeviceEnumerator = null;
 
