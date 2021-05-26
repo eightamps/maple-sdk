@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 
 const BuildTarget = std.build.Target;
 const os_tag = std.Target.Os.Tag;
@@ -13,8 +14,10 @@ fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) vo
         step.linkSystemLibrary("usb-1.0");
         step.linkSystemLibrary("pulse");
     } else if (is_windows) {
-        // const libusb = b.addSharedLibrary("libusb", "vendor/libusb-win32/MING32/dll/libusb-1.0.dll");
-        // step.addLibPath("vendor/libusb-win32/include");
+        step.addIncludeDir("vendor/libusb-win32/include");
+        step.addLibPath("vendor/libusb-win32/VS2019/MS64/dll");
+
+        step.linkSystemLibraryName("libusb-1.0");
         step.linkSystemLibrary("uuid");
         step.linkSystemLibrary("ole32");
         step.addPackage(.{
@@ -23,7 +26,7 @@ fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) vo
         });
     } else {
         // is other
-        std.debug.print("link step for 'other'\n", .{});
+        print("link step for 'other'\n", .{});
     }
 }
 
@@ -52,10 +55,10 @@ pub fn build(b: *std.build.Builder) void {
     const curr_tag = if (target.os_tag != null) target.os_tag else std.builtin.os.tag;
     const is_windows = curr_tag == windows_tag;
     const is_linux = curr_tag == linux_tag;
-    // std.debug.print("std.os.tag: {s}\n", .{std.builtin.os.tag});
-    std.debug.print("current os tag: {s}\n", .{curr_tag});
-    std.debug.print("Builder is_windows: {s}\n", .{is_windows});
-    std.debug.print("Builder is_linux: {s}\n", .{is_linux});
+    // print("std.os.tag: {s}\n", .{std.builtin.os.tag});
+    print("current os tag: {s}\n", .{curr_tag});
+    print("Builder is_windows: {s}\n", .{is_windows});
+    print("Builder is_linux: {s}\n", .{is_linux});
 
     // Build a shared lib
     const lib = b.addSharedLibrary("sdk", "src/main_lib.zig", version);
