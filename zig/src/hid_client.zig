@@ -39,9 +39,8 @@ pub const HidClient = struct {
             }
         }
 
-        var device_handle = libusb_open_device_with_vid_pid(ctx, vid, pid);
+        const device_handle = libusb_open_device_with_vid_pid(ctx, vid, pid);
         {
-            // device_handle = try find_device(ctx, vid, pid);
             if (device_handle == null) {
                 print("libusb_find_device did not find device\n", .{});
                 return error.Fail;
@@ -49,22 +48,25 @@ pub const HidClient = struct {
             print("Successfully found the expected HID device\n", .{});
         }
 
-        var device = libusb_get_device(device_handle);
+        const device = libusb_get_device(device_handle);
         {
             const bus_no = libusb_get_bus_number(device);
             const dev_addr = libusb_get_device_address(device);
-            print("Found hid device at bus: 0x{x} {d} and dev addr 0x{x} {d}\n", .{ bus_no, bus_no, dev_addr, dev_addr });
+            print("Found hid device at bus hex:0x{x} d:{d} and dev addr hex:0x{x} d:{d}\n", .{ bus_no, bus_no, dev_addr, dev_addr });
 
-            var desc: *libusb_device_descriptor = undefined;
+            var desc: libusb_device_descriptor = undefined;
             {
-                const status = libusb_get_device_descriptor(device, @ptrToInt(&desc));
+                const status = libusb_get_device_descriptor(device, &desc);
                 if (FAILURE(status)) {
+                    print("libusb_get_device_descriptor FAILED with: {d}\n", .{status});
                     return error.Fail;
                 }
-                print("idVendor: 0x{x}", .{desc.idVendor});
-                print("idProduct: 0x{x}", .{desc.idProduct});
-                print("iSerialNumber: {d}", .{desc.iSerialNumber});
-                print("bNumConfigurations: {d}", .{desc.bNumConfigurations});
+                print("get device desc with SUCCESS: {d}\n", .{status});
+                print("desc: {}\n", .{desc});
+                print("idVendor: 0x{x}\n", .{desc.idVendor});
+                print("idProduct: 0x{x}\n", .{desc.idProduct});
+                print("iSerialNumber: {d}\n", .{desc.iSerialNumber});
+                print("bNumConfigurations: {d}\n", .{desc.bNumConfigurations});
             }
         }
 
@@ -78,13 +80,10 @@ pub const HidClient = struct {
     }
 };
 
-test "HidClient is instantiable" {
-    const client = try HidClient.open(0xe335, 0x8a01);
-    // const client = try HidClient.open(0x27c6, 0x538d);
-    // const client = try HidClient.open(0x0bda, 0x565a);
-    // const client = try HidClient.open(0x1d6b, 0x0002);
+test "HidClient open" {
+    const client = try HidClient.open(0x335e, 0x8a01);
     defer client.close();
 
-    try expectEqual(client.vid, 0xe335);
+    try expectEqual(client.vid, 0x335e);
     try expectEqual(client.pid, 0x8a01);
 }

@@ -9,6 +9,10 @@ set -eo pipefail
 #
 # TODO(lbayes): Figure out a cleanish way to get something like
 # what this shell script provides from build.zig.
+#
+# To GDB test binaries, here's a note from zig forum:
+# zig test file.zig -femit-bin=./tests-binary
+# Then just gdb ./tests-binary
 ###############################################################
 
 TARGET=$1
@@ -24,12 +28,10 @@ echo ">> zig bin: ${ZIG}"
 echo ">> zig ver: ${ZIG_VERSION}"
 
 if [[ $TARGET == "watch-test" ]]; then
-  zig build test
   ${WC} ${WATCH_FILES} -c "zig build test"
 fi
 
 if [[ $TARGET == "watch-run" ]]; then
-  zig build run
   ${WC} ${WATCH_FILES} -c "zig build run"
 fi
 

@@ -1,20 +1,24 @@
 const std = @import("std");
 const platform = @import("platform.zig");
+const hid_client = @import("hid_client.zig");
 
 const print = std.debug.print;
 
-pub fn main() u8 {
+usingnamespace hid_client;
+
+pub fn main() !u8 {
     std.debug.print("Main Console loaded\n", .{});
 
-    var api = platform.AudioApi{};
+    const client = try HidClient.open(0x335e, 0x8a01);
+    defer client.close();
 
-    const device = api.getDefaultDevice() catch |err| {
-        print(">>>>>>>>> ERROR: {s}\n", .{err});
-        return 1;
-    };
-    defer api.deinit();
-
-    std.debug.print("device name: {s}\n", .{device.name});
+    // var api = platform.AudioApi{};
+    // const device = api.getDefaultDevice() catch |err| {
+    //     print(">>>>>>>>> ERROR: {s}\n", .{err});
+    //     return 1;
+    // };
+    // defer api.deinit();
+    // std.debug.print("device name: {s}\n", .{device.name});
 
     return 0;
 }
