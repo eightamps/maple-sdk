@@ -10,12 +10,11 @@ fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) vo
     step.linkLibC();
 
     if (is_linux) {
-        step.linkSystemLibrary("libusb-1.0");
+        step.linkSystemLibrary("usb-1.0");
         step.linkSystemLibrary("pulse");
     } else if (is_windows) {
         // const libusb = b.addSharedLibrary("libusb", "vendor/libusb-win32/MING32/dll/libusb-1.0.dll");
         // step.addLibPath("vendor/libusb-win32/include");
-
         step.linkSystemLibrary("uuid");
         step.linkSystemLibrary("ole32");
         step.addPackage(.{
