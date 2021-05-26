@@ -1,15 +1,15 @@
 const std = @import("std");
 const platform = @import("platform.zig");
-const hid_client = @import("hid_client.zig");
+const phony_client = @import("phony_client.zig");
 
 const print = std.debug.print;
 
-usingnamespace hid_client;
+usingnamespace phony_client;
 
 pub fn main() !u8 {
     std.debug.print("Main Console loaded\n", .{});
 
-    const client = try HidClient.open(0x335e, 0x8a01);
+    const client = try PhonyClient.open();
     defer client.close();
 
     // var api = platform.AudioApi{};
