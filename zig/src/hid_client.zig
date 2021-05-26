@@ -15,11 +15,15 @@ fn FAILURE(status: i32) bool {
 pub const HidClient = struct {
     vid: u16,
     pid: u16,
+    is_open: bool,
     usb_context: ?*libusb_context,
     device_handle: ?*libusb_device_handle,
     device: ?*libusb_device,
 
     pub fn close(self: HidClient) void {
+        // if (self.is_open) {
+        // release interface
+        // }
         // if (self.device_handle != null) {
         // }
         // if (self.device) != null) {
@@ -30,6 +34,8 @@ pub const HidClient = struct {
     }
 
     pub fn open(vid: u16, pid: u16) !HidClient {
+        var is_open = false;
+
         var ctx: *libusb_context = undefined;
         {
             const status = libusb_init(@ptrToInt(&ctx));
@@ -70,9 +76,31 @@ pub const HidClient = struct {
             }
         }
 
+        {
+            const status = libusb_set_auto_detach_kernel_driver(device_handle, 1);
+            if (FAILURE(status)) {
+                print("libusb_set_auto_detach_kernel_driver FAILED with: {d}\n", .{status});
+                print("CONTINUING ANYWAY\n", .{});
+                // return error.Fail;
+            } else {
+                print("libusb_set_auto_detach_kernel_driver SUCCEEDED\n", .{});
+            }
+        }
+
+        {
+            const status = libusb_claim_interface(device_handle, 2);
+            if (FAILURE(status)) {
+                print("libusb_claim_interface FAILED WITH: {d}\n", .{status});
+                return error.Fail;
+            }
+            print("libusb_claim_interface SUCCEEDED\n", .{});
+            is_open = true;
+        }
+
         return HidClient{
             .vid = vid,
             .pid = pid,
+            .is_open = is_open,
             .usb_context = ctx,
             .device_handle = device_handle,
             .device = device,
