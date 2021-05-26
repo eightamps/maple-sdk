@@ -10,22 +10,28 @@ pub fn info() []const u8 {
     return "LINUX";
 }
 
-pub fn AudioApi() type {
-    return struct {
-        const Self = @This();
+pub const AudioApi = struct {
+    is_initialized: bool = false,
 
-        pub fn getDefaultDevice() !AudioDevice {
-            std.debug.print("Linux getDefaultDevice()\n", .{});
-            //var enumerator: ?mm.IMMDeviceEnumerator = null;
+    fn init(self: *AudioApi) !void {}
 
-            //var status: mm.HRESULT = mm.CoCreateInstance(&mm.CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, @ptrCast([*c]?*c_void, &enumerator));
-            // EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
+    pub fn deinit(self: *AudioApi) void {}
 
-            // status = IMMDeviceEnumerator_GetDefaultAudioEndpoint(enumerator, datadir,
-            //     role, device);
-            // EXIT_ON_ERROR(status, "GetDefaultAudioEndpoint failed");
-            // log_info("get_default_device returned");
-            return AudioDevice{};
+    pub fn getDefaultDevice(self: *AudioApi) !AudioDevice {
+        if (!self.is_initialized) {
+            try self.init();
         }
-    };
-}
+
+        std.debug.print("Linux getDefaultDevice()\n", .{});
+        //var enumerator: ?mm.IMMDeviceEnumerator = null;
+
+        //var status: mm.HRESULT = mm.CoCreateInstance(&mm.CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, @ptrCast([*c]?*c_void, &enumerator));
+        // EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
+
+        // status = IMMDeviceEnumerator_GetDefaultAudioEndpoint(enumerator, datadir,
+        //     role, device);
+        // EXIT_ON_ERROR(status, "GetDefaultAudioEndpoint failed");
+        // log_info("get_default_device returned");
+        return AudioDevice{};
+    }
+};
