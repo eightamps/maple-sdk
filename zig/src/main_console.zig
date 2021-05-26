@@ -9,16 +9,16 @@ usingnamespace phony_client;
 pub fn main() !u8 {
     std.debug.print("Main Console loaded\n", .{});
 
-    const client = try PhonyClient.open();
-    defer client.close();
+    // const client = try PhonyClient.open();
+    // defer client.close();
 
-    // var api = platform.AudioApi{};
-    // const device = api.getDefaultDevice() catch |err| {
-    //     print(">>>>>>>>> ERROR: {s}\n", .{err});
-    //     return 1;
-    // };
-    // defer api.deinit();
-    // std.debug.print("device name: {s}\n", .{device.name});
+    var api = platform.AudioApi{};
+    const device = api.getDefaultDevice() catch |err| {
+        print(">>>>>>>>> ERROR: {s}\n", .{err});
+        return 1;
+    };
+    defer api.deinit();
+    std.debug.print("device name: {s}\n", .{device.name});
 
     return 0;
 }

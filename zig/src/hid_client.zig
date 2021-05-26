@@ -43,6 +43,7 @@ pub const HidClient = struct {
                 print("libusb_init failed {d}\n", .{status});
                 return error.Fail;
             }
+            print("libusb_init SUCCESS\n", .{});
         }
 
         const device_handle = libusb_open_device_with_vid_pid(ctx, vid, pid);
@@ -56,6 +57,10 @@ pub const HidClient = struct {
 
         const device = libusb_get_device(device_handle);
         {
+            if (device == null) {
+                print("libusb_get_device FAILURE\n", .{});
+                return error.Fail;
+            }
             const bus_no = libusb_get_bus_number(device);
             const dev_addr = libusb_get_device_address(device);
             print("Found hid device at bus hex:0x{x} d:{d} and dev addr hex:0x{x} d:{d}\n", .{ bus_no, bus_no, dev_addr, dev_addr });

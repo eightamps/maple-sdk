@@ -71,7 +71,6 @@ pub fn build(b: *std.build.Builder) void {
     lib.setOutputDir("dist");
     lib.force_pic = true;
     linkLibs(lib, is_windows, is_linux);
-    // lib.linkSystemLibrary("c");
     lib.install();
 
     // Build a console client that loads the shared lib statically
@@ -79,10 +78,9 @@ pub fn build(b: *std.build.Builder) void {
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.setOutputDir("dist");
-    exe.linkLibC();
-    // How to make this dynamically link?
     linkLibs(exe, is_windows, is_linux);
 
+    // How to make this dynamically link?
     exe.addPackage(.{
         .name = "sdk",
         .path = "src/main_lib.zig",
