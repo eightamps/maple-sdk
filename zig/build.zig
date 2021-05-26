@@ -100,10 +100,10 @@ pub fn build(b: *std.build.Builder) void {
 
     // TODO(lbayes): Figure out how to build platform-specific test
     // containers.
-    tests.addPackage(.{
-        .name = "win32",
-        .path = "vendor/win32/win32.zig",
-    });
+    // tests.addPackage(.{
+    // .name = "win32",
+    // .path = "vendor/win32/win32.zig",
+    // });
 
     linkLibs(tests, is_windows, is_linux);
     // QUESTION(lbayes): How do I include multiple files for this test run?
