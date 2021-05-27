@@ -1,5 +1,5 @@
 const std = @import("std");
-const platform = @import("platform.zig");
+const audible = @import("audible.zig");
 const phony_client = @import("phony_client.zig");
 
 const print = std.debug.print;
@@ -12,7 +12,7 @@ pub fn main() !u8 {
     // const client = try PhonyClient.open();
     // defer client.close();
 
-    var api = platform.AudioApi{};
+    var api = audible.AudioApi{};
     const device = api.getDefaultDevice() catch |err| {
         print(">>>>>>>>> ERROR: {s}\n", .{err});
         return 1;

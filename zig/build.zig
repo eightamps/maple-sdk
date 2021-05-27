@@ -13,19 +13,26 @@ fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) vo
     if (is_linux) {
         step.linkSystemLibrary("usb-1.0");
         step.linkSystemLibrary("pulse");
+        step.addPackage(.{
+            .name = "audible",
+            .path = "src/os/nix/audible.zig",
+        });
     } else if (is_windows) {
+        // Configure libusb
         step.addIncludeDir("vendor/libusb-win32/include");
-
         // TODO(lbayes): Copy the files found in here to dist/ when building
         step.addLibPath("vendor/libusb-win32/VS2019/MS64/dll");
         step.linkSystemLibraryName("libusb-1.0");
 
-        step.linkSystemLibrary("uuid");
-        step.linkSystemLibrary("ole32");
+        // Get win32 zig packages
         step.addPackage(.{
             .name = "win32",
             .path = "vendor/win32/win32.zig",
         });
+
+        // step.linkSystemLibrary("uuid");
+        // step.linkSystemLibrary("ole32");
+
     } else {
         // is other
         print("link step for 'other'\n", .{});
