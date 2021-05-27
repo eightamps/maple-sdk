@@ -29,10 +29,6 @@ fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) vo
             .name = "win32",
             .path = "vendor/win32/win32.zig",
         });
-
-        // step.linkSystemLibrary("uuid");
-        // step.linkSystemLibrary("ole32");
-
     } else {
         // is other
         print("link step for 'other'\n", .{});
