@@ -1,4 +1,8 @@
 const std = @import("std");
+const audible = @import("../../audible_all.zig");
+
+const Allocator = std.mem.Allocator;
+const print = std.debug.print;
 
 const DEFAULT_DEVICE_NAME = "[unknown]";
 
@@ -11,27 +15,24 @@ pub fn info() []const u8 {
 }
 
 pub const AudioApi = struct {
-    is_initialized: bool = false,
+    allocator: *Allocator,
 
-    fn init(self: *AudioApi) !void {}
+    pub fn init(a: *Allocator) !*AudioApi {
+        const instance = try a.create(AudioApi);
+        instance.* = AudioApi{
+            .allocator = a,
+        };
+        return instance;
+    }
 
-    pub fn deinit(self: *AudioApi) void {}
+    pub fn deinit(self: *AudioApi) void {
+        print("AudibleApi.deinit called\n", .{});
+        self.allocator.destroy(self);
+    }
 
     pub fn getDefaultDevice(self: *AudioApi) !AudioDevice {
-        if (!self.is_initialized) {
-            try self.init();
-        }
-
         std.debug.print("Linux getDefaultDevice()\n", .{});
-        //var enumerator: ?mm.IMMDeviceEnumerator = null;
-
-        //var status: mm.HRESULT = mm.CoCreateInstance(&mm.CLSID_MMDeviceEnumerator, null, mm.CLSCTX_ALL, &mm.IID_IMMDeviceEnumerator, @ptrCast([*c]?*c_void, &enumerator));
-        // EXIT_ON_ERROR(status, "CoCreateInstance with p_enumerator failed");
-
-        // status = IMMDeviceEnumerator_GetDefaultAudioEndpoint(enumerator, datadir,
-        //     role, device);
-        // EXIT_ON_ERROR(status, "GetDefaultAudioEndpoint failed");
-        // log_info("get_default_device returned");
-        return AudioDevice{};
+        var device = self.allocator.alloc(AudioDevice, 1);
+        return device;
     }
 };

@@ -1,4 +1,5 @@
 const std = @import("std");
+const audible = @import("../../audible_all.zig");
 const win32 = @import("win32");
 
 const fmt = std.fmt;
