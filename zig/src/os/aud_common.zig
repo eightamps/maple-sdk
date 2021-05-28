@@ -1,10 +1,11 @@
 const std = @import("std");
-// const platform = @import("platform.zig");
 const testing = std.testing;
 
 const ASI_TELEPHONE: []const u8 = "ASI Telephone";
 const WAY2CALL: []const u8 = "Way2Call";
-const DEFAULT_EXCLUDES = ASI_TELEPHONE ++ "|" ++ WAY2CALL;
+const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL ++ "|" ++ "hda-dsp";
+// const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL;
+const EMPTY_MATCHES: []const u8 = "";
 
 pub const Direction = enum(u8) {
     Capture = 0,
@@ -18,8 +19,8 @@ pub const Role = enum(u8) {
 };
 
 pub const Matcher = struct {
-    role: Role = Role.Communication,
     direction: Direction,
+    role: Role = Role.Communication,
     is_default: bool = false,
     // NOTE(lbayes): I'd prefer these to either be arrays of strings or even
     // better, Regex. Unfortunately, I don't know how to declare an optional
@@ -27,8 +28,8 @@ pub const Matcher = struct {
     // seems the Regex library is still under development (for now). Just
     // going to make it a post-delimited input string that gets split when
     // used.
-    matches: ?[]const u8 = null,
-    not_matches: ?[]const u8 = null,
+    matches: []const u8,
+    not_matches: []const u8,
 };
 
 // DefaultCapture is a configured Matcher that will not allow devices with
@@ -37,6 +38,7 @@ pub const DefaultCapture = Matcher{
     .role = Role.Communication,
     .direction = Direction.Capture,
     .is_default = true,
+    .matches = EMPTY_MATCHES,
     .not_matches = DEFAULT_EXCLUDES,
 };
 
@@ -46,6 +48,7 @@ pub const DefaultRender = Matcher{
     .role = Role.Communication,
     .direction = Direction.Render,
     .is_default = true,
+    .matches = EMPTY_MATCHES,
     .not_matches = DEFAULT_EXCLUDES,
 };
 
@@ -85,8 +88,4 @@ test "DefaultRender" {
     try testing.expect(DefaultRender.direction == Direction.Render);
     try testing.expect(DefaultRender.is_default == true);
     try testing.expectEqual(DefaultRender.not_matches, ASI_TELEPHONE ++ "|" ++ WAY2CALL);
-}
-
-test "AudioDevice empty creation" {
-    const a = AudioDevice{};
 }

@@ -13,6 +13,12 @@ fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) vo
     if (is_linux) {
         step.linkSystemLibrary("usb-1.0");
         step.linkSystemLibrary("pulse");
+
+        // Link vendor/libsoundio
+        step.addIncludeDir("vendor/libsoundio/include");
+        step.addLibPath("vendor/libsoundio/");
+        step.linkSystemLibraryName("soundio");
+
         step.addPackage(.{
             .name = "audible",
             .path = "src/os/nix/audible.zig",

@@ -1,9 +1,13 @@
 const std = @import("std");
+const common = @import("../aud_common.zig");
 const win32 = @import("win32");
 
+const Allocator = std.mem.Allocator;
 const fmt = std.fmt;
+const heap = std.heap;
 const mem = std.mem;
 const print = std.debug.print;
+const expectEqual = std.testing.expectEqual;
 
 usingnamespace win32.media.audio.core_audio;
 usingnamespace win32.media.audio.direct_music;
@@ -35,36 +39,42 @@ fn printU16String(ptr: [*:0]const u16) []u8 {
     return smaller;
 }
 
-pub const AudioDevice = struct {
-    name: []const u8 = "[unknown]",
-};
-
 pub fn info() []const u8 {
     return "WINDOWS";
 }
 
-pub const AudioApi = struct {
-    is_initialized: bool = false,
+pub const Device = struct {
+    allocator: *Allocator,
+    name: []const u8 = "[unknown]",
 
-    fn init(self: *AudioApi) !void {
-        {
-            const status = CoInitialize(null);
-            if (FAILED(status)) {
-                print("CoInitialize FAILED: {d}\n", .{status});
-                return error.Fail;
-            }
+    pub fn deinit(self: *Device) void {
+        self.allocator.destroy(self);
+    }
+};
+
+pub const Devices = struct {
+    allocator: *Allocator,
+
+    pub fn init(a: *Allocator) !*Devices {
+        const instance = try a.create(Devices);
+        instance.* = Devices{
+            .allocator = a,
+        };
+
+        const status = CoInitialize(null);
+        if (FAILED(status)) {
+            print("CoInitialize FAILED: {d}\n", .{status});
+            return error.Fail;
         }
+        return instance;
     }
 
-    pub fn deinit(self: *AudioApi) void {
+    pub fn deinit(self: *Devices) void {
         CoUninitialize();
+        self.allocator.destroy(self);
     }
 
-    pub fn getDefaultDevice(self: *AudioApi) !AudioDevice {
-        if (!self.is_initialized) {
-            try self.init();
-        }
-
+    pub fn getDevice(self: *Devices, matcher: common.Matcher) !*Device {
         var enumerator: *IMMDeviceEnumerator = undefined;
         {
             const status = CoCreateInstance(CLSID_MMDeviceEnumerator, null, CLSCTX_ALL, IID_IMMDeviceEnumerator, @ptrCast(**c_void, &enumerator));
@@ -196,7 +206,9 @@ pub const AudioApi = struct {
         var foo = printU16String(friendly_name_ptr);
         print("FOOOOOOOOOOOOOOOOOOOOOOOOO: {s}\n", .{foo});
 
-        var audio_device = AudioDevice{
+        const audio_device = try self.allocator.create(Device);
+        audio_device.* = Device{
+            .allocator = self.allocator,
             .name = foo,
         };
         // mem.copy(u8, audio_device.name, friendly_name_ptr);
@@ -220,3 +232,28 @@ pub const AudioApi = struct {
 //     }
 //     return 1;
 // }
+//
+
+test "Win Native.Devices is instantiable" {
+    const devices = try Devices.init(std.testing.allocator);
+    defer devices.deinit();
+}
+
+test "Win Native.Devices info" {
+    const name = info();
+    try expectEqual(name, "LINUX");
+}
+
+test "Win Native.Default device" {
+    const devices = try Devices.init(std.testing.allocator);
+    defer devices.deinit();
+
+    const device = try devices.getDevice(common.DefaultCapture);
+    defer device.deinit();
+}
+
+test "utf16 name to u8" {
+    const name = "¬XuΣa█╠╡";
+
+    try expectEqual([]u8, "abcd", "efgh");
+}

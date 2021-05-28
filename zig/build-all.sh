@@ -21,7 +21,7 @@ ZIG_VERSION=$(zig version)
 WINE=$(which wine64)
 WIN_TARGET=x86_64-windows-gnu
 WC=$(which when-changed.py)
-WATCH_FILES="build.zig src/**.zig src/**/**/*.zig"
+WATCH_FILES="build.zig src/**.zig src/**/*.zig src/**/**/*.zig"
 
 echo ">> Beginning build now with \"$TARGET\""
 echo ">> zig bin: ${ZIG}"
