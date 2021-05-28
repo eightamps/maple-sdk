@@ -24,14 +24,6 @@ fn index_failed(status: c_int) bool {
     return status < 0;
 }
 
-fn contains(haystack: [*c]u8, needle: ?[]const u8) bool {
-    // TODO(lbayes): Convert [*c]u8 to ?[]const u8 for std lib
-    // comparison.
-
-    return false;
-    // return mem.indexOf([]const u8, haystack, needle) >= 0;
-}
-
 pub fn info() []const u8 {
     return "LINUX";
 }
@@ -113,15 +105,18 @@ pub const Devices = struct {
         if (matcher.is_default) {
             const index = try self.getDefaultRenderDeviceIndex();
             const sio_device = try self.getSioRenderDeviceByIndex(index);
-            print(">>>>>>>>>>>>> name: {s}\n", .{sio_device.name});
+            const device_name_cs = @ptrCast([*:0]const u8, sio_device.name);
+            const device_name = device_name_cs[0..mem.len(device_name_cs)];
+            print(">>>>>>>>>>>>> name: {s}\n", .{device_name});
             var itr = mem.split(matcher.not_matches, "|");
             {
-                var name = itr.next();
-                const device_name = sio_device.name;
                 print("-----------\n", .{});
+                var name = itr.next();
+                print("device_name: {s}\n", .{device_name});
                 while (name != null) : (name = itr.next()) {
                     print("device_name: \"{s}\" vs name: \"{s}\"\n", .{ device_name, name });
-                    if (contains(device_name, name)) {
+                    const unwrapped = name orelse continue;
+                    if (mem.indexOf(u8, device_name, unwrapped) != null) {
                         print("DEVICE NAME IS NOT VALID!\n", .{});
                         return error.Fail;
                     }

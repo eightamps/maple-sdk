@@ -3,8 +3,8 @@ const testing = std.testing;
 
 const ASI_TELEPHONE: []const u8 = "ASI Telephone";
 const WAY2CALL: []const u8 = "Way2Call";
-const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL ++ "|" ++ "hda-dsp";
-// const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL;
+const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL;
+// const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL ++ "|" ++ "hda-dsp";
 const EMPTY_MATCHES: []const u8 = "";
 
 pub const Direction = enum(u8) {
@@ -59,26 +59,18 @@ test "Device Instantiated" {
 }
 
 test "Matcher Capture & default" {
-    const m = Matcher{
-        .direction = Direction.Capture,
-        .matches = EMPTY_MATCHES,
-        .not_matches = EMPTY_MATCHES,
-    };
+    const m = Matcher{ .direction = Direction.Capture };
     try testing.expectEqual(m.direction, Direction.Capture);
-    try testing.expectEqual(m.role, Role.Communication);
 
     // Verify default values:
     try testing.expectEqual(m.is_default, false);
-    try testing.expectEqual(m.matches, EMPTY_MATCHES);
-    try testing.expectEqual(m.not_matches, EMPTY_MATCHES);
+    try testing.expectEqual(m.role, Role.Communication);
+    try testing.expectEqual(m.matches, null);
+    try testing.expectEqual(m.not_matches, null);
 }
 
 test "Matcher Render" {
-    const m = Matcher{
-        .direction = Direction.Render,
-        .matches = EMPTY_MATCHES,
-        .not_matches = EMPTY_MATCHES,
-    };
+    const m = Matcher{ .direction = Direction.Render };
     try testing.expectEqual(m.direction, Direction.Render);
 }
 
@@ -88,12 +80,12 @@ test "DefaultCapture" {
     try testing.expect(DefaultCapture.role == Role.Communication);
     try testing.expect(DefaultCapture.direction == Direction.Capture);
     try testing.expect(DefaultCapture.is_default == true);
-    try testing.expectEqual(DefaultCapture.not_matches, DEFAULT_EXCLUDES);
+    try testing.expectEqual(DefaultCapture.not_matches, ASI_TELEPHONE ++ "|" ++ WAY2CALL);
 }
 
 test "DefaultRender" {
     try testing.expect(DefaultRender.role == Role.Communication);
     try testing.expect(DefaultRender.direction == Direction.Render);
     try testing.expect(DefaultRender.is_default == true);
-    try testing.expectEqual(DefaultRender.not_matches, DEFAULT_EXCLUDES);
+    try testing.expectEqual(DefaultRender.not_matches, ASI_TELEPHONE ++ "|" ++ WAY2CALL);
 }
