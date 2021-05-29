@@ -59,18 +59,26 @@ test "Device Instantiated" {
 }
 
 test "Matcher Capture & default" {
-    const m = Matcher{ .direction = Direction.Capture };
+    const m = Matcher{
+        .direction = Direction.Capture,
+        .matches = EMPTY_MATCHES,
+        .not_matches = EMPTY_MATCHES,
+    };
     try testing.expectEqual(m.direction, Direction.Capture);
 
     // Verify default values:
     try testing.expectEqual(m.is_default, false);
     try testing.expectEqual(m.role, Role.Communication);
-    try testing.expectEqual(m.matches, null);
-    try testing.expectEqual(m.not_matches, null);
+    try testing.expectEqual(m.matches, EMPTY_MATCHES);
+    try testing.expectEqual(m.not_matches, EMPTY_MATCHES);
 }
 
 test "Matcher Render" {
-    const m = Matcher{ .direction = Direction.Render };
+    const m = Matcher{
+        .direction = Direction.Render,
+        .matches = EMPTY_MATCHES,
+        .not_matches = EMPTY_MATCHES,
+    };
     try testing.expectEqual(m.direction, Direction.Render);
 }
 
