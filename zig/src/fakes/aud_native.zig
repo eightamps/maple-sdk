@@ -1,12 +1,6 @@
 const std = @import("std");
 const common = @import("../aud_common.zig");
 
-const sio = @cImport({
-    @cInclude("soundio/soundio.h");
-});
-
-usingnamespace sio;
-
 const Allocator = std.mem.Allocator;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
@@ -16,16 +10,8 @@ const print = std.debug.print;
 
 const DEFAULT_DEVICE_NAME = "[unknown]";
 
-fn failed(status: c_int) bool {
-    return status != 0;
-}
-
-fn index_failed(status: c_int) bool {
-    return status < 0;
-}
-
 pub fn info() []const u8 {
-    return "LINUX";
+    return "TEST";
 }
 
 pub const Device = struct {
@@ -40,37 +26,10 @@ pub const Device = struct {
 
 pub const Devices = struct {
     allocator: *Allocator,
-    soundio: *SoundIo,
-    ring_buffer: *SoundIoRingBuffer = undefined,
+    fake_devices: []const Device,
 
     pub fn init(a: *Allocator) !*Devices {
         const instance = try a.create(Devices);
-
-        const soundio = soundio_create();
-        if (soundio == null) {
-            print("soundio failed to allocate\n", .{});
-            return error.Fail;
-        }
-        print("soundio successfully created context\n", .{});
-
-        {
-            const status = soundio_connect_backend(soundio, @intToEnum(sio.SoundIoBackend, sio.SoundIoBackendPulseAudio));
-            if (failed(status)) {
-                print("soundio failed to connect to backend\n", .{});
-                // Free the soundio object before exiting
-                soundio_destroy(soundio);
-                return error.Fail;
-            }
-        }
-
-        sio.soundio_flush_events(soundio);
-        print("soundio flushed events\n", .{});
-
-        instance.* = Devices{
-            .allocator = a,
-            .soundio = soundio,
-        };
-
         return instance;
     }
 

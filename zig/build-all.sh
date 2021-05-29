@@ -5,7 +5,7 @@ set -eo pipefail
 # Yo dawg! I heard you like build scripts, so I made a build
 # script for your build script!
 #
-# ¯\_(⊙_ʖ⊙)_/¯
+# ¯\_(ツ)_/¯
 #
 # TODO(lbayes): Figure out a cleanish way to get something like
 # what this shell script provides from build.zig.
@@ -47,25 +47,31 @@ if [[ $TARGET == "clean" ]]; then
   exit 0
 fi
 
-echo ">> Building and running Linux (Host) tests"
-${ZIG} build test
 
 if [[ $TARGET == "test" ]]; then
-  echo ">> Exiting after running Host tests"
+	echo ">> Building and running Linux (Host) tests"
+	${ZIG} build test
   exit $?
 fi
 
-echo ">> Build Linux (Host) target"
-${ZIG} build
+if [[ $TARGET == "all" ]]; then
+	echo ">> Build Linux (Host) target"
+	${ZIG} build
 
-echo ">> Run Linux target"
-./dist/console
+	echo ">> Run Linux target"
+	./dist/console
 
-echo ">> Build Windows target"
-${ZIG} build -Dtarget=${WIN_TARGET}
+	echo ">> Build Windows target"
+	${ZIG} build -Dtarget=${WIN_TARGET}
 
-echo ">> Run Windows target"
-${WINE} dist/console.exe
+	echo ">> Run Windows target"
+	${WINE} dist/console.exe
 
-echo ">> List generated artifacts"
-ls -l dist
+	echo ">> List generated artifacts"
+	ls -l dist
+
+	exit $?
+fi
+
+echo ">> ./build-all.sh requires a task argument"
+
