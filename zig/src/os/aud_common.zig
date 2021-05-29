@@ -59,18 +59,26 @@ test "Device Instantiated" {
 }
 
 test "Matcher Capture & default" {
-    const m = Matcher{ .direction = Direction.Capture };
+    const m = Matcher{
+        .direction = Direction.Capture,
+        .matches = EMPTY_MATCHES,
+        .not_matches = EMPTY_MATCHES,
+    };
     try testing.expectEqual(m.direction, Direction.Capture);
+    try testing.expectEqual(m.role, Role.Communication);
 
     // Verify default values:
     try testing.expectEqual(m.is_default, false);
-    try testing.expectEqual(m.role, Role.Communication);
-    try testing.expectEqual(m.matches, null);
-    try testing.expectEqual(m.not_matches, null);
+    try testing.expectEqual(m.matches, EMPTY_MATCHES);
+    try testing.expectEqual(m.not_matches, EMPTY_MATCHES);
 }
 
 test "Matcher Render" {
-    const m = Matcher{ .direction = Direction.Render };
+    const m = Matcher{
+        .direction = Direction.Render,
+        .matches = EMPTY_MATCHES,
+        .not_matches = EMPTY_MATCHES,
+    };
     try testing.expectEqual(m.direction, Direction.Render);
 }
 
@@ -80,12 +88,12 @@ test "DefaultCapture" {
     try testing.expect(DefaultCapture.role == Role.Communication);
     try testing.expect(DefaultCapture.direction == Direction.Capture);
     try testing.expect(DefaultCapture.is_default == true);
-    try testing.expectEqual(DefaultCapture.not_matches, ASI_TELEPHONE ++ "|" ++ WAY2CALL);
+    try testing.expectEqual(DefaultCapture.not_matches, DEFAULT_EXCLUDES);
 }
 
 test "DefaultRender" {
     try testing.expect(DefaultRender.role == Role.Communication);
     try testing.expect(DefaultRender.direction == Direction.Render);
     try testing.expect(DefaultRender.is_default == true);
-    try testing.expectEqual(DefaultRender.not_matches, ASI_TELEPHONE ++ "|" ++ WAY2CALL);
+    try testing.expectEqual(DefaultRender.not_matches, DEFAULT_EXCLUDES);
 }
