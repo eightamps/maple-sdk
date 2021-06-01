@@ -1,10 +1,11 @@
 const std = @import("std");
 const common = @import("os/aud_common.zig");
+const fake_native = @import("os/fake/aud_native.zig");
 
 const target_file = switch (std.Target.current.os.tag) {
     .windows => "os/win/aud_native.zig",
     .linux => "os/nix/aud_native.zig",
-    else => "fakes/aud_native.zig",
+    else => "os/fake/aud_native.zig",
 };
 
 const Allocator = std.mem.Allocator;
@@ -19,6 +20,48 @@ pub usingnamespace common;
 
 pub fn info() []const u8 {
     return native.info();
+}
+
+pub fn Devices2(comptime T: type, comptime R: type) type {
+    return struct {
+        allocator: *Allocator,
+        impl: *T,
+
+        pub fn init(a: *Allocator) !*Devices2(T, R) {
+            const instance = try a.create(Devices2(T, R));
+            const impl = try T.init(a);
+
+            instance.* = Devices2(T, R){
+                .allocator = a,
+                .impl = impl,
+            };
+            print("Devices2.init called!\n", .{});
+            return instance;
+        }
+
+        pub fn deinit(self: *Devices2(T, R)) void {
+            self.impl.deinit();
+            self.allocator.destroy(self);
+        }
+    };
+}
+
+test "Devices2 with current platform" {
+    print("---------------\n", .{});
+    const api = try Devices2(native.Devices, native.Device).init(std.testing.allocator);
+    defer api.deinit();
+    print("---------------\n", .{});
+}
+
+test "Devices2 with fake implementation" {
+    const api = try Devices2(fake_native.Devices, fake_native.Device).init(std.testing.allocator);
+    defer api.deinit();
+    print("---------------\n", .{});
+}
+
+test "Devices2 with fake finds valid device" {
+    const api = try Devices2(fake_native.Devices, fake_native.Device).init(std.testing.allocator);
+    defer api.deinit();
 }
 
 pub const Devices = struct {
