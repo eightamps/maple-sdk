@@ -8,11 +8,33 @@ const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL;
 const EMPTY_MATCHES: []const u8 = "";
 
 pub const Device = struct {
-    id: []const u8,
+    id: u16,
     name: []const u8,
     direction: Direction,
+    is_default: bool = false,
     // sample_rate: u32,
     // channel_count: u8,
+
+    pub fn equals(self: *Device, d: *Device) bool {
+        return self.id == d.id and
+            self.name == d.name and
+            self.direction == d.direction and
+            self.is_default == d.is_default;
+    }
+};
+
+pub const NullRenderDevice = Device{
+    .id = 254,
+    .name = "[NullRenderDevice]",
+    .direction = Direction.Render,
+    .is_default = false,
+};
+
+pub const NullCaptureDevice = Device{
+    .id = 255,
+    .name = "[NullCaptureDevice]",
+    .direction = Direction.Capture,
+    .is_default = false,
 };
 
 pub const Direction = enum(u8) {

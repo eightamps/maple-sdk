@@ -9,6 +9,7 @@ const target_file = switch (std.Target.current.os.tag) {
 };
 
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const heap = std.heap;
@@ -42,21 +43,73 @@ pub fn Devices2(comptime T: type) type {
             self.delegate.deinit();
             self.allocator.destroy(self);
         }
+
+        pub fn getDefaultCaptureDevice(self: *Devices2(T)) !Device {
+            return self.delegate.getDefaultCaptureDevice();
+        }
     };
 }
 
 const Devices2Type = Devices2(native.Devices);
 const FakeDevices = Devices2(fake.Devices);
 
-fn createTestFixture() !*FakeDevices {
-    const delegate = try fake.Devices.init(std.testing.allocator);
-    return FakeDevices.init(std.testing.allocator, delegate);
+fn createFakeDevices(a: *Allocator) ![]Device {
+    var devices = [_]Device{
+        Device{
+            .id = 0,
+            .name = "Array Microphone",
+            .is_default = true,
+            .direction = Direction.Capture,
+        },
+        Device{
+            .id = 1,
+            .name = "Built-in Speakers",
+            .is_default = true,
+            .direction = Direction.Render,
+        },
+        Device{
+            .id = 2,
+            .name = "Headphones",
+            .direction = Direction.Render,
+        },
+        Device{
+            .id = 3,
+            .name = "Way2Call",
+            .direction = Direction.Render,
+        },
+        Device{
+            .id = 4,
+            .name = "Way2Call",
+            .direction = Direction.Capture,
+        },
+        Device{
+            .id = 5,
+            .name = "ASI Telephone",
+            .direction = Direction.Render,
+        },
+        Device{
+            .id = 6,
+            .name = "ASI Telephone",
+            .direction = Direction.Capture,
+        },
+    };
+
+    return &devices;
 }
 
 test "Devices2 with current platform" {
     print("---------------\n", .{});
-    const api = try createTestFixture();
+    const alloc = std.testing.allocator;
+    var fake_devices = try createFakeDevices(alloc);
+    defer alloc.free(fake_devices);
+
+    const delegate = try fake.Devices.init_with_devices(alloc, fake_devices);
+    const api = try FakeDevices.init(alloc, delegate);
     print("api.delegate: {*}\n", .{api.delegate});
+
+    var default_capture = try api.getDefaultCaptureDevice();
+    // try expect(default_capture != null);
+    try expectEqual(default_capture.name, "sdf");
     defer api.deinit();
     print("---------------\n", .{});
 }

@@ -18,12 +18,22 @@ pub fn info() []const u8 {
 
 pub const Devices = struct {
     allocator: *Allocator,
-    fake_devices: []const Device = undefined,
+    devices: []Device,
 
     pub fn init(a: *Allocator) !*Devices {
         const instance = try a.create(Devices);
         instance.* = Devices{
             .allocator = a,
+            .devices = undefined,
+        };
+        return instance;
+    }
+
+    pub fn init_with_devices(a: *Allocator, devices: []Device) !*Devices {
+        const instance = try a.create(Devices);
+        instance.* = Devices{
+            .allocator = a,
+            .devices = devices,
         };
         return instance;
     }
@@ -40,6 +50,20 @@ pub const Devices = struct {
             .direction = direction,
         };
         return device;
+    }
+
+    pub fn getDefaultCaptureDevice(self: *Devices) !Device {
+        var i: u16 = 0;
+        while (i < self.devices.len) : (i += 1) {
+            var device = self.devices[i];
+            // print("CHECKING DEVICE: {s}\n", .{device});
+            if (device.is_default and device.direction == Direction.Capture) {
+                // print(">>> RETURNING DEVICE: {s}\n", .{device});
+                return device;
+            }
+        }
+
+        return NullCaptureDevice;
     }
 
     pub fn getRenderDeviceByIndex(self: *Devices, index: c_int) !*Device {
