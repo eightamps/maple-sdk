@@ -7,6 +7,14 @@ const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL;
 // const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL ++ "|" ++ "hda-dsp";
 const EMPTY_MATCHES: []const u8 = "";
 
+pub const Device = struct {
+    id: []const u8,
+    name: []const u8,
+    direction: Direction,
+    // sample_rate: u32,
+    // channel_count: u8,
+};
+
 pub const Direction = enum(u8) {
     Capture = 0,
     Render,

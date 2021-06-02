@@ -1,6 +1,6 @@
 const std = @import("std");
 const common = @import("os/aud_common.zig");
-const fake_native = @import("os/fake/aud_native.zig");
+const fake = @import("os/fake/aud_native.zig");
 
 const target_file = switch (std.Target.current.os.tag) {
     .windows => "os/win/aud_native.zig",
@@ -22,47 +22,61 @@ pub fn info() []const u8 {
     return native.info();
 }
 
-pub fn Devices2(comptime T: type, comptime R: type) type {
+pub fn Devices2(comptime T: type) type {
     return struct {
         allocator: *Allocator,
-        impl: *T,
+        delegate: *T,
 
-        pub fn init(a: *Allocator) !*Devices2(T, R) {
-            const instance = try a.create(Devices2(T, R));
-            const impl = try T.init(a);
+        pub fn init(a: *Allocator, delegate: *T) !*Devices2(T) {
+            const instance = try a.create(Devices2(T));
 
-            instance.* = Devices2(T, R){
+            instance.* = Devices2(T){
                 .allocator = a,
-                .impl = impl,
+                .delegate = delegate,
             };
             print("Devices2.init called!\n", .{});
             return instance;
         }
 
-        pub fn deinit(self: *Devices2(T, R)) void {
-            self.impl.deinit();
+        pub fn deinit(self: *Devices2(T)) void {
+            self.delegate.deinit();
             self.allocator.destroy(self);
         }
     };
 }
 
+const Devices2Type = Devices2(native.Devices);
+const FakeDevices = Devices2(fake.Devices);
+
+fn createTestFixture() !*FakeDevices {
+    const delegate = try fake.Devices.init(std.testing.allocator);
+    return FakeDevices.init(std.testing.allocator, delegate);
+}
+
 test "Devices2 with current platform" {
     print("---------------\n", .{});
-    const api = try Devices2(native.Devices, native.Device).init(std.testing.allocator);
+    const api = try createTestFixture();
+    print("api.delegate: {*}\n", .{api.delegate});
     defer api.deinit();
     print("---------------\n", .{});
 }
 
-test "Devices2 with fake implementation" {
-    const api = try Devices2(fake_native.Devices, fake_native.Device).init(std.testing.allocator);
-    defer api.deinit();
-    print("---------------\n", .{});
-}
+// test "Devices2 with fake implementation" {
+//     const alloc = std.testing.allocator;
+//     const fake_devices = fake.Devices.init(alloc);
+//     const FakeNativeDevice = Devices2(fake.Device);
+//     const api = try FakeNativeDevice.init(alloc, fake_devices);
+//     defer api.deinit();
+//     print("---------------\n", .{});
+// }
 
-test "Devices2 with fake finds valid device" {
-    const api = try Devices2(fake_native.Devices, fake_native.Device).init(std.testing.allocator);
-    defer api.deinit();
-}
+// test "Devices2 with fake finds valid device" {
+//     const alloc = std.testing.allocator;
+//     const fake_devices = fake.Devices.init(alloc);
+//     const FakeNativeDevice = Devices2(fake.Device);
+//     var api = try FakeNativeDevice.init(alloc, fake_devices);
+//     defer api.deinit();
+// }
 
 pub const Devices = struct {
     allocator: *Allocator,
