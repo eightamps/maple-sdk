@@ -18,11 +18,6 @@ fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) vo
         step.addIncludeDir("vendor/libsoundio/include");
         step.addLibPath("vendor/libsoundio/");
         step.linkSystemLibraryName("soundio");
-
-        step.addPackage(.{
-            .name = "audible",
-            .path = "src/os/nix/audible.zig",
-        });
     } else if (is_windows) {
         // Configure libusb
         step.addIncludeDir("vendor/libusb-win32/include");
