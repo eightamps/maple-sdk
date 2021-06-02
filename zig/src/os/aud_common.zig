@@ -10,7 +10,7 @@ const EMPTY_MATCHES: []const u8 = "";
 pub const Device = struct {
     id: u16,
     name: []const u8,
-    direction: Direction,
+    direction: Direction = Direction.Render,
     is_default: bool = false,
     // sample_rate: u32,
     // channel_count: u8,
