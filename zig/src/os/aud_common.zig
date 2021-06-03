@@ -1,11 +1,14 @@
 const std = @import("std");
 const testing = std.testing;
 
-const ASI_TELEPHONE: []const u8 = "ASI Telephone";
-const WAY2CALL: []const u8 = "Way2Call";
 const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL;
 // const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL ++ "|" ++ "hda-dsp";
 const EMPTY_MATCHES: []const u8 = "";
+
+pub const ASI_TELEPHONE: []const u8 = "ASI Telephone";
+pub const WAY2CALL: []const u8 = "Way2Call";
+pub const NULL_RENDER_DEVICE_NAME = "[NullRenderDevice]";
+pub const NULL_CAPTURE_DEVICE_NAME = "[NullCaptureDevice]";
 
 pub const Device = struct {
     id: u16,
@@ -23,16 +26,38 @@ pub const Device = struct {
     }
 };
 
-pub const NullRenderDevice = Device{
+pub fn isRenderDevice(d: Device) bool {
+    return d.direction == Direction.Render;
+}
+
+pub fn isCaptureDevice(d: Device) bool {
+    return d.direction == Direction.Capture;
+}
+
+pub fn isDefaultDevice(d: Device) bool {
+    return d.is_default;
+}
+
+pub const DeviceFilter = fn (Device) bool;
+
+//pub const captureDevicesFilter = []DeviceFilter{
+//     isCaptureDevice,
+// };
+//
+// pub const renderDevicesFilter = []DeviceFilter{
+//     isRenderDevice,
+// };
+
+pub var NullRenderDevice = Device{
     .id = 254,
-    .name = "[NullRenderDevice]",
+    .name = NULL_RENDER_DEVICE_NAME,
     .direction = Direction.Render,
     .is_default = false,
 };
 
-pub const NullCaptureDevice = Device{
+pub var NullCaptureDevice = Device{
     .id = 255,
-    .name = "[NullCaptureDevice]",
+    .name = NULL_CAPTURE_DEVICE_NAME,
     .direction = Direction.Capture,
     .is_default = false,
 };

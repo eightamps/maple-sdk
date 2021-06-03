@@ -1,5 +1,6 @@
 const std = @import("std");
 const common = @import("../aud_common.zig");
+const helpers = @import("../../helpers.zig");
 
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
@@ -15,9 +16,7 @@ const print = std.debug.print;
 usingnamespace common;
 
 const DEFAULT_DEVICE_NAME = "[unknown]";
-
-const WAY2CALL_SUBSTR = "Way2Call";
-const ASI_TEL_SUBSTR = "ASI Telephone";
+const MAX_DEVICE_COUNT: usize = 128;
 
 const InitType = enum(u8) {
     Path,
@@ -29,8 +28,6 @@ const JsonData = struct {
     capture_devices: []Device,
 };
 
-const DeviceFilter = fn (device: Device) bool;
-
 pub fn info() []const u8 {
     return "TEST";
 }
@@ -39,21 +36,6 @@ pub const Devices = struct {
     allocator: *Allocator,
     devices: []Device,
     initialized_with: InitType,
-
-    fn includeAll(device: Device) bool {
-        return true;
-    }
-
-    // Filter device names to ensure they do not contain (case-insensitive) either
-    // "Way2Call" or "ASI Telephone". This is used by the default device requests
-    // to guarantee we never attempt to send or receive host-side user audio through
-    // these known-bad devices, which Microsoft insists on forcing into the default
-    // position(s).
-    fn filterW2CAndAsi(device: Device) bool {
-        if (ascii.indexOfIgnoreCasePos(device.name, 0, WAY2CALL_SUBSTR) != null) return false;
-        if (ascii.indexOfIgnoreCasePos(device.name, 0, ASI_TEL_SUBSTR) != null) return false;
-        return true;
-    }
 
     fn loadFakeDevices(a: *Allocator, path: []const u8) ![]Device {
         const f = try fs.cwd().openFile(path, .{ .read = true });
@@ -104,64 +86,53 @@ pub const Devices = struct {
         self.allocator.destroy(self);
     }
 
-    fn getFilteredDevicesByDirection(self: *Devices, result: *ArrayList(*Device), direction: Direction, filter: DeviceFilter) !void {
-        var i: u16 = 0;
-        while (i < self.devices.len) : (i += 1) {
-            const device = self.devices[i];
-            if (device.direction == direction and filter(device)) {
-                // print("device: {d} {s}\n", .{ device.id, device.name });
-                try result.append(&self.devices[i]);
-            }
-        }
-    }
-
-    fn getDefaultDeviceByDirection(self: *Devices, direction: Direction) !*Device {
-        var subset = ArrayList(*Device).init(std.testing.allocator);
-        defer subset.deinit();
-
-        try self.getFilteredDevicesByDirection(&subset, direction, filterW2CAndAsi);
-        var devices = subset.items;
-
-        if (devices.len == 0) {
-            return error.Fail;
+    pub fn getDefaultCaptureDevice(self: *Devices) !?*Device {
+        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        var filters = [_]DeviceFilter{
+            isDefaultDevice,
+            isCaptureDevice,
+        };
+        var result = helpers.filterItems(Device, self.devices, &buffer, &filters);
+        if (result.len > 0) {
+            return &result[0];
         }
 
-        var i: u16 = 0;
-        while (i < devices.len) : (i += 1) {
-            var device = devices[i];
-            if (device.is_default and device.direction == direction) {
-                return device;
-            }
+        return null;
+    }
+
+    pub fn getDefaultRenderDevice(self: *Devices) !?*Device {
+        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        var filters = [_]DeviceFilter{
+            isDefaultDevice,
+            isRenderDevice,
+        };
+        var result = helpers.filterItems(Device, self.devices, &buffer, &filters);
+        if (result.len > 0) {
+            return &result[0];
         }
 
-        return devices[0];
+        return null;
     }
 
-    pub fn getDevicesByDirection(self: *Devices, result: *ArrayList(*Device), direction: Direction) !void {
-        try self.getFilteredDevicesByDirection(result, direction, includeAll);
+    pub fn getCaptureDevices(self: *Devices, buffer: []Device) ![]Device {
+        var filters = [_]DeviceFilter{isCaptureDevice};
+        return helpers.filterItems(Device, self.devices, buffer, &filters);
     }
 
-    pub fn getRenderDevices(self: *Devices, result: *ArrayList(*Device)) !void {
-        return self.getDevicesByDirection(result, Direction.Render);
-    }
-
-    pub fn getCaptureDevices(self: *Devices, result: *ArrayList(*Device)) !void {
-        return self.getDevicesByDirection(result, Direction.Capture);
-    }
-
-    pub fn getDefaultCaptureDevice(self: *Devices) !*Device {
-        return try self.getDefaultDeviceByDirection(Direction.Capture);
-    }
-
-    pub fn getDefaultRenderDevice(self: *Devices) !*Device {
-        return try self.getDefaultDeviceByDirection(Direction.Render);
+    pub fn getRenderDevices(self: *Devices, buffer: []Device) ![]Device {
+        var filters = [_]DeviceFilter{isRenderDevice};
+        return helpers.filterItems(Device, self.devices, buffer, &filters);
     }
 
     pub fn getCaptureDeviceAt(self: *Devices, index: u16) *Device {
-        return &self.devices[index];
+        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        var result = try self.getCaptureDevices(&buffer);
+        return &result[index];
     }
 
     pub fn getRenderDeviceAt(self: *Devices, index: u16) *Device {
-        return &self.devices[index];
+        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        var result = try self.getRenderDevices(&buffer);
+        return &result[index];
     }
 };
