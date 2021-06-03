@@ -40,14 +40,6 @@ pub fn isDefaultDevice(d: Device) bool {
 
 pub const DeviceFilter = fn (Device) bool;
 
-//pub const captureDevicesFilter = []DeviceFilter{
-//     isCaptureDevice,
-// };
-//
-// pub const renderDevicesFilter = []DeviceFilter{
-//     isRenderDevice,
-// };
-
 pub var NullRenderDevice = Device{
     .id = 254,
     .name = NULL_RENDER_DEVICE_NAME,

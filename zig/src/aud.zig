@@ -64,6 +64,36 @@ pub fn Devices2(comptime T: type) type {
             self.allocator.destroy(self);
         }
 
+        // fn getDefaultDevice(self: *Devices2(T), direction: Direction) !?Device {
+        //     const getDefault = if (direction == Direction.Capture) self.delegate.getDefaultCaptureDevice else self.delegate.getDefaultRenderDevice;
+        //     const getDevices = if (direction == Direction.Capture) self.delegate.getCaptureDevices else self.delegate.getRenderDevices;
+        //     const capture_device = if (direction == Direction.Capture) NullCaptureDevice else NullRenderDevice;
+
+        //     // Ask the native implementation for it's default device
+        //     const opt_device = try getDefault();
+        //     if (opt_device != null) {
+        //         // TODO(lbayes): Figure out how to make ?* into * without a second variable.
+        //         var device = opt_device orelse &capture_device;
+        //         if (isValidDefaultDeviceName(device.*)) {
+        //             // If the device is a valid default device, return it
+        //             return device.*;
+        //         }
+        //     }
+
+        //     // The native default device was not a valid device, get the next candidate.
+        //     var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        //     var devices = try getDevices(&buffer);
+        //     var filters = [_]DeviceFilter{
+        //         isValidDefaultDeviceName,
+        //     };
+
+        //     return helpers.firstItemMatching(Device, devices, &filters);
+        // }
+
+        // pub fn getDefaultCaptureDevice(self: *Devices2(T)) !?Device {
+        //     return self.getDefaultDevice(Direction.Capture);
+        // }
+
         pub fn getDefaultCaptureDevice(self: *Devices2(T)) !?Device {
             // Ask the native implementation for it's default device
             const opt_device = try self.delegate.getDefaultCaptureDevice();

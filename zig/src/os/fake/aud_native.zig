@@ -86,12 +86,14 @@ pub const Devices = struct {
         self.allocator.destroy(self);
     }
 
-    pub fn getDefaultCaptureDevice(self: *Devices) !?*Device {
+    fn getDefaultDevice(self: *Devices, direction: Direction) !?*Device {
         var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        var dir_filter = if (direction == Direction.Capture) isCaptureDevice else isRenderDevice;
         var filters = [_]DeviceFilter{
             isDefaultDevice,
-            isCaptureDevice,
+            dir_filter,
         };
+
         var result = helpers.filterItems(Device, self.devices, &buffer, &filters);
         if (result.len > 0) {
             return &result[0];
@@ -100,18 +102,12 @@ pub const Devices = struct {
         return null;
     }
 
-    pub fn getDefaultRenderDevice(self: *Devices) !?*Device {
-        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
-        var filters = [_]DeviceFilter{
-            isDefaultDevice,
-            isRenderDevice,
-        };
-        var result = helpers.filterItems(Device, self.devices, &buffer, &filters);
-        if (result.len > 0) {
-            return &result[0];
-        }
+    pub fn getDefaultCaptureDevice(self: *Devices) !?*Device {
+        return self.getDefaultDevice(Direction.Capture);
+    }
 
-        return null;
+    pub fn getDefaultRenderDevice(self: *Devices) !?*Device {
+        return self.getDefaultDevice(Direction.Render);
     }
 
     pub fn getCaptureDevices(self: *Devices, buffer: []Device) ![]Device {
