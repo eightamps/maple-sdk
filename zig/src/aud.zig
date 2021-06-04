@@ -9,6 +9,10 @@ const target_file = switch (std.Target.current.os.tag) {
     else => "os/fake/aud_native.zig",
 };
 
+const native = @import(target_file);
+
+pub usingnamespace common;
+
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const ascii = std.ascii;
@@ -22,21 +26,38 @@ const json = std.json;
 const mem = std.mem;
 const print = std.debug.print;
 
-const native = @import(target_file);
-pub usingnamespace common;
-
-pub fn info() []const u8 {
-    return native.info();
-}
-
 const WAY2CALL_SUBSTR = "Way2Call";
 const ASI_TEL_SUBSTR = "ASI Telephone";
 const MAX_DEVICE_COUNT: usize = 128;
 
-pub fn Devices2(comptime T: type) type {
+pub fn Devices(comptime T: type) type {
     return struct {
         allocator: *Allocator,
         delegate: *T,
+
+        pub fn init(a: *Allocator) !*Devices(T) {
+            var delegate = try native.Devices.init(a);
+            return init_with_delegate(a, delegate);
+        }
+
+        pub fn init_with_delegate(a: *Allocator, delegate: *T) !*Devices(T) {
+            var instance = try a.create(Devices(T));
+
+            instance.* = Devices(T){
+                .allocator = a,
+                .delegate = delegate,
+            };
+            return instance;
+        }
+
+        pub fn deinit(self: *Devices(T)) void {
+            self.delegate.deinit();
+            self.allocator.destroy(self);
+        }
+
+        pub fn info(self: *Devices(T)) []const u8 {
+            return self.delegate.info();
+        }
 
         // Filter device names to ensure they do not contain (case-insensitive) either
         // "Way2Call" or "ASI Telephone". This is used by the default device requests
@@ -49,22 +70,7 @@ pub fn Devices2(comptime T: type) type {
             return true;
         }
 
-        pub fn init(a: *Allocator, delegate: *T) !*Devices2(T) {
-            var instance = try a.create(Devices2(T));
-
-            instance.* = Devices2(T){
-                .allocator = a,
-                .delegate = delegate,
-            };
-            return instance;
-        }
-
-        pub fn deinit(self: *Devices2(T)) void {
-            self.delegate.deinit();
-            self.allocator.destroy(self);
-        }
-
-        pub fn getDefaultDevice(self: *Devices2(T), direction: Direction) !Device {
+        pub fn getDefaultDevice(self: *Devices(T), direction: Direction) !Device {
             // Ask the native implementation for it's default device
             const device = try self.delegate.getDefaultDevice(direction);
             if (isValidDefaultDeviceName(device)) {
@@ -84,48 +90,49 @@ pub fn Devices2(comptime T: type) type {
 
         // Get the default capture device (i.e., Microphone) that is not presented with a
         // blocked name.
-        pub fn getDefaultCaptureDevice(self: *Devices2(T)) !Device {
+        pub fn getDefaultCaptureDevice(self: *Devices(T)) !Device {
             return self.getDefaultDevice(Direction.Capture);
         }
 
         // Get the default render device (i.e., Speakers) that is not presented with a
         // blocked name.
-        pub fn getDefaultRenderDevice(self: *Devices2(T)) !Device {
+        pub fn getDefaultRenderDevice(self: *Devices(T)) !Device {
             return self.getDefaultDevice(Direction.Render);
         }
 
-        pub fn getDevices(self: *Devices2(T), buffer: []Device, direction: Direction) ![]Device {
+        pub fn getDevices(self: *Devices(T), buffer: []Device, direction: Direction) ![]Device {
             return self.delegate.getDevices(buffer, direction);
         }
 
         // Get the collection capture devices.
-        pub fn getCaptureDevices(self: *Devices2(T), buffer: []Device) ![]Device {
+        pub fn getCaptureDevices(self: *Devices(T), buffer: []Device) ![]Device {
             return self.delegate.getCaptureDevices(buffer);
         }
 
         // Get the collection of render devices.
-        pub fn getRenderDevices(self: *Devices2(T), buffer: []Device) ![]Device {
+        pub fn getRenderDevices(self: *Devices(T), buffer: []Device) ![]Device {
             return self.delegate.getRenderDevices(buffer);
         }
 
         // Get the capture device found at the provided index.
         // The list of all devices is pre-filtered to only include Capture
         // devices.
-        pub fn getCaptureDeviceAt(self: *Devices2(T), index: u16) *Device {
+        pub fn getCaptureDeviceAt(self: *Devices(T), index: u16) *Device {
             return self.delegate.getCaptureDeviceAt(index);
         }
 
         // Get the render device found at the provided index.
         // The list of all devices is pre-filtered to only include Capture
         // devices.
-        pub fn getRenderDeviceAt(self: *Devices2(T), index: u16) *Device {
+        pub fn getRenderDeviceAt(self: *Devices(T), index: u16) *Device {
             return self.delegate.getRenderDeviceAt(index);
         }
     };
 }
 
-const Devices2Type = Devices2(native.Devices);
-const FakeDevices = Devices2(fake.Devices);
+pub const NativeDevices = Devices(native.Devices);
+
+const FakeDevices = Devices(fake.Devices);
 
 const fake_devices_path = "src/fakes/devices.json";
 const fake_devices_w2c_defaults = "src/fakes/devices_w2c_defaults.json";
@@ -137,15 +144,15 @@ fn createFakeApi(path: []const u8) !*FakeDevices {
     const alloc = std.testing.allocator;
     // Configure and create the API surface
     const delegate = try fake.Devices.initWithDevicesPath(alloc, path);
-    return try FakeDevices.init(alloc, delegate);
+    return try FakeDevices.init_with_delegate(alloc, delegate);
 }
 
-test "Devices2 Fake is instantiable" {
+test "Devices Fake is instantiable" {
     var api = try createFakeApi(fake_devices_path);
     defer api.deinit();
 }
 
-test "Devices2.getCaptureDevices" {
+test "Devices.getCaptureDevices" {
     var api = try createFakeApi(fake_devices_path);
     defer api.deinit();
 
@@ -159,7 +166,7 @@ test "Devices2.getCaptureDevices" {
     try expectEqualStrings("ASI Telephone (Microphone)", results[2].name);
 }
 
-test "Devices2.getRenderDevices" {
+test "Devices.getRenderDevices" {
     var api = try createFakeApi(fake_devices_path);
     defer api.deinit();
 
@@ -175,7 +182,7 @@ test "Devices2.getRenderDevices" {
     try expectEqualStrings("ASI Telephone (Speakers)", results[3].name);
 }
 
-test "Devices2.getCaptureDeviceAt" {
+test "Devices.getCaptureDeviceAt" {
     var api = try createFakeApi(fake_devices_path);
     defer api.deinit();
 
@@ -184,7 +191,7 @@ test "Devices2.getCaptureDeviceAt" {
     try expectEqualStrings("Way2Call (Microphone)", device_at.name);
 }
 
-test "Devices2.getRenderDeviceAt" {
+test "Devices.getRenderDeviceAt" {
     var api = try createFakeApi(fake_devices_path);
     defer api.deinit();
 
@@ -193,7 +200,7 @@ test "Devices2.getRenderDeviceAt" {
     try expectEqualStrings("ASI Telephone (Speakers)", device_at.name);
 }
 
-test "Devices2.getDefaultCaptureDevice returns expected entry" {
+test "Devices.getDefaultCaptureDevice returns expected entry" {
     var api = try createFakeApi(fake_devices_path);
     defer api.deinit();
 
@@ -203,7 +210,7 @@ test "Devices2.getDefaultCaptureDevice returns expected entry" {
     try expectEqualStrings("Array Microphone", device.name);
 }
 
-test "Devices2.getDefaultCaptureDevice cannot be Way2Call" {
+test "Devices.getDefaultCaptureDevice cannot be Way2Call" {
     // Get the dataset that has W2C as default mic
     var api = try createFakeApi(fake_devices_w2c_defaults);
     defer api.deinit(); // Will deinit delegate and self
@@ -215,7 +222,7 @@ test "Devices2.getDefaultCaptureDevice cannot be Way2Call" {
     try expectEqualStrings("Array Microphone", device.name);
 }
 
-test "Devices2.getDefaultCaptureDevice cannot be ASI Telephone" {
+test "Devices.getDefaultCaptureDevice cannot be ASI Telephone" {
     // Get the dataset that has W2C as default mic
     var api = try createFakeApi(fake_devices_asi_defaults);
     defer api.deinit(); // Will deinit delegate and self
@@ -227,7 +234,7 @@ test "Devices2.getDefaultCaptureDevice cannot be ASI Telephone" {
     try expectEqualStrings("Array Microphone", device.name);
 }
 
-test "Devices2.getDefaultCaptureDevice fails if no good devices" {
+test "Devices.getDefaultCaptureDevice fails if no good devices" {
     // Get the dataset that has W2C as default mic
     var api = try createFakeApi(fake_devices_only_bad);
     defer api.deinit(); // Will deinit delegate and self
@@ -235,7 +242,7 @@ test "Devices2.getDefaultCaptureDevice fails if no good devices" {
     try expectError(error.Fail, api.getDefaultCaptureDevice());
 }
 
-test "Devices2.getDefaultRenderDevice returns expected entry" {
+test "Devices.getDefaultRenderDevice returns expected entry" {
     var api = try createFakeApi(fake_devices_path);
     defer api.deinit(); // Will deinit delegate and self
 
@@ -245,7 +252,7 @@ test "Devices2.getDefaultRenderDevice returns expected entry" {
     try expectEqualStrings("Built-in Speakers", device.name);
 }
 
-test "Devices2.getDefaultRenderDevice cannot be Way2Call" {
+test "Devices.getDefaultRenderDevice cannot be Way2Call" {
     // Get the dataset that has W2C as default mic
     var api = try createFakeApi(fake_devices_w2c_defaults);
     defer api.deinit(); // Will deinit delegate and self
@@ -255,87 +262,4 @@ test "Devices2.getDefaultRenderDevice cannot be Way2Call" {
     // Return the first non-W2C entry.
     try expectEqual(device.id, 1);
     try expectEqualStrings("Built-in Speakers", device.name);
-}
-
-pub const Devices = struct {
-    allocator: *Allocator,
-    delegate: *native.Devices,
-
-    pub fn init(a: *Allocator) !*Devices {
-        const instance = try a.create(Devices);
-        const delegate = try native.Devices.init(a);
-
-        instance.* = Devices{
-            .allocator = a,
-            .delegate = delegate,
-        };
-        return instance;
-    }
-
-    pub fn deinit(self: *Devices) void {
-        print("AudibleApi.deinit called\n", .{});
-        self.delegate.deinit();
-        self.allocator.destroy(self);
-    }
-
-    pub fn getDevice(self: *Devices, matcher: common.Matcher) !*native.Device {
-        std.debug.print("Linux getDevice()\n", .{});
-        switch (matcher.direction) {
-            common.Direction.Render => {
-                return self.getRenderDevice(matcher);
-            },
-            common.Direction.Capture => {
-                return self.getCaptureDevice(matcher);
-            },
-        }
-    }
-
-    pub fn getRenderDevice(self: *Devices, matcher: common.Matcher) !*native.Device {
-        if (matcher.is_default) {
-            const index = try self.delegate.getDefaultRenderDeviceIndex();
-            const sio_device = try self.delegate.getRenderDeviceByIndex(index);
-            const device_name_cs = @ptrCast([*:0]const u8, sio_device.name);
-            const device_name = device_name_cs[0..mem.len(device_name_cs)];
-            print(">>>>>>>>>>>>> name: {s}\n", .{device_name});
-            var itr = mem.split(matcher.not_matches, "|");
-            {
-                print("-----------\n", .{});
-                var name = itr.next();
-                print("device_name: {s}\n", .{device_name});
-                while (name != null) : (name = itr.next()) {
-                    print("device_name: \"{s}\" vs name: \"{s}\"\n", .{ device_name, name });
-                    const unwrapped = name orelse continue;
-                    if (mem.indexOf(u8, device_name, unwrapped) != null) {
-                        print("DEVICE NAME IS NOT VALID!\n", .{});
-                        return error.Fail;
-                    }
-                }
-                print("-----------\n", .{});
-            }
-            // const count = try self.getRenderDeviceCount();
-        }
-        return try self.delegate.createDevice(common.Direction.Render);
-    }
-
-    pub fn getCaptureDevice(self: *Devices, matcher: common.Matcher) !*native.Device {
-        return try self.delegate.createDevice(common.Direction.Capture);
-    }
-};
-
-test "aud.Devices is instantiable" {
-    const devices = try Devices.init(std.testing.allocator);
-    defer devices.deinit();
-}
-
-test "aud.info" {
-    const name = info();
-    try expectEqual(name, "LINUX");
-}
-
-test "aud.Devices.getDevice()" {
-    const devices = try Devices.init(std.testing.allocator);
-    defer devices.deinit();
-
-    const device = try devices.getDevice(DefaultCapture);
-    defer device.deinit();
 }

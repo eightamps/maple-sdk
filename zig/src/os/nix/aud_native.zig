@@ -1,163 +1,87 @@
 const std = @import("std");
 const common = @import("../aud_common.zig");
-
-const sio = @cImport({
-    @cInclude("soundio/soundio.h");
-});
-
-usingnamespace sio;
+const helpers = @import("../../helpers.zig");
 
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
+const ascii = std.ascii;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
+const fs = std.fs;
 const heap = std.heap;
+const json = std.json;
 const mem = std.mem;
 const print = std.debug.print;
 
-const DEFAULT_DEVICE_NAME = "[unknown]";
-
-fn failed(status: c_int) bool {
-    return status != 0;
-}
-
-fn index_failed(status: c_int) bool {
-    return status < 0;
-}
-
-pub fn info() []const u8 {
-    return "LINUX";
-}
-
-pub const Device = struct {
-    direction: common.Direction,
-    allocator: *Allocator,
-    name: []const u8 = DEFAULT_DEVICE_NAME,
-
-    pub fn deinit(self: *Device) void {
-        self.allocator.destroy(self);
-    }
-};
+usingnamespace common;
 
 pub const Devices = struct {
     allocator: *Allocator,
-    soundio: *SoundIo,
-    ring_buffer: *SoundIoRingBuffer = undefined,
+    devices: []Device = undefined,
 
     pub fn init(a: *Allocator) !*Devices {
         const instance = try a.create(Devices);
-
-        const soundio = soundio_create();
-        if (soundio == null) {
-            print("soundio failed to allocate\n", .{});
-            return error.Fail;
-        }
-        print("soundio successfully created context\n", .{});
-
-        {
-            const status = soundio_connect_backend(soundio, @intToEnum(sio.SoundIoBackend, sio.SoundIoBackendPulseAudio));
-            if (failed(status)) {
-                print("soundio failed to connect to backend\n", .{});
-                // Free the soundio object before exiting
-                soundio_destroy(soundio);
-                return error.Fail;
-            }
-        }
-
-        sio.soundio_flush_events(soundio);
-        print("soundio flushed events\n", .{});
-
         instance.* = Devices{
             .allocator = a,
-            .soundio = soundio,
         };
-
         return instance;
     }
 
     pub fn deinit(self: *Devices) void {
-        print("AudibleApi.deinit called\n", .{});
-        soundio_destroy(self.soundio);
         self.allocator.destroy(self);
     }
 
-    pub fn createDevice(self: *Devices, direction: common.Direction) !*Device {
-        const device = try self.allocator.create(Device);
-        device.* = Device{
-            .allocator = self.allocator,
-            .direction = direction,
+    pub fn info(self: *Devices) []const u8 {
+        return "nix";
+    }
+
+    pub fn getDefaultDevice(self: *Devices, direction: Direction) !Device {
+        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        var dir_filter = if (direction == Direction.Capture) isCaptureDevice else isRenderDevice;
+        var filters = [_]DeviceFilter{
+            isDefaultDevice,
+            dir_filter,
         };
-        return device;
-    }
 
-    pub fn getCaptureDevice(self: *Devices, matcher: common.Matcher) !*Device {
-        return try self.createDevice(common.Direction.Capture);
-    }
-
-    pub fn getRenderDeviceByIndex(self: *Devices, index: c_int) !*SoundIoDevice {
-        const sio_device = soundio_get_output_device(self.soundio, index);
-        if (sio_device == null) {
-            print("soundio_get_output_device failed\n", .{});
-            return error.Fail;
+        var result = helpers.filterItems(Device, self.devices, &buffer, &filters);
+        if (result.len > 0) {
+            return result[0];
         }
-        print("soundio_get_output_device success\n", .{});
-        return sio_device;
+
+        return error.Fail;
     }
 
-    pub fn getDefaultRenderDeviceIndex(self: *Devices) !c_int {
-        const index = soundio_default_output_device_index(self.soundio);
-        if (index_failed(index)) {
-            print("soundio_default_output_device_index failed with: {}\n", .{index});
-            return error.Fail;
-        }
-        print("soundio_default_output_device_index index: {}\n", .{index});
-        return index;
+    pub fn getDefaultCaptureDevice(self: *Devices) !Device {
+        return self.getDefaultDevice(Direction.Capture);
     }
 
-    fn getRenderDeviceCount(self: *Devices) !c_int {
-        const count = soundio_output_device_count(self.soundio);
-        if (index_failed(count)) {
-            print("soundio_output_device_count failed with: {}\n", .{count});
-            return error.Fail;
-        }
-        print("soundio_output_device_count: {}\n", .{count});
-        return count;
+    pub fn getDefaultRenderDevice(self: *Devices) !Device {
+        return self.getDefaultDevice(Direction.Render);
     }
 
-    fn getDefaultCaptureDeviceIndex(self: *Devices) !c_int {
-        const index = soundio_default_input_device_index(self.soundio);
-        if (index_failed(index)) {
-            print("soundio_default_input_device_index failed with: {}\n", .{index});
-            return error.Fail;
-        }
-        print("soundio_default_input_device_index: {}\n", .{index});
-        return index;
+    pub fn getDevices(self: *Devices, buffer: []Device, direction: Direction) ![]Device {
+        const filter = if (direction == Direction.Capture) isCaptureDevice else isRenderDevice;
+        var filters = [_]DeviceFilter{filter};
+        return helpers.filterItems(Device, self.devices, buffer, &filters);
     }
 
-    fn getCaptureDeviceCount(self: *Devices) !c_int {
-        const count = soundio_input_device_count(self.soundio);
-        if (index_failed(count)) {
-            print("soundio_input_device_count failed with: {}\n", .{count});
-            return error.Fail;
-        }
-        print("soundio_input_device_count: {}\n", .{count});
-        return count;
+    pub fn getCaptureDevices(self: *Devices, buffer: []Device) ![]Device {
+        return self.getDevices(buffer, Direction.Capture);
+    }
+
+    pub fn getRenderDevices(self: *Devices, buffer: []Device) ![]Device {
+        return self.getDevices(buffer, Direction.Render);
+    }
+
+    pub fn getCaptureDeviceAt(self: *Devices, index: u16) *Device {
+        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        var result = try self.getCaptureDevices(&buffer);
+        return &result[index];
+    }
+
+    pub fn getRenderDeviceAt(self: *Devices, index: u16) *Device {
+        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        var result = try self.getRenderDevices(&buffer);
+        return &result[index];
     }
 };
-
-test "Nix Native.Devices is instantiable" {
-    const devices = try Devices.init(std.testing.allocator);
-    defer devices.deinit();
-}
-
-test "Nix Native.Devices info" {
-    const name = info();
-    try expectEqual(name, "LINUX");
-}
-
-test "Nix Native.Default device" {
-    const devices = try Devices.init(std.testing.allocator);
-    defer devices.deinit();
-
-    const index = try devices.getDefaultRenderDeviceIndex();
-    const device = try devices.getRenderDeviceByIndex(index);
-}

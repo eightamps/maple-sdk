@@ -9,7 +9,7 @@ usingnamespace phony_client;
 
 pub fn main() !u8 {
     print("--------------------------------------------------\n", .{});
-    print("Main Console loaded with audo.info(): {s}\n", .{aud.info()});
+    print("Main Console loaded\n", .{});
 
     // Create the configured allocator
     var gpa = heap.GeneralPurposeAllocator(.{}){};
@@ -21,14 +21,14 @@ pub fn main() !u8 {
     }
 
     // Initialize the native audio devices api (names need to change)
-    var devices = try aud.Devices.init(&gpa.allocator);
-    defer devices.deinit();
+    var audio_api = try aud.NativeDevices.init(&gpa.allocator);
+    defer audio_api.deinit();
 
     // Get a default capture device
-    const device = try devices.getDevice(aud.DefaultRender);
-    defer device.deinit();
+    // const device = try devices.getDevice(aud.DefaultRender);
+    // defer device.deinit();
 
-    std.debug.print("device name: {s}\n", .{device.name});
+    // std.debug.print("device name: {s}\n", .{device.name});
 
     // const client = try PhonyClient.open();
     // defer client.close();

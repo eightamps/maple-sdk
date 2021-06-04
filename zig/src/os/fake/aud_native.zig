@@ -15,9 +15,6 @@ const print = std.debug.print;
 
 usingnamespace common;
 
-const DEFAULT_DEVICE_NAME = "[unknown]";
-const MAX_DEVICE_COUNT: usize = 128;
-
 const InitType = enum(u8) {
     Path,
     Devices,
@@ -27,10 +24,6 @@ const JsonData = struct {
     render_devices: []Device,
     capture_devices: []Device,
 };
-
-pub fn info() []const u8 {
-    return "TEST";
-}
 
 pub const Devices = struct {
     allocator: *Allocator,
@@ -84,6 +77,10 @@ pub const Devices = struct {
         }
 
         self.allocator.destroy(self);
+    }
+
+    pub fn info(self: *Devices) []const u8 {
+        return "fake";
     }
 
     pub fn getDefaultDevice(self: *Devices, direction: Direction) !Device {
