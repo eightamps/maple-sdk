@@ -54,7 +54,8 @@ pub const Devices = struct {
         print("soundio successfully created context\n", .{});
 
         {
-            const status = soundio_connect_backend(soundio, @intToEnum(sio.SoundIoBackend, sio.SoundIoBackendPulseAudio));
+            const value = @intToEnum(sio.SoundIoBackend, sio.SoundIoBackendPulseAudio);
+            const status = soundio_connect_backend(soundio, value);
             if (failed(status)) {
                 print("soundio failed to connect to backend\n", .{});
                 // Free the soundio object before exiting
@@ -103,16 +104,6 @@ pub const Devices = struct {
         return sio_device;
     }
 
-    pub fn getDefaultRenderDeviceIndex(self: *Devices) !c_int {
-        const index = soundio_default_output_device_index(self.soundio);
-        if (index_failed(index)) {
-            print("soundio_default_output_device_index failed with: {}\n", .{index});
-            return error.Fail;
-        }
-        print("soundio_default_output_device_index index: {}\n", .{index});
-        return index;
-    }
-
     fn getRenderDeviceCount(self: *Devices) !c_int {
         const count = soundio_output_device_count(self.soundio);
         if (index_failed(count)) {
@@ -121,6 +112,16 @@ pub const Devices = struct {
         }
         print("soundio_output_device_count: {}\n", .{count});
         return count;
+    }
+
+    pub fn getDefaultRenderDeviceIndex(self: *Devices) !c_int {
+        const index = soundio_default_output_device_index(self.soundio);
+        if (index_failed(index)) {
+            print("soundio_default_output_device_index failed with: {}\n", .{index});
+            return error.Fail;
+        }
+        print("soundio_default_output_device_index index: {}\n", .{index});
+        return index;
     }
 
     fn getDefaultCaptureDeviceIndex(self: *Devices) !c_int {

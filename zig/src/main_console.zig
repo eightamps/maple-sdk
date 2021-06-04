@@ -25,13 +25,8 @@ pub fn main() !u8 {
     defer audio_api.deinit();
 
     // Get a default capture device
-    // const device = try devices.getDevice(aud.DefaultRender);
-    // defer device.deinit();
-
-    // std.debug.print("device name: {s}\n", .{device.name});
-
-    // const client = try PhonyClient.open();
-    // defer client.close();
+    const render_device = try audio_api.getDefaultRenderDevice();
+    std.debug.print("render_device.name: {s}\n", .{render_device.name});
 
     return 0;
 }

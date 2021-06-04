@@ -14,21 +14,12 @@ const native = @import(target_file);
 pub usingnamespace common;
 
 const Allocator = std.mem.Allocator;
-const ArrayList = std.ArrayList;
 const ascii = std.ascii;
 const expect = std.testing.expect;
 const expectError = std.testing.expectError;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
-const fs = std.fs;
-const heap = std.heap;
-const json = std.json;
-const mem = std.mem;
 const print = std.debug.print;
-
-const WAY2CALL_SUBSTR = "Way2Call";
-const ASI_TEL_SUBSTR = "ASI Telephone";
-const MAX_DEVICE_COUNT: usize = 128;
 
 pub fn Devices(comptime T: type) type {
     return struct {
@@ -65,8 +56,8 @@ pub fn Devices(comptime T: type) type {
         // these known-bad devices, which Microsoft insists on forcing into the default
         // position(s).
         fn isValidDefaultDeviceName(d: Device) bool {
-            if (ascii.indexOfIgnoreCasePos(d.name, 0, WAY2CALL_SUBSTR) != null) return false;
-            if (ascii.indexOfIgnoreCasePos(d.name, 0, ASI_TEL_SUBSTR) != null) return false;
+            if (ascii.indexOfIgnoreCasePos(d.name, 0, WAY2CALL) != null) return false;
+            if (ascii.indexOfIgnoreCasePos(d.name, 0, ASI_TELEPHONE) != null) return false;
             return true;
         }
 

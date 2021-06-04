@@ -5,8 +5,7 @@ const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL;
 // const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL ++ "|" ++ "hda-dsp";
 const EMPTY_MATCHES: []const u8 = "";
 
-const MAX_DEVICE_COUNT: usize = 128;
-
+pub const MAX_DEVICE_COUNT: usize = 128;
 pub const ASI_TELEPHONE: []const u8 = "ASI Telephone";
 pub const WAY2CALL: []const u8 = "Way2Call";
 pub const NULL_DEVICE_NAME = "[NullDevice]";

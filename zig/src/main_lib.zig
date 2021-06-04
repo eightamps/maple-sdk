@@ -6,8 +6,3 @@ const hid_client = @import("hid_client.zig");
 // implementations and export them from this library entry point.
 pub usingnamespace aud;
 pub usingnamespace hid_client;
-
-test "info test" {
-    const value = aud.info();
-    try std.testing.expectEqual(value, "LINUX");
-}
