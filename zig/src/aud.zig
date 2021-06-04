@@ -50,7 +50,7 @@ pub fn Devices2(comptime T: type) type {
         }
 
         pub fn init(a: *Allocator, delegate: *T) !*Devices2(T) {
-            const instance = try a.create(Devices2(T));
+            var instance = try a.create(Devices2(T));
 
             instance.* = Devices2(T){
                 .allocator = a,
@@ -64,78 +64,38 @@ pub fn Devices2(comptime T: type) type {
             self.allocator.destroy(self);
         }
 
-        // fn getDefaultDevice(self: *Devices2(T), direction: Direction) !?Device {
-        //     const getDefault = if (direction == Direction.Capture) self.delegate.getDefaultCaptureDevice else self.delegate.getDefaultRenderDevice;
-        //     const getDevices = if (direction == Direction.Capture) self.delegate.getCaptureDevices else self.delegate.getRenderDevices;
-        //     const capture_device = if (direction == Direction.Capture) NullCaptureDevice else NullRenderDevice;
-
-        //     // Ask the native implementation for it's default device
-        //     const opt_device = try getDefault();
-        //     if (opt_device != null) {
-        //         // TODO(lbayes): Figure out how to make ?* into * without a second variable.
-        //         var device = opt_device orelse &capture_device;
-        //         if (isValidDefaultDeviceName(device.*)) {
-        //             // If the device is a valid default device, return it
-        //             return device.*;
-        //         }
-        //     }
-
-        //     // The native default device was not a valid device, get the next candidate.
-        //     var buffer: [MAX_DEVICE_COUNT]Device = undefined;
-        //     var devices = try getDevices(&buffer);
-        //     var filters = [_]DeviceFilter{
-        //         isValidDefaultDeviceName,
-        //     };
-
-        //     return helpers.firstItemMatching(Device, devices, &filters);
-        // }
-
-        // pub fn getDefaultCaptureDevice(self: *Devices2(T)) !?Device {
-        //     return self.getDefaultDevice(Direction.Capture);
-        // }
-
-        pub fn getDefaultCaptureDevice(self: *Devices2(T)) !?Device {
+        pub fn getDefaultDevice(self: *Devices2(T), direction: Direction) !Device {
             // Ask the native implementation for it's default device
-            const opt_device = try self.delegate.getDefaultCaptureDevice();
-            if (opt_device != null) {
-                // TODO(lbayes): Figure out how to make ?* into * without a second variable.
-                var device = opt_device orelse &NullCaptureDevice;
-                if (isValidDefaultDeviceName(device.*)) {
-                    // If the device is a valid default device, return it
-                    return device.*;
-                }
+            const device = try self.delegate.getDefaultDevice(direction);
+            if (isValidDefaultDeviceName(device)) {
+                // If the device is a valid default device, return it
+                return device;
             }
 
             // The native default device was not a valid device, get the next candidate.
             var buffer: [MAX_DEVICE_COUNT]Device = undefined;
-            var devices = try self.getCaptureDevices(&buffer);
+            var devices = try self.getDevices(&buffer, direction);
             var filters = [_]DeviceFilter{
                 isValidDefaultDeviceName,
             };
 
-            return helpers.firstItemMatching(Device, devices, &filters);
+            return helpers.firstItemMatching(Device, devices, &filters) orelse error.Fail;
         }
 
-        pub fn getDefaultRenderDevice(self: *Devices2(T)) !?Device {
-            // Ask the native implementation for it's default device
-            const opt_device = try self.delegate.getDefaultRenderDevice();
-            if (opt_device != null) {
-                // TODO(lbayes): Figure out how to make ?* into * without a second variable.
-                var device = opt_device orelse &NullRenderDevice;
-                if (isValidDefaultDeviceName(device.*)) {
-                    // If the device is a valid default device, return it
-                    return device.*;
-                }
-            }
+        // Get the default capture device (i.e., Microphone) that is not presented with a
+        // blocked name.
+        pub fn getDefaultCaptureDevice(self: *Devices2(T)) !Device {
+            return self.getDefaultDevice(Direction.Capture);
+        }
 
-            // The native default device was not a valid device, get the next candidate.
-            var buffer: [MAX_DEVICE_COUNT]Device = undefined;
-            var devices = try self.getRenderDevices(&buffer);
-            var filters = [_]DeviceFilter{
-                isValidDefaultDeviceName,
-            };
+        // Get the default render device (i.e., Speakers) that is not presented with a
+        // blocked name.
+        pub fn getDefaultRenderDevice(self: *Devices2(T)) !Device {
+            return self.getDefaultDevice(Direction.Render);
+        }
 
-            return helpers.firstItemMatching(Device, devices, &filters);
+        pub fn getDevices(self: *Devices2(T), buffer: []Device, direction: Direction) ![]Device {
+            return self.delegate.getDevices(buffer, direction);
         }
 
         // Get the collection capture devices.
@@ -237,8 +197,7 @@ test "Devices2.getDefaultCaptureDevice returns expected entry" {
     var api = try createFakeApi(fake_devices_path);
     defer api.deinit();
 
-    var opt_device = try api.getDefaultCaptureDevice();
-    var device = opt_device orelse NullCaptureDevice;
+    var device = try api.getDefaultCaptureDevice();
 
     try expectEqual(device.id, 0);
     try expectEqualStrings("Array Microphone", device.name);
@@ -249,8 +208,7 @@ test "Devices2.getDefaultCaptureDevice cannot be Way2Call" {
     var api = try createFakeApi(fake_devices_w2c_defaults);
     defer api.deinit(); // Will deinit delegate and self
 
-    var opt_device = try api.getDefaultCaptureDevice();
-    var device = opt_device orelse NullCaptureDevice;
+    var device = try api.getDefaultCaptureDevice();
 
     // Return the first non-W2C entry.
     try expectEqual(device.id, 0);
@@ -262,8 +220,7 @@ test "Devices2.getDefaultCaptureDevice cannot be ASI Telephone" {
     var api = try createFakeApi(fake_devices_asi_defaults);
     defer api.deinit(); // Will deinit delegate and self
 
-    var opt_device = try api.getDefaultCaptureDevice();
-    var device = opt_device orelse NullCaptureDevice;
+    var device = try api.getDefaultCaptureDevice();
 
     // Return the zeroth entry b/c W2C is invalid
     try expectEqual(device.id, 0);
@@ -275,16 +232,14 @@ test "Devices2.getDefaultCaptureDevice fails if no good devices" {
     var api = try createFakeApi(fake_devices_only_bad);
     defer api.deinit(); // Will deinit delegate and self
 
-    var device = try api.getDefaultCaptureDevice();
-    try expect(device == null);
+    try expectError(error.Fail, api.getDefaultCaptureDevice());
 }
 
 test "Devices2.getDefaultRenderDevice returns expected entry" {
     var api = try createFakeApi(fake_devices_path);
     defer api.deinit(); // Will deinit delegate and self
 
-    var opt_device = try api.getDefaultRenderDevice();
-    var device = opt_device orelse NullRenderDevice;
+    var device = try api.getDefaultRenderDevice();
 
     try expectEqual(device.id, 1);
     try expectEqualStrings("Built-in Speakers", device.name);
@@ -295,8 +250,7 @@ test "Devices2.getDefaultRenderDevice cannot be Way2Call" {
     var api = try createFakeApi(fake_devices_w2c_defaults);
     defer api.deinit(); // Will deinit delegate and self
 
-    var opt_device = try api.getDefaultRenderDevice();
-    var device = opt_device orelse NullRenderDevice;
+    var device = try api.getDefaultRenderDevice();
 
     // Return the first non-W2C entry.
     try expectEqual(device.id, 1);

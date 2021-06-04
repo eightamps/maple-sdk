@@ -7,14 +7,14 @@ const EMPTY_MATCHES: []const u8 = "";
 
 pub const ASI_TELEPHONE: []const u8 = "ASI Telephone";
 pub const WAY2CALL: []const u8 = "Way2Call";
-pub const NULL_RENDER_DEVICE_NAME = "[NullRenderDevice]";
-pub const NULL_CAPTURE_DEVICE_NAME = "[NullCaptureDevice]";
+pub const NULL_DEVICE_NAME = "[NullDevice]";
 
 pub const Device = struct {
     id: u16,
     name: []const u8,
     direction: Direction = Direction.Render,
     is_default: bool = false,
+    rank: u8 = 0,
     // sample_rate: u32,
     // channel_count: u8,
 
@@ -40,16 +40,9 @@ pub fn isDefaultDevice(d: Device) bool {
 
 pub const DeviceFilter = fn (Device) bool;
 
-pub var NullRenderDevice = Device{
+pub var NullDevice = Device{
     .id = 254,
-    .name = NULL_RENDER_DEVICE_NAME,
-    .direction = Direction.Render,
-    .is_default = false,
-};
-
-pub var NullCaptureDevice = Device{
-    .id = 255,
-    .name = NULL_CAPTURE_DEVICE_NAME,
+    .name = NULL_DEVICE_NAME,
     .direction = Direction.Capture,
     .is_default = false,
 };
