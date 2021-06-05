@@ -16,6 +16,7 @@ pub const Device = struct {
     direction: Direction = Direction.Render,
     is_default: bool = false,
     rank: u8 = 0,
+    native_id: []const u8 = undefined,
     // sample_rate: u32,
     // channel_count: u8,
 

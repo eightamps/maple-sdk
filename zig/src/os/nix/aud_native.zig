@@ -7,7 +7,9 @@ const sio = @cImport({
 });
 
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
 const expect = std.testing.expect;
+const mem = std.mem;
 const print = std.debug.print;
 
 usingnamespace common;
@@ -26,6 +28,7 @@ pub const Devices = struct {
     soundio: *SoundIo,
     ring_buffer: *SoundIoRingBuffer = undefined,
     devices: []Device = undefined,
+    sio_devices: ArrayList(SoundIoDevice) = undefined,
 
     pub fn init(a: *Allocator) !*Devices {
         const instance = try a.create(Devices);
@@ -54,6 +57,7 @@ pub const Devices = struct {
         instance.* = Devices{
             .allocator = a,
             .soundio = soundio,
+            .sio_devices = ArrayList(SoundIoDevice).init(a),
         };
 
         return instance;
@@ -88,9 +92,14 @@ pub const Devices = struct {
         }
         print("soundio_default_output_device_index index: {}\n", .{index});
         const sio_device = try self.getRenderDeviceByIndex(index);
+
+        var native_id = try self.allocator.alloc(u8, mem.len(sio_device.id));
+        mem.copy(u8, &native_id, sio_device.id);
+
         const device = Device{
             .id = 0,
             .name = "asdf",
+            .native_id = native_id,
         };
         return device;
     }
