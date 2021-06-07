@@ -101,6 +101,8 @@ pub fn build(b: *std.build.Builder) void {
 
     // Build tests
     var tests = b.addTest("src/main_lib.zig");
+    tests.emit_bin = true;
+    // tests.exec_cmd = "lldb-12";
     tests.setTarget(target);
     tests.setBuildMode(mode);
 

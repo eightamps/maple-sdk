@@ -74,6 +74,9 @@ pub const Devices = struct {
         // Clear JSON parse memory only if created with JSON data
         if (self.initialized_with == InitType.Path) {
             json.parseFree([]Device, self.devices, .{ .allocator = self.allocator });
+            // for (self.devices) |dev| {
+            // self.allocator.destroy(&dev);
+            // }
         }
 
         self.allocator.destroy(self);
