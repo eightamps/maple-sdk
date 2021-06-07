@@ -27,8 +27,9 @@ pub const Devices = struct {
     allocator: *Allocator,
     soundio: *SoundIo,
     ring_buffer: *SoundIoRingBuffer = undefined,
-    devices: []Device = undefined,
-    sio_devices: ArrayList(SoundIoDevice) = undefined,
+    aud_devices: ArrayList(*Device) = undefined,
+    sio_devices: ArrayList(*SoundIoDevice) = undefined,
+    last_id: u8 = 0,
 
     pub fn init(a: *Allocator) !*Devices {
         const instance = try a.create(Devices);
@@ -57,13 +58,22 @@ pub const Devices = struct {
         instance.* = Devices{
             .allocator = a,
             .soundio = soundio,
-            .sio_devices = ArrayList(SoundIoDevice).init(a),
+            .sio_devices = ArrayList(*SoundIoDevice).init(a),
+            .aud_devices = ArrayList(*Device).init(a),
         };
 
         return instance;
     }
 
     pub fn deinit(self: *Devices) void {
+        self.sio_devices.deinit();
+
+        // Free each device that was allocated for the devices list.
+        for (self.aud_devices.items) |dev| {
+            self.allocator.destroy(dev);
+        }
+
+        self.aud_devices.deinit();
         soundio_destroy(self.soundio);
         self.allocator.destroy(self);
     }
@@ -80,6 +90,32 @@ pub const Devices = struct {
         }
     }
 
+    fn getNextId(self: *Devices) u8 {
+        const id = self.last_id;
+        self.last_id += 1;
+        return id;
+    }
+
+    fn sioDeviceToAudDevice(self: *Devices, sio_device: *SoundIoDevice) !Device {
+        const native_id = mem.sliceTo(sio_device.id, 0);
+        const native_name = mem.sliceTo(sio_device.name, 0);
+
+        var device = try self.allocator.create(Device);
+
+        device.* = Device{
+            .id = self.getNextId(),
+            .name = native_name,
+            .native_id = native_id,
+        };
+
+        print("ID: {d}\n", .{device.id});
+        print("NATIVE_ID: {d}: {s}\n", .{ mem.len(device.native_id), device.native_id });
+        print("NAME: {d}: {s}\n", .{ mem.len(device.name), device.name });
+        try self.aud_devices.append(device);
+
+        return device.*;
+    }
+
     pub fn getDefaultCaptureDevice(self: *Devices) !Device {
         return error.Fail;
     }
@@ -93,15 +129,10 @@ pub const Devices = struct {
         print("soundio_default_output_device_index index: {}\n", .{index});
         const sio_device = try self.getRenderDeviceByIndex(index);
 
-        var native_id = try self.allocator.alloc(u8, mem.len(sio_device.id));
-        mem.copy(u8, &native_id, sio_device.id);
+        // Store the device for later lookups?
+        try self.sio_devices.append(sio_device);
 
-        const device = Device{
-            .id = 0,
-            .name = "asdf",
-            .native_id = native_id,
-        };
-        return device;
+        return self.sioDeviceToAudDevice(sio_device);
     }
 
     fn getRenderDeviceByIndex(self: *Devices, index: c_int) !*SoundIoDevice {
