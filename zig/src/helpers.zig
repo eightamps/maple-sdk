@@ -2,6 +2,45 @@ const std = @import("std");
 
 const expectEqual = std.testing.expectEqual;
 
+pub fn filterItems(comptime T: type, input: []T, output: []T, filters: []fn (d: T) bool) []T {
+    var input_index: u32 = 0;
+    var output_index: u32 = 0;
+
+    outer: while (input_index < input.len) : (input_index += 1) {
+        const device = input[input_index];
+        // If any of the provided filters return true, skip this entry.
+        for (filters) |filter| {
+            if (!filter(device)) {
+                continue :outer;
+            }
+        }
+        output[output_index] = input[input_index];
+        output_index += 1;
+    }
+
+    return output[0..output_index];
+}
+
+pub fn firstItemMatching(comptime T: type, input: []T, filters: []fn (d: T) bool) ?T {
+    var input_index: u32 = 0;
+
+    outer: while (input_index < input.len) : (input_index += 1) {
+        var device = input[input_index];
+        for (filters) |filter| {
+            if (!filter(device)) {
+                continue :outer;
+            }
+        }
+
+        // If each of the provided filters return true, return this entry.
+        return device;
+    }
+
+    return null;
+}
+
+// Test infrastructure below
+
 const FakeDirection = enum(u8) {
     Render,
     Capture,
@@ -81,43 +120,6 @@ var defaultCaptureFilter = .{
 var alwaysNullFilter = .{
     isFalse,
 };
-
-pub fn filterItems(comptime T: type, input: []T, output: []T, filters: []fn (d: T) bool) []T {
-    var input_index: u32 = 0;
-    var output_index: u32 = 0;
-
-    outer: while (input_index < input.len) : (input_index += 1) {
-        const device = input[input_index];
-        // If any of the provided filters return true, skip this entry.
-        for (filters) |filter| {
-            if (!filter(device)) {
-                continue :outer;
-            }
-        }
-        output[output_index] = input[input_index];
-        output_index += 1;
-    }
-
-    return output[0..output_index];
-}
-
-pub fn firstItemMatching(comptime T: type, input: []T, filters: []fn (d: T) bool) ?T {
-    var input_index: u32 = 0;
-
-    outer: while (input_index < input.len) : (input_index += 1) {
-        var device = input[input_index];
-        for (filters) |filter| {
-            if (!filter(device)) {
-                continue :outer;
-            }
-        }
-
-        // If each of the provided filters return true, return this entry.
-        return device;
-    }
-
-    return null;
-}
 
 test "filterItems gets a subset" {
     var buffer: [10]FakeDevice = undefined;

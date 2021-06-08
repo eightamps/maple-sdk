@@ -1,6 +1,6 @@
 const std = @import("std");
-const common = @import("../aud_common.zig");
-const helpers = @import("../../helpers.zig");
+const common = @import("./common.zig");
+const helpers = @import("../helpers.zig");
 
 const sio = @cImport({
     @cInclude("soundio/soundio.h");
@@ -11,6 +11,7 @@ const ArrayList = std.ArrayList;
 const expect = std.testing.expect;
 const mem = std.mem;
 const print = std.debug.print;
+const talloc = std.testing.allocator;
 
 usingnamespace common;
 usingnamespace sio;
@@ -90,26 +91,18 @@ pub const Devices = struct {
         }
     }
 
-    fn getNextId(self: *Devices) u8 {
-        const id = self.last_id;
-        self.last_id += 1;
-        return id;
-    }
-
     fn sioDeviceToAudDevice(self: *Devices, sio_device: *SoundIoDevice) !Device {
-        const native_id = mem.sliceTo(sio_device.id, 0);
+        const id = mem.sliceTo(sio_device.id, 0);
         const native_name = mem.sliceTo(sio_device.name, 0);
 
         var device = try self.allocator.create(Device);
 
         device.* = Device{
-            .id = self.getNextId(),
+            .id = id,
             .name = native_name,
-            .native_id = native_id,
         };
 
-        print("ID: {d}\n", .{device.id});
-        print("NATIVE_ID: {d}: {s}\n", .{ mem.len(device.native_id), device.native_id });
+        print("ID: {s}\n", .{device.id});
         print("NAME: {d}: {s}\n", .{ mem.len(device.name), device.name });
         try self.aud_devices.append(device);
 
@@ -183,11 +176,7 @@ pub const Devices = struct {
     }
 };
 
-test "Nix Devices is instantiable" {
-    var alloc = std.testing.allocator;
-    var api = try Devices.init(alloc);
+test "Soundio Devices is instantiable" {
+    var api = try Devices.init(talloc);
     defer api.deinit();
-
-    print("YOOOOOOOOO\n", .{});
-    expect(false);
 }

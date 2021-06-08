@@ -1,30 +1,37 @@
 const std = @import("std");
-const common = @import("os/aud_common.zig");
-const fake = @import("os/fake/aud_native.zig");
+const common = @import("./aud/common.zig");
+const fake = @import("./aud/fake.zig");
 const helpers = @import("./helpers.zig");
 
+// Get the native audible implementation
 const target_file = switch (std.Target.current.os.tag) {
-    .windows => "os/win/aud_native.zig",
-    .linux => "os/nix/aud_native.zig",
-    else => "os/fake/aud_native.zig",
+    .windows => "./aud/win.zig",
+    .linux => "./aud/soundio.zig",
+    else => "./aud_fake.zig", // TODO(lbayes): Should be error
 };
-
 const native = @import(target_file);
 
-pub usingnamespace common;
-
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
+const Device = common.Device;
+const DeviceFilter = common.DeviceFilter;
+const Direction = common.Direction;
 const ascii = std.ascii;
 const expect = std.testing.expect;
-const expectError = std.testing.expectError;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
+const expectError = std.testing.expectError;
+const mem = std.mem;
 const print = std.debug.print;
+const talloc = std.testing.allocator;
+
+const PreferredIds = ArrayList([]const u8);
 
 pub fn Devices(comptime T: type) type {
     return struct {
         allocator: *Allocator,
         delegate: *T,
+        preferred: PreferredIds,
 
         pub fn init(a: *Allocator) !*Devices(T) {
             var delegate = try native.Devices.init(a);
@@ -37,11 +44,13 @@ pub fn Devices(comptime T: type) type {
             instance.* = Devices(T){
                 .allocator = a,
                 .delegate = delegate,
+                .preferred = PreferredIds.init(a),
             };
             return instance;
         }
 
         pub fn deinit(self: *Devices(T)) void {
+            self.preferred.deinit();
             self.delegate.deinit();
             self.allocator.destroy(self);
         }
@@ -56,8 +65,8 @@ pub fn Devices(comptime T: type) type {
         // these known-bad devices, which Microsoft insists on forcing into the default
         // position(s).
         fn isValidDefaultDeviceName(d: Device) bool {
-            if (ascii.indexOfIgnoreCasePos(d.name, 0, WAY2CALL) != null) return false;
-            if (ascii.indexOfIgnoreCasePos(d.name, 0, ASI_TELEPHONE) != null) return false;
+            if (ascii.indexOfIgnoreCasePos(d.name, 0, common.WAY2CALL) != null) return false;
+            if (ascii.indexOfIgnoreCasePos(d.name, 0, common.ASI_TELEPHONE) != null) return false;
             return true;
         }
 
@@ -70,13 +79,29 @@ pub fn Devices(comptime T: type) type {
             }
 
             // The native default device was not a valid device, get the next candidate.
-            var buffer: [MAX_DEVICE_COUNT]Device = undefined;
-            var devices = try self.getDevices(&buffer, direction);
+            var buf_a: [common.MAX_DEVICE_COUNT]Device = undefined;
+            var all_devices = try self.getDevices(&buf_a, direction);
             var filters = [_]DeviceFilter{
                 isValidDefaultDeviceName,
             };
 
-            return helpers.firstItemMatching(Device, devices, &filters) orelse error.Fail;
+            var buf_b: [common.MAX_DEVICE_COUNT]Device = undefined;
+            // Get a subset of all_devices that only includes valid device names.
+            var valid_devices = helpers.filterItems(Device, all_devices, &buf_b, &filters);
+
+            if (valid_devices.len == 0) {
+                return error.Fail;
+            }
+
+            for (self.preferred.items) |pref| {
+                for (valid_devices) |dev| {
+                    if (mem.eql(u8, pref, dev.id)) {
+                        return dev;
+                    }
+                }
+            }
+
+            return helpers.firstItemMatching(Device, valid_devices, &filters) orelse error.Fail;
         }
 
         // Get the default capture device (i.e., Microphone) that is not presented with a
@@ -118,6 +143,21 @@ pub fn Devices(comptime T: type) type {
         pub fn getRenderDeviceAt(self: *Devices(T), index: u16) *Device {
             return self.delegate.getRenderDeviceAt(index);
         }
+
+        // Push a new device native id to the top of the list of preferred devices.
+        // This list will be used to select a default device whenever one of the prohibited device
+        // names is returned from the platform as if it were a default device.
+        //
+        // Each call to this method will push the provided id to the top of the list and the
+        // entire list will be scanned until the first expected device is found.
+        pub fn pushPreferredNativeId(self: *Devices(T), id: []const u8, direction: Direction) !void {
+            try self.preferred.insert(0, id);
+        }
+
+        // Clear the accumulated list of preferred device ids.
+        pub fn clearPreferredIds(self: *Devices(T)) void {
+            self.preferred.clearRetainingCapacity();
+        }
     };
 }
 
@@ -132,10 +172,9 @@ const fake_devices_only_bad = "src/fakes/devices_only_bad.json";
 
 // Create and return a configured API client for tests.
 fn createFakeApi(path: []const u8) !*FakeDevices {
-    const alloc = std.testing.allocator;
     // Configure and create the API surface
-    const delegate = try fake.Devices.initWithDevicesPath(alloc, path);
-    return try FakeDevices.init_with_delegate(alloc, delegate);
+    const delegate = try fake.Devices.initWithDevicesPath(talloc, path);
+    return try FakeDevices.init_with_delegate(talloc, delegate);
 }
 
 test "Devices Fake is instantiable" {
@@ -147,7 +186,7 @@ test "Devices.getCaptureDevices" {
     var api = try createFakeApi(fake_devices_path);
     defer api.deinit();
 
-    var buffer: [10]Device = undefined;
+    var buffer: [common.MAX_DEVICE_COUNT]Device = undefined;
 
     const results = try api.getCaptureDevices(&buffer);
 
@@ -178,7 +217,7 @@ test "Devices.getCaptureDeviceAt" {
     defer api.deinit();
 
     var device_at = api.getCaptureDeviceAt(1);
-    try expectEqual(device_at.id, 3);
+    try expectEqualStrings("3", device_at.id);
     try expectEqualStrings("Way2Call (Microphone)", device_at.name);
 }
 
@@ -187,7 +226,7 @@ test "Devices.getRenderDeviceAt" {
     defer api.deinit();
 
     var device_at = api.getRenderDeviceAt(3);
-    try expectEqual(device_at.id, 6);
+    try expectEqualStrings("6", device_at.id);
     try expectEqualStrings("ASI Telephone (Speakers)", device_at.name);
 }
 
@@ -197,7 +236,7 @@ test "Devices.getDefaultCaptureDevice returns expected entry" {
 
     var device = try api.getDefaultCaptureDevice();
 
-    try expectEqual(device.id, 0);
+    try expectEqualStrings("0", device.id);
     try expectEqualStrings("Array Microphone", device.name);
 }
 
@@ -209,7 +248,7 @@ test "Devices.getDefaultCaptureDevice cannot be Way2Call" {
     var device = try api.getDefaultCaptureDevice();
 
     // Return the first non-W2C entry.
-    try expectEqual(device.id, 0);
+    try expectEqualStrings("0", device.id);
     try expectEqualStrings("Array Microphone", device.name);
 }
 
@@ -221,7 +260,7 @@ test "Devices.getDefaultCaptureDevice cannot be ASI Telephone" {
     var device = try api.getDefaultCaptureDevice();
 
     // Return the zeroth entry b/c W2C is invalid
-    try expectEqual(device.id, 0);
+    try expectEqualStrings("0", device.id);
     try expectEqualStrings("Array Microphone", device.name);
 }
 
@@ -239,7 +278,7 @@ test "Devices.getDefaultRenderDevice returns expected entry" {
 
     var device = try api.getDefaultRenderDevice();
 
-    try expectEqual(device.id, 1);
+    try expectEqualStrings("1", device.id);
     try expectEqualStrings("Built-in Speakers", device.name);
 }
 
@@ -251,6 +290,33 @@ test "Devices.getDefaultRenderDevice cannot be Way2Call" {
     var device = try api.getDefaultRenderDevice();
 
     // Return the first non-W2C entry.
-    try expectEqual(device.id, 1);
+    try expectEqualStrings("1", device.id);
     try expectEqualStrings("Built-in Speakers", device.name);
+}
+
+test "Devices saves preferred device ids" {
+    var api = try createFakeApi(fake_devices_w2c_defaults);
+    defer api.deinit(); // Will deinit delegate and self
+
+    try api.pushPreferredNativeId("headset-spkr", Direction.Render); // second priority
+    try api.pushPreferredNativeId("bt-spkr", Direction.Render); // first priority
+
+    var speaker = try api.getDefaultRenderDevice();
+    try expectEqualStrings("bt-spkr", speaker.id);
+    try expectEqualStrings("Bluetooth Speaker", speaker.name);
+
+    api.clearPreferredIds();
+    try api.pushPreferredNativeId("headset-spkr", Direction.Render); // only priority
+
+    var headset = try api.getDefaultRenderDevice();
+    try expectEqualStrings("headset-spkr", headset.id);
+    try expectEqualStrings("Bluetooth Headset (Speakers)", headset.name);
+}
+
+// NOTE(lbayes): This will load whichever implementation is appropriate
+// for the environment where these tests are being COMPILED. Probably
+// not exactly what we want, but slightly better than nothing?
+test "Devices native implementation gets tested" {
+    var api = try NativeDevices.init(talloc);
+    defer api.deinit();
 }

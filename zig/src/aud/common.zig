@@ -8,24 +8,15 @@ const EMPTY_MATCHES: []const u8 = "";
 pub const MAX_DEVICE_COUNT: usize = 128;
 pub const ASI_TELEPHONE: []const u8 = "ASI Telephone";
 pub const WAY2CALL: []const u8 = "Way2Call";
-pub const NULL_DEVICE_NAME = "[NullDevice]";
 
 pub const Device = struct {
-    id: u16,
+    id: []const u8 = "",
     name: []const u8,
     direction: Direction = Direction.Render,
     is_default: bool = false,
     rank: u8 = 0,
-    native_id: []const u8 = "",
     // sample_rate: u32,
     // channel_count: u8,
-
-    pub fn equals(self: *Device, d: *Device) bool {
-        return self.id == d.id and
-            self.name == d.name and
-            self.direction == d.direction and
-            self.is_default == d.is_default;
-    }
 };
 
 pub fn isRenderDevice(d: Device) bool {
@@ -41,13 +32,6 @@ pub fn isDefaultDevice(d: Device) bool {
 }
 
 pub const DeviceFilter = fn (Device) bool;
-
-pub var NullDevice = Device{
-    .id = 254,
-    .name = NULL_DEVICE_NAME,
-    .direction = Direction.Capture,
-    .is_default = false,
-};
 
 pub const Direction = enum(u8) {
     Capture = 0,

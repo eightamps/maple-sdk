@@ -1,5 +1,5 @@
 const std = @import("std");
-const common = @import("../aud_common.zig");
+const common = @import("../common.zig");
 const win32 = @import("win32");
 
 const Allocator = std.mem.Allocator;

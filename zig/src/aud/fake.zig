@@ -1,6 +1,6 @@
 const std = @import("std");
-const common = @import("../aud_common.zig");
-const helpers = @import("../../helpers.zig");
+const common = @import("./common.zig");
+const helpers = @import("../helpers.zig");
 
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;

@@ -1,24 +1,24 @@
 [
   {
-    "id": 3,
+    "id": "3",
     "name": "WAY2call (Microphone)",
     "is_default": false,
     "direction": 0
   },
   {
-    "id": 4,
+    "id": "4",
     "name": "Way2Call (Speakers)",
     "is_default": false,
     "direction": 1
   },
   {
-    "id": 5,
+    "id": "5",
     "name": "ASI Telephone (Microphone)",
     "is_default": true,
     "direction": 0
   },
   {
-    "id": 6,
+    "id": "6",
     "name": "ASI Telephone (Speakers)",
     "is_default": true,
     "direction": 1
