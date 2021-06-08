@@ -61,17 +61,20 @@ pub fn Devices(comptime T: type) type {
             return self.delegate.info();
         }
 
-        // Filter device names to ensure they do not contain (case-insensitive) either
-        // "Way2Call" or "ASI Telephone". This is used by the default device requests
-        // to guarantee we never attempt to send or receive host-side user audio through
-        // these known-bad devices, which Microsoft insists on forcing into the default
-        // position(s).
+        // Filter device names to ensure they do not contain (case-insensitive)
+        // either "Way2Call" or "ASI Telephone". This is used by the default
+        // device requests to guarantee we never attempt to send or receive
+        // host-side user audio through these known-bad devices, which
+        // Microsoft insists on forcing into the default position(s).
         fn isValidDefaultCaptureDevice(d: Device) bool {
             if (ascii.indexOfIgnoreCasePos(d.name, 0, common.WAY2CALL) != null) return false;
             if (ascii.indexOfIgnoreCasePos(d.name, 0, common.ASI_TELEPHONE) != null) return false;
             return true;
         }
 
+        // Return true if ths provided device can be used as a render device.
+        //
+        // In other words, this device does not present any of our blocked device names.
         fn isValidDefaultRenderDevice(d: Device) bool {
             if (ascii.indexOfIgnoreCasePos(d.name, 0, common.WAY2CALL) != null) return false;
             if (ascii.indexOfIgnoreCasePos(d.name, 0, common.ASI_TELEPHONE) != null) return false;
@@ -87,6 +90,10 @@ pub fn Devices(comptime T: type) type {
             }
         }
 
+        // Get the default device from the underlying operating system, and if
+        // the device name is expected to be blocked, use the first preferred
+        // device (if found), or the first device in the list if no preferred
+        // devices are found.
         pub fn getDefaultDevice(self: *Devices(T), direction: Direction) !Device {
             // Ask the native implementation for it's default device
             const device = try self.delegate.getDefaultDevice(direction);
@@ -162,12 +169,16 @@ pub fn Devices(comptime T: type) type {
             return self.delegate.getRenderDeviceAt(index);
         }
 
-        // Push a new device native id to the top of the list of preferred devices.
-        // This list will be used to select a default device whenever one of the prohibited device
-        // names is returned from the platform as if it were a default device.
+        // Push a new device native id to the top of the list of preferred
+        // devices.
         //
-        // Each call to this method will push the provided id to the top of the list and the
-        // entire list will be scanned until the first expected device is found.
+        // This list will be used to select a default device whenever one of the
+        // prohibited device names is returned from the platform as if it were a
+        // default device.
+        //
+        // Each call to this method will push the provided id to the top of the
+        // list and the entire list will be scanned until the first expected
+        // device is found.
         pub fn pushPreferredNativeId(self: *Devices(T), id: []const u8, direction: Direction) !void {
             try self.preferred.insert(0, id);
         }

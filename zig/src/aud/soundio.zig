@@ -82,16 +82,15 @@ pub const Devices = struct {
         self.allocator.destroy(self);
     }
 
-    pub fn info(self: *Devices) []const u8 {
-        return "soundio";
-    }
+    fn getNativeDevices(self: *Devices, buffer: []Device, count: c_int, get_by_index: NativeGetDevice) ![]Device {
+        var index: usize = 0;
 
-    pub fn getDefaultDevice(self: *Devices, direction: Direction) !Device {
-        if (direction == Direction.Capture) {
-            return self.getDefaultCaptureDevice();
-        } else {
-            return self.getDefaultRenderDevice();
+        while (index < count) : (index += 1) {
+            const sio_device = get_by_index(self.soundio, @intCast(c_int, index));
+            const device = try self.sioDeviceToAudDevice(sio_device);
+            buffer[index] = device;
         }
+        return buffer[0..index];
     }
 
     fn sioDeviceToAudDevice(self: *Devices, sio_device: *c.SoundIoDevice) !Device {
@@ -112,8 +111,35 @@ pub const Devices = struct {
         return device.*;
     }
 
+    pub fn info(self: *Devices) []const u8 {
+        return "soundio";
+    }
+
+    pub fn getDefaultDevice(self: *Devices, direction: Direction) !Device {
+        if (direction == Direction.Capture) {
+            return self.getDefaultCaptureDevice();
+        } else {
+            return self.getDefaultRenderDevice();
+        }
+    }
+
+    pub fn getCaptureDeviceAt(self: *Devices, index: c_int) !Device {
+        const sio_device = try c.soundio_get_input_device(self.soundio, index) orelse error.Fail;
+        return self.sioDeviceToAudDevice(sio_device);
+    }
+
     pub fn getDefaultCaptureDevice(self: *Devices) !Device {
-        return error.Fail;
+        const index = c.soundio_default_input_device_index(self.soundio);
+        if (index_failed(index)) {
+            print("soundio_default_input_device_index failed with: {}\n", .{index});
+            return error.Fail;
+        }
+        return try self.getCaptureDeviceAt(index);
+    }
+
+    pub fn getRenderDeviceAt(self: *Devices, index: c_int) !Device {
+        const sio_device = try c.soundio_get_output_device(self.soundio, index) orelse error.Fail;
+        return self.sioDeviceToAudDevice(sio_device);
     }
 
     pub fn getDefaultRenderDevice(self: *Devices) !Device {
@@ -122,44 +148,7 @@ pub const Devices = struct {
             print("soundio_default_output_device_index failed with: {}\n", .{index});
             return error.Fail;
         }
-        print("soundio_default_output_device_index index: {}\n", .{index});
-        const sio_device = try self.getRenderDeviceByIndex(index);
-
-        // Store the device for later lookups?
-        try self.sio_devices.append(sio_device);
-
-        return self.sioDeviceToAudDevice(sio_device);
-    }
-
-    fn getRenderDeviceByIndex(self: *Devices, index: c_int) !*c.SoundIoDevice {
-        const sio_device = c.soundio_get_output_device(self.soundio, index);
-        if (sio_device == null) {
-            print("soundio_get_output_device failed\n", .{});
-            return error.Fail;
-        }
-        print("soundio_get_output_device success\n", .{});
-        return sio_device;
-    }
-
-    fn getDefaultCaptureDeviceIndex(self: *Devices) !c_int {
-        const index = c.soundio_default_input_device_index(self.soundio);
-        if (index_failed(index)) {
-            print("soundio_default_input_device_index failed with: {}\n", .{index});
-            return error.Fail;
-        }
-        print("soundio_default_input_device_index: {}\n", .{index});
-        return index;
-    }
-
-    fn getNativeDevices(self: *Devices, buffer: []Device, count: c_int, get_device: NativeGetDevice) ![]Device {
-        var index: usize = 0;
-
-        while (index < count) : (index += 1) {
-            const sio_device = get_device(self.soundio, @intCast(c_int, index));
-            const device = try self.sioDeviceToAudDevice(sio_device);
-            buffer[index] = device;
-        }
-        return buffer[0..index];
+        return try self.getRenderDeviceAt(index);
     }
 
     pub fn getDevices(self: *Devices, buffer: []Device, direction: Direction) ![]Device {
@@ -174,18 +163,6 @@ pub const Devices = struct {
     pub fn getRenderDevices(self: *Devices, buffer: []Device) ![]Device {
         const count = c.soundio_output_device_count(self.soundio);
         return self.getNativeDevices(buffer, count, c.soundio_get_output_device);
-    }
-
-    pub fn getCaptureDeviceAt(self: *Devices, index: u16) *Device {
-        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
-        var result = try self.getCaptureDevices(&buffer);
-        return &result[index];
-    }
-
-    pub fn getRenderDeviceAt(self: *Devices, index: u16) *Device {
-        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
-        var result = try self.getRenderDevices(&buffer);
-        return &result[index];
     }
 };
 
@@ -210,3 +187,5 @@ test "Soundio getDevices returns list" {
     }
     try expectEqual(devices.len, 5);
 }
+
+test "Soundio getDeviceById" {}
