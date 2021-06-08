@@ -1,5 +1,5 @@
 const std = @import("std");
-const common = @import("./common.zig");
+const common = @import("common.zig");
 const helpers = @import("../helpers.zig");
 
 const c = @cImport({
@@ -103,6 +103,11 @@ pub const Devices = struct {
             .id = id,
             .name = native_name,
         };
+
+        // Default Device.direction is Render, update if we have a Capture device.
+        if (sio_device.aim == @intToEnum(c.SoundIoDeviceAim, c.SoundIoDeviceAimInput)) {
+            device.direction = Direction.Capture;
+        }
 
         // print("ID: {s}\n", .{device.id});
         // print("NAME: {d}: {s}\n", .{ mem.len(device.name), device.name });

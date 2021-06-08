@@ -1,18 +1,20 @@
 const std = @import("std");
-const common = @import("./aud/common.zig");
-const fake = @import("./aud/fake.zig");
-const helpers = @import("./helpers.zig");
+const common = @import("aud/common.zig");
+const fake = @import("aud/fake.zig");
+const helpers = @import("helpers.zig");
 
 // Get the native audible implementation
 const target_file = switch (std.Target.current.os.tag) {
-    .windows => "./aud/soundio.zig",
-    .linux => "./aud/soundio.zig",
-    else => "./aud_fake.zig", // TODO(lbayes): Should be error
+    .windows => "aud/soundio.zig",
+    .linux => "aud/soundio.zig",
+    else => "aud_fake.zig", // TODO(lbayes): Should be error
 };
 const native = @import(target_file);
 
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
+const Channel = std.event.Channel;
+const Thread = std.Thread;
 const ascii = std.ascii;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
@@ -21,6 +23,7 @@ const expectError = std.testing.expectError;
 const mem = std.mem;
 const print = std.debug.print;
 const talloc = std.testing.allocator;
+const time = std.time;
 
 pub const MAX_DEVICE_COUNT = common.MAX_DEVICE_COUNT;
 pub const Device = common.Device;
@@ -35,6 +38,24 @@ const fake_devices_path = "src/fakes/devices.json";
 const fake_devices_w2c_defaults = "src/fakes/devices_w2c_defaults.json";
 const fake_devices_asi_defaults = "src/fakes/devices_asi_defaults.json";
 const fake_devices_only_bad = "src/fakes/devices_only_bad.json";
+
+// Must be unbound for threads to work with it.
+fn work(context: *StreamContext) u8 {
+    while (context.is_active) {
+        time.sleep(10 * time.ns_per_ms);
+    }
+    return 0;
+}
+
+pub const StreamContext = struct {
+    is_active: bool = true,
+    thread: *Thread = undefined,
+    channel: *Channel(f32) = undefined,
+
+    pub fn kill(self: *StreamContext) void {
+        self.is_active = false;
+    }
+};
 
 pub fn Devices(comptime T: type) type {
     return struct {
@@ -206,6 +227,23 @@ pub fn Devices(comptime T: type) type {
                 }
             }
             return error.Fail;
+        }
+
+        // Connect the streams for the provided pair of devices and return
+        // a ThreadContext object for external control.
+        pub fn connect(self: *Devices(T), render: Device, capture: Device) !*StreamContext {
+            if (render.direction != Direction.Render) {
+                print("connect expected a render device but received a capture instead\n", .{});
+                return error.Fail;
+            }
+            if (capture.direction != Direction.Capture) {
+                print("connect expected a capture device but received a render instead\n", .{});
+                return error.Fail;
+            }
+
+            var context = StreamContext{};
+            context.thread = try Thread.spawn(work, &context);
+            return &context;
         }
     };
 }
