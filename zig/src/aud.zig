@@ -26,8 +26,15 @@ pub const MAX_DEVICE_COUNT = common.MAX_DEVICE_COUNT;
 pub const Device = common.Device;
 pub const Direction = common.Direction;
 pub const DeviceFilter = common.DeviceFilter;
+pub const NativeDevices = Devices(native.Devices);
 
 const PreferredIds = ArrayList([]const u8);
+
+const FakeDevices = Devices(fake.Devices);
+const fake_devices_path = "src/fakes/devices.json";
+const fake_devices_w2c_defaults = "src/fakes/devices_w2c_defaults.json";
+const fake_devices_asi_defaults = "src/fakes/devices_asi_defaults.json";
+const fake_devices_only_bad = "src/fakes/devices_only_bad.json";
 
 pub fn Devices(comptime T: type) type {
     return struct {
@@ -202,15 +209,6 @@ pub fn Devices(comptime T: type) type {
         }
     };
 }
-
-pub const NativeDevices = Devices(native.Devices);
-
-const FakeDevices = Devices(fake.Devices);
-
-const fake_devices_path = "src/fakes/devices.json";
-const fake_devices_w2c_defaults = "src/fakes/devices_w2c_defaults.json";
-const fake_devices_asi_defaults = "src/fakes/devices_asi_defaults.json";
-const fake_devices_only_bad = "src/fakes/devices_only_bad.json";
 
 // Create and return a configured API client for tests.
 fn createFakeApi(path: []const u8) !*FakeDevices {
