@@ -7,3 +7,6 @@
 [submodule "zig/vendor/win32"]
 	path = zig/vendor/win32
 	url = git@github.com:marlersoft/zigwin32.git
+[submodule "zig/vendor/libsoundio"]
+	path = zig/vendor/libsoundio
+	url = git@github.com:joextodd/libsoundio-binaries.git
