@@ -104,13 +104,13 @@ pub fn Devices(comptime T: type) type {
             }
 
             // The native default device was not a valid device, get the next candidate.
-            var buf_a: [common.MAX_DEVICE_COUNT]Device = undefined;
+            var buf_a: [MAX_DEVICE_COUNT]Device = undefined;
             var all_devices = try self.getDevices(&buf_a, direction);
             var filters = [_]DeviceFilter{
                 directionFilter,
             };
 
-            var buf_b: [common.MAX_DEVICE_COUNT]Device = undefined;
+            var buf_b: [MAX_DEVICE_COUNT]Device = undefined;
             // Get a subset of all_devices that only includes valid device names.
             var valid_devices = helpers.filterItems(Device, all_devices, &buf_b, &filters);
 
@@ -187,6 +187,19 @@ pub fn Devices(comptime T: type) type {
         pub fn clearPreferredIds(self: *Devices(T)) void {
             self.preferred.clearRetainingCapacity();
         }
+
+        // Get the first device where it's name and direction match the
+        // provided values.
+        pub fn getDeviceWithName(self: *Devices(T), name: []const u8, direction: Direction) !Device {
+            var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+            const devices = try self.getDevices(&buffer, direction);
+            for (devices) |device| {
+                if (ascii.indexOfIgnoreCasePos(device.name, 0, name) != null) {
+                    return device;
+                }
+            }
+            return error.Fail;
+        }
     };
 }
 
@@ -215,7 +228,7 @@ test "Devices.getCaptureDevices" {
     var api = try createFakeApi(fake_devices_path);
     defer api.deinit();
 
-    var buffer: [common.MAX_DEVICE_COUNT]Device = undefined;
+    var buffer: [MAX_DEVICE_COUNT]Device = undefined;
 
     const results = try api.getCaptureDevices(&buffer);
 
@@ -348,4 +361,15 @@ test "Devices saves preferred device ids" {
 test "Devices native implementation gets tested" {
     var api = try NativeDevices.init(talloc);
     defer api.deinit();
+}
+
+test "Devices getDeviceWithName" {
+    var api = try createFakeApi(fake_devices_w2c_defaults);
+    defer api.deinit();
+
+    var phone_speaker = try api.getDeviceWithName("ASI Telephone", Direction.Capture);
+    try expectEqualStrings("5", phone_speaker.id);
+
+    var phone_mic = try api.getDeviceWithName("ASI Telephone", Direction.Render);
+    try expectEqualStrings("6", phone_mic.id);
 }

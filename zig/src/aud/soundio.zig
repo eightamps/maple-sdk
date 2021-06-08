@@ -175,17 +175,17 @@ test "Soundio Devices is instantiable" {
 
 // NOTE(lbayes): This test will only pass on my workstation
 // with particular devices connected. It is only useful for development purposes
-test "Soundio getDevices returns list" {
-    var api = try Devices.init(talloc);
-    defer api.deinit();
-
-    var buff: [common.MAX_DEVICE_COUNT]Device = undefined;
-    const devices = try api.getDevices(&buff, Direction.Render);
-
-    for (devices) |dev| {
-        print("DEVI: {s}\n", .{dev.name});
-    }
-    try expectEqual(devices.len, 5);
-}
+// test "Soundio getDevices returns list" {
+//     var api = try Devices.init(talloc);
+//     defer api.deinit();
+//
+//     var buff: [common.MAX_DEVICE_COUNT]Device = undefined;
+//     const devices = try api.getDevices(&buff, Direction.Render);
+//
+//     for (devices) |dev| {
+//         print("DEVI: {s}\n", .{dev.name});
+//     }
+//     try expectEqual(devices.len, 5);
+// }
 
 test "Soundio getDeviceById" {}
