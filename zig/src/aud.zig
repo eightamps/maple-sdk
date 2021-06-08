@@ -5,7 +5,7 @@ const helpers = @import("./helpers.zig");
 
 // Get the native audible implementation
 const target_file = switch (std.Target.current.os.tag) {
-    .windows => "./aud/win.zig",
+    .windows => "./aud/soundio.zig",
     .linux => "./aud/soundio.zig",
     else => "./aud_fake.zig", // TODO(lbayes): Should be error
 };

@@ -16,14 +16,20 @@ fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) vo
 
         // Link vendor/libsoundio
         step.addIncludeDir("vendor/libsoundio/include");
-        step.addLibPath("vendor/libsoundio/");
         step.linkSystemLibraryName("soundio");
+        step.addLibPath("vendor/libsoundio/linux/");
     } else if (is_windows) {
         // Configure libusb
         step.addIncludeDir("vendor/libusb-win32/include");
         // TODO(lbayes): Copy the files found in here to dist/ when building
         step.addLibPath("vendor/libusb-win32/VS2019/MS64/dll");
         step.linkSystemLibraryName("libusb-1.0");
+
+        // Link vendor/libsoundio
+        step.addIncludeDir("vendor/libsoundio/include");
+        step.addLibPath("vendor/libsoundio/win32/");
+        step.linkSystemLibraryName("soundio");
+        step.verbose_link = true;
 
         // Get win32 zig packages
         step.addPackage(.{

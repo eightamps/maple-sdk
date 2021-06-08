@@ -35,6 +35,11 @@ if [[ $TARGET == "watch-run" ]]; then
   ${WC} ${WATCH_FILES} -c "zig build run"
 fi
 
+if [[ $TARGET == "watch-build-win" ]]; then
+  # zig build --watch -Dtarget=${WIN_TARGET} && ${WINE} dist/console.exe
+  ${WC} ${WATCH_FILES} -c "zig build -Dtarget=${WIN_TARGET}"
+fi
+
 if [[ $TARGET == "watch-run-win" ]]; then
   # zig build --watch -Dtarget=${WIN_TARGET} && ${WINE} dist/console.exe
   ${WC} ${WATCH_FILES} -c "zig build -Dtarget=${WIN_TARGET} && ${WINE} dist/console.exe"

@@ -2,19 +2,19 @@ const std = @import("std");
 const common = @import("./common.zig");
 const helpers = @import("../helpers.zig");
 
-const sio = @cImport({
+const c = @cImport({
     @cInclude("soundio/soundio.h");
 });
 
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
+const Device = common.Device;
+const Direction = common.Direction;
 const expect = std.testing.expect;
+const expectEqualStrings = std.testing.expectEqualStrings;
 const mem = std.mem;
 const print = std.debug.print;
 const talloc = std.testing.allocator;
-
-usingnamespace common;
-usingnamespace sio;
 
 fn failed(status: c_int) bool {
     return status != 0;
@@ -26,16 +26,16 @@ fn index_failed(status: c_int) bool {
 
 pub const Devices = struct {
     allocator: *Allocator,
-    soundio: *SoundIo,
-    ring_buffer: *SoundIoRingBuffer = undefined,
+    soundio: *c.SoundIo,
+    ring_buffer: *c.SoundIoRingBuffer = undefined,
     aud_devices: ArrayList(*Device) = undefined,
-    sio_devices: ArrayList(*SoundIoDevice) = undefined,
+    sio_devices: ArrayList(*c.SoundIoDevice) = undefined,
     last_id: u8 = 0,
 
     pub fn init(a: *Allocator) !*Devices {
         const instance = try a.create(Devices);
 
-        const soundio = soundio_create();
+        const soundio = c.soundio_create();
         if (soundio == null) {
             print("soundio failed to allocate\n", .{});
             return error.Fail;
@@ -43,23 +43,23 @@ pub const Devices = struct {
         print("soundio successfully created context\n", .{});
 
         {
-            const value = @intToEnum(sio.SoundIoBackend, sio.SoundIoBackendPulseAudio);
-            const status = soundio_connect_backend(soundio, value);
+            const value = @intToEnum(c.SoundIoBackend, c.SoundIoBackendPulseAudio);
+            const status = c.soundio_connect_backend(soundio, value);
             if (failed(status)) {
                 print("soundio failed to connect to backend\n", .{});
                 // Free the soundio object before exiting
-                soundio_destroy(soundio);
+                c.soundio_destroy(soundio);
                 return error.Fail;
             }
         }
 
-        sio.soundio_flush_events(soundio);
+        c.soundio_flush_events(soundio);
         print("soundio flushed events\n", .{});
 
         instance.* = Devices{
             .allocator = a,
             .soundio = soundio,
-            .sio_devices = ArrayList(*SoundIoDevice).init(a),
+            .sio_devices = ArrayList(*c.SoundIoDevice).init(a),
             .aud_devices = ArrayList(*Device).init(a),
         };
 
@@ -75,12 +75,12 @@ pub const Devices = struct {
         }
 
         self.aud_devices.deinit();
-        soundio_destroy(self.soundio);
+        c.soundio_destroy(self.soundio);
         self.allocator.destroy(self);
     }
 
     pub fn info(self: *Devices) []const u8 {
-        return "nix";
+        return "soundio";
     }
 
     pub fn getDefaultDevice(self: *Devices, direction: Direction) !Device {
@@ -91,7 +91,7 @@ pub const Devices = struct {
         }
     }
 
-    fn sioDeviceToAudDevice(self: *Devices, sio_device: *SoundIoDevice) !Device {
+    fn sioDeviceToAudDevice(self: *Devices, sio_device: *c.SoundIoDevice) !Device {
         const id = mem.sliceTo(sio_device.id, 0);
         const native_name = mem.sliceTo(sio_device.name, 0);
 
@@ -114,7 +114,7 @@ pub const Devices = struct {
     }
 
     pub fn getDefaultRenderDevice(self: *Devices) !Device {
-        const index = soundio_default_output_device_index(self.soundio);
+        const index = c.soundio_default_output_device_index(self.soundio);
         if (index_failed(index)) {
             print("soundio_default_output_device_index failed with: {}\n", .{index});
             return error.Fail;
@@ -128,8 +128,8 @@ pub const Devices = struct {
         return self.sioDeviceToAudDevice(sio_device);
     }
 
-    fn getRenderDeviceByIndex(self: *Devices, index: c_int) !*SoundIoDevice {
-        const sio_device = soundio_get_output_device(self.soundio, index);
+    fn getRenderDeviceByIndex(self: *Devices, index: c_int) !*c.SoundIoDevice {
+        const sio_device = c.soundio_get_output_device(self.soundio, index);
         if (sio_device == null) {
             print("soundio_get_output_device failed\n", .{});
             return error.Fail;
@@ -139,7 +139,7 @@ pub const Devices = struct {
     }
 
     fn getDefaultCaptureDeviceIndex(self: *Devices) !c_int {
-        const index = soundio_default_input_device_index(self.soundio);
+        const index = c.soundio_default_input_device_index(self.soundio);
         if (index_failed(index)) {
             print("soundio_default_input_device_index failed with: {}\n", .{index});
             return error.Fail;
@@ -179,4 +179,6 @@ pub const Devices = struct {
 test "Soundio Devices is instantiable" {
     var api = try Devices.init(talloc);
     defer api.deinit();
+
+    try expectEqualStrings("soundio", api.info());
 }

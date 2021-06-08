@@ -4,16 +4,20 @@ const helpers = @import("../helpers.zig");
 
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
+const Device = common.Device;
+const DeviceFilter = common.DeviceFilter;
+const Direction = common.Direction;
 const ascii = std.ascii;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const fs = std.fs;
 const heap = std.heap;
+const isCaptureDevice = common.isCaptureDevice;
+const isDefaultDevice = common.isDefaultDevice;
+const isRenderDevice = common.isRenderDevice;
 const json = std.json;
 const mem = std.mem;
 const print = std.debug.print;
-
-usingnamespace common;
 
 const InitType = enum(u8) {
     Path,
@@ -87,7 +91,7 @@ pub const Devices = struct {
     }
 
     pub fn getDefaultDevice(self: *Devices, direction: Direction) !Device {
-        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        var buffer: [common.MAX_DEVICE_COUNT]Device = undefined;
         var dir_filter = if (direction == Direction.Capture) isCaptureDevice else isRenderDevice;
         var filters = [_]DeviceFilter{
             isDefaultDevice,
@@ -125,13 +129,13 @@ pub const Devices = struct {
     }
 
     pub fn getCaptureDeviceAt(self: *Devices, index: u16) *Device {
-        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        var buffer: [common.MAX_DEVICE_COUNT]Device = undefined;
         var result = try self.getCaptureDevices(&buffer);
         return &result[index];
     }
 
     pub fn getRenderDeviceAt(self: *Devices, index: u16) *Device {
-        var buffer: [MAX_DEVICE_COUNT]Device = undefined;
+        var buffer: [common.MAX_DEVICE_COUNT]Device = undefined;
         var result = try self.getRenderDevices(&buffer);
         return &result[index];
     }

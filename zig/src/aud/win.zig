@@ -1,13 +1,14 @@
 const std = @import("std");
-const common = @import("../common.zig");
+const common = @import("./common.zig");
 const win32 = @import("win32");
 
 const Allocator = std.mem.Allocator;
+const expectEqual = std.testing.expectEqual;
 const fmt = std.fmt;
 const heap = std.heap;
 const mem = std.mem;
 const print = std.debug.print;
-const expectEqual = std.testing.expectEqual;
+const talloc = std.testing.allocator;
 
 usingnamespace win32.media.audio.core_audio;
 usingnamespace win32.media.audio.direct_music;
@@ -39,10 +40,6 @@ fn printU16String(ptr: [*:0]const u16) []u8 {
     return smaller;
 }
 
-pub fn info() []const u8 {
-    return "WINDOWS";
-}
-
 pub const Device = struct {
     allocator: *Allocator,
     name: []const u8 = "[unknown]",
@@ -72,6 +69,10 @@ pub const Devices = struct {
     pub fn deinit(self: *Devices) void {
         CoUninitialize();
         self.allocator.destroy(self);
+    }
+
+    pub fn info(self: *Devices) []const u8 {
+        return "win";
     }
 
     pub fn getDevice(self: *Devices, matcher: common.Matcher) !*Device {
@@ -235,13 +236,8 @@ pub const Devices = struct {
 //
 
 test "Win Native.Devices is instantiable" {
-    const devices = try Devices.init(std.testing.allocator);
+    const devices = try Devices.init(talloc);
     defer devices.deinit();
-}
-
-test "Win Native.Devices info" {
-    const name = info();
-    try expectEqual(name, "LINUX");
 }
 
 test "Win Native.Default device" {
