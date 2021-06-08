@@ -13,9 +13,6 @@ const native = @import(target_file);
 
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
-const Device = common.Device;
-const DeviceFilter = common.DeviceFilter;
-const Direction = common.Direction;
 const ascii = std.ascii;
 const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
@@ -24,6 +21,11 @@ const expectError = std.testing.expectError;
 const mem = std.mem;
 const print = std.debug.print;
 const talloc = std.testing.allocator;
+
+pub const MAX_DEVICE_COUNT = common.MAX_DEVICE_COUNT;
+pub const Device = common.Device;
+pub const Direction = common.Direction;
+pub const DeviceFilter = common.DeviceFilter;
 
 const PreferredIds = ArrayList([]const u8);
 
@@ -64,16 +66,32 @@ pub fn Devices(comptime T: type) type {
         // to guarantee we never attempt to send or receive host-side user audio through
         // these known-bad devices, which Microsoft insists on forcing into the default
         // position(s).
-        fn isValidDefaultDeviceName(d: Device) bool {
+        fn isValidDefaultCaptureDevice(d: Device) bool {
             if (ascii.indexOfIgnoreCasePos(d.name, 0, common.WAY2CALL) != null) return false;
             if (ascii.indexOfIgnoreCasePos(d.name, 0, common.ASI_TELEPHONE) != null) return false;
             return true;
         }
 
+        fn isValidDefaultRenderDevice(d: Device) bool {
+            if (ascii.indexOfIgnoreCasePos(d.name, 0, common.WAY2CALL) != null) return false;
+            if (ascii.indexOfIgnoreCasePos(d.name, 0, common.ASI_TELEPHONE) != null) return false;
+            if (ascii.indexOfIgnoreCasePos(d.name, 0, common.ASI_MICROPHONE) != null) return false;
+            return true;
+        }
+
+        fn getDeviceFilterFor(self: *Devices(T), direction: Direction) DeviceFilter {
+            if (direction == Direction.Capture) {
+                return isValidDefaultCaptureDevice;
+            } else {
+                return isValidDefaultRenderDevice;
+            }
+        }
+
         pub fn getDefaultDevice(self: *Devices(T), direction: Direction) !Device {
             // Ask the native implementation for it's default device
             const device = try self.delegate.getDefaultDevice(direction);
-            if (isValidDefaultDeviceName(device)) {
+            const directionFilter = self.getDeviceFilterFor(direction);
+            if (directionFilter(device)) {
                 // If the device is a valid default device, return it
                 return device;
             }
@@ -82,7 +100,7 @@ pub fn Devices(comptime T: type) type {
             var buf_a: [common.MAX_DEVICE_COUNT]Device = undefined;
             var all_devices = try self.getDevices(&buf_a, direction);
             var filters = [_]DeviceFilter{
-                isValidDefaultDeviceName,
+                directionFilter,
             };
 
             var buf_b: [common.MAX_DEVICE_COUNT]Device = undefined;

@@ -11,6 +11,7 @@ const ArrayList = std.ArrayList;
 const Device = common.Device;
 const Direction = common.Direction;
 const expect = std.testing.expect;
+const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 const mem = std.mem;
 const print = std.debug.print;
@@ -23,6 +24,8 @@ fn failed(status: c_int) bool {
 fn index_failed(status: c_int) bool {
     return status < 0;
 }
+
+const NativeGetDevice = fn ([*c]c.struct_SoundIo, c_int) callconv(.C) [*c]c.struct_SoundIoDevice;
 
 pub const Devices = struct {
     allocator: *Allocator,
@@ -102,8 +105,8 @@ pub const Devices = struct {
             .name = native_name,
         };
 
-        print("ID: {s}\n", .{device.id});
-        print("NAME: {d}: {s}\n", .{ mem.len(device.name), device.name });
+        // print("ID: {s}\n", .{device.id});
+        // print("NAME: {d}: {s}\n", .{ mem.len(device.name), device.name });
         try self.aud_devices.append(device);
 
         return device.*;
@@ -148,19 +151,29 @@ pub const Devices = struct {
         return index;
     }
 
+    fn getNativeDevices(self: *Devices, buffer: []Device, count: c_int, get_device: NativeGetDevice) ![]Device {
+        var index: usize = 0;
+
+        while (index < count) : (index += 1) {
+            const sio_device = get_device(self.soundio, @intCast(c_int, index));
+            const device = try self.sioDeviceToAudDevice(sio_device);
+            buffer[index] = device;
+        }
+        return buffer[0..index];
+    }
+
     pub fn getDevices(self: *Devices, buffer: []Device, direction: Direction) ![]Device {
-        // const filter = if (direction == Direction.Capture) isCaptureDevice else isRenderDevice;
-        // var filters = [_]DeviceFilter{filter};
-        // return helpers.filterItems(Device, self.devices, buffer, &filters);
-        return error.Fail;
+        if (direction == Direction.Capture) return self.getCaptureDevices(buffer) else return self.getRenderDevices(buffer);
     }
 
     pub fn getCaptureDevices(self: *Devices, buffer: []Device) ![]Device {
-        return self.getDevices(buffer, Direction.Capture);
+        const count = c.soundio_input_device_count(self.soundio);
+        return self.getNativeDevices(buffer, count, c.soundio_get_input_device);
     }
 
     pub fn getRenderDevices(self: *Devices, buffer: []Device) ![]Device {
-        return self.getDevices(buffer, Direction.Render);
+        const count = c.soundio_output_device_count(self.soundio);
+        return self.getNativeDevices(buffer, count, c.soundio_get_output_device);
     }
 
     pub fn getCaptureDeviceAt(self: *Devices, index: u16) *Device {
@@ -181,4 +194,19 @@ test "Soundio Devices is instantiable" {
     defer api.deinit();
 
     try expectEqualStrings("soundio", api.info());
+}
+
+// NOTE(lbayes): This test will only pass on my workstation
+// with particular devices connected. It is only useful for development purposes
+test "Soundio getDevices returns list" {
+    var api = try Devices.init(talloc);
+    defer api.deinit();
+
+    var buff: [common.MAX_DEVICE_COUNT]Device = undefined;
+    const devices = try api.getDevices(&buff, Direction.Render);
+
+    for (devices) |dev| {
+        print("DEVI: {s}\n", .{dev.name});
+    }
+    try expectEqual(devices.len, 5);
 }

@@ -7,6 +7,7 @@ const EMPTY_MATCHES: []const u8 = "";
 
 pub const MAX_DEVICE_COUNT: usize = 128;
 pub const ASI_TELEPHONE: []const u8 = "ASI Telephone";
+pub const ASI_MICROPHONE: []const u8 = "ASI Microphone";
 pub const WAY2CALL: []const u8 = "Way2Call";
 
 pub const Device = struct {
@@ -123,3 +124,5 @@ test "DefaultRender" {
     try testing.expect(DefaultRender.is_default == true);
     try testing.expectEqual(DefaultRender.not_matches, ASI_TELEPHONE ++ "|" ++ WAY2CALL);
 }
+
+test "ASI Microphone cannot be a render device" {}
