@@ -46,8 +46,10 @@ pub const Devices = struct {
         print("soundio successfully created context\n", .{});
 
         {
-            const value = @intToEnum(c.SoundIoBackend, c.SoundIoBackendPulseAudio);
-            const status = c.soundio_connect_backend(soundio, value);
+            // const value = @intToEnum(c.SoundIoBackend, c.SoundIoBackendPulseAudio);
+            // const status = c.soundio_connect_backend(soundio, value);
+            const status = c.soundio_connect(soundio);
+
             if (failed(status)) {
                 print("soundio failed to connect to backend\n", .{});
                 // Free the soundio object before exiting
@@ -71,12 +73,10 @@ pub const Devices = struct {
 
     pub fn deinit(self: *Devices) void {
         self.sio_devices.deinit();
-
         // Free each device that was allocated for the devices list.
         for (self.aud_devices.items) |dev| {
             self.allocator.destroy(dev);
         }
-
         self.aud_devices.deinit();
         c.soundio_destroy(self.soundio);
         self.allocator.destroy(self);

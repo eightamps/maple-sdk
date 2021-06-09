@@ -27,7 +27,7 @@ fn linkLibs(step: *std.build.LibExeObjStep, is_windows: bool, is_linux: bool) vo
 
         // Link vendor/libsoundio
         step.addIncludeDir("vendor/libsoundio/include");
-        step.addLibPath("vendor/libsoundio/win32/");
+        step.addLibPath("vendor/libsoundio/win64/");
         step.linkSystemLibraryName("soundio");
         step.verbose_link = true;
 
