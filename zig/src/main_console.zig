@@ -39,19 +39,21 @@ pub fn main() !u8 {
         }
     }
 
-    // Get a default capture device
+    // Get default render device
     const render = try audio_api.getDefaultRenderDevice();
     print("render.name: {s}\n", .{render.name});
 
+    // Get default capture device
     const capture = try audio_api.getDefaultCaptureDevice();
     print("capture.name: {s}\n", .{capture.name});
 
+    // Connect the device pair
     const to_phone = try audio_api.connect(render, capture);
     const from_phone = try audio_api.connect(render, capture);
 
-    time.sleep(5000 * time.ns_per_ms);
-    to_phone.kill();
-    from_phone.kill();
+    time.sleep(1 * time.ns_per_ms);
+    to_phone.stop();
+    from_phone.stop();
 
     print("Main Console exiting now\n", .{});
     return 0;

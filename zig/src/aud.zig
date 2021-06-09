@@ -52,7 +52,7 @@ pub const StreamContext = struct {
     thread: *Thread = undefined,
     channel: *Channel(f32) = undefined,
 
-    pub fn kill(self: *StreamContext) void {
+    pub fn stop(self: *StreamContext) void {
         self.is_active = false;
     }
 };
