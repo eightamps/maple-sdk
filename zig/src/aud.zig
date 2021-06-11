@@ -1,15 +1,15 @@
-const std = @import("std");
 const common = @import("aud/common.zig");
 const fake = @import("aud/fake.zig");
 const helpers = @import("helpers.zig");
+const std = @import("std");
+const RingBuffer = @import("ring_buffer.zig").RingBuffer;
 
 // Get the native audible implementation
-const target_file = switch (std.Target.current.os.tag) {
+const native = @import(switch (std.Target.current.os.tag) {
     .windows => "aud/soundio.zig",
     .linux => "aud/soundio.zig",
     else => "aud_fake.zig", // TODO(lbayes): Should be error
-};
-const native = @import(target_file);
+});
 
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
@@ -20,6 +20,7 @@ const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 const expectError = std.testing.expectError;
+const fifo = std.fifo;
 const mem = std.mem;
 const print = std.debug.print;
 const talloc = std.testing.allocator;
@@ -40,7 +41,7 @@ const fake_devices_asi_defaults = "src/fakes/devices_asi_defaults.json";
 const fake_devices_only_bad = "src/fakes/devices_only_bad.json";
 
 // Must be unbound for threads to work with it.
-fn work(context: *StreamContext) u8 {
+fn connectDevices(context: *StreamContext) u8 {
     while (context.is_active) {
         time.sleep(10 * time.ns_per_ms);
     }
@@ -48,6 +49,8 @@ fn work(context: *StreamContext) u8 {
 }
 
 pub const StreamContext = struct {
+    capture: Device,
+    render: Device,
     is_active: bool = true,
     thread: *Thread = undefined,
     channel: *Channel(f32) = undefined,
@@ -241,8 +244,11 @@ pub fn Devices(comptime T: type) type {
                 return error.Fail;
             }
 
-            var context = StreamContext{};
-            context.thread = try Thread.spawn(work, &context);
+            var context = StreamContext{
+                .render = render,
+                .capture = capture,
+            };
+            context.thread = try Thread.spawn(connectDevices, &context);
             return &context;
         }
     };
@@ -409,3 +415,132 @@ test "Devices getDeviceWithName" {
     var phone_mic = try api.getDeviceWithName("ASI Telephone", Direction.Render);
     try expectEqualStrings("6", phone_mic.id);
 }
+
+test "Aud can access RingBuffer" {
+    const rb = try RingBuffer(f32, 100).init(talloc);
+    defer rb.deinit();
+}
+
+// const TestRingBuffer = fifo.LinearFifo(f32, fifo.LinearFifoBufferType.Dynamic);
+//
+// const TestBufContext = struct {
+//     buffer: TestRingBuffer,
+//     should_exit: bool = false,
+//     should_write: bool = false,
+//     should_read: bool = false,
+//     read_complete: bool = true,
+//     read_mb: u128 = 0,
+// };
+//
+// fn testWriter(ctx: *TestBufContext) u8 {
+//     var last_value: f32 = 0.0;
+//     var items: [10]f32 = undefined;
+//     while (!ctx.should_exit) {
+//         if (ctx.should_write) {
+//             ctx.should_write = false;
+//             var index: usize = 0;
+//             while (index < items.len) {
+//                 last_value += 0.001;
+//                 if (last_value > 100.0) {
+//                     last_value = 0.0;
+//                 }
+//                 items[index] = last_value;
+//                 index += 1;
+//             }
+//             ctx.buffer.writeAssumeCapacity(&items);
+//             ctx.should_read = true;
+//         }
+//     }
+//     print("writer exiting now\n", .{});
+//     return 0;
+// }
+//
+// fn testReader(ctx: *TestBufContext) u8 {
+//     var result: [1000]f32 = undefined;
+//     var read_count: u128 = 0;
+//     var loop_count: u128 = 0;
+//     var len: usize = 0;
+//     while (!ctx.should_exit) {
+//         if (ctx.should_read and ctx.buffer.readableLength() > 0) {
+//             ctx.should_read = false;
+//             len = ctx.buffer.read(&result);
+//             // const result = ctx.buffer.readableSlice(0);
+//             // if (len != 10) {
+//             // print("READ result: {d}\n", .{len});
+//             // }
+//             read_count += len * @sizeOf(f32);
+//             ctx.read_mb = read_count / 1_024_000;
+//
+//             loop_count += 1;
+//
+//             if (loop_count > 1_024_000) {
+//                 print("read {d} MB\n", .{ctx.read_mb});
+//                 loop_count = 0;
+//             }
+//
+//             // time.sleep(1);
+//             // time.sleep(1 * time.ns_per_ms);
+//             ctx.should_write = true;
+//         }
+//     }
+//     print("reader exiting now\n", .{});
+//     return 0;
+// }
+//
+// test "Devices buffer" {
+//     print("\n", .{});
+//     print("\n", .{});
+//     var buf = TestRingBuffer.init(talloc);
+//     // try buf.ensureCapacity(128);
+//     try buf.ensureCapacity(2048);
+//     defer buf.deinit();
+//
+//     print("\n", .{});
+//     print("----------------------------------------\n", .{});
+//     var context = TestBufContext{ .buffer = buf };
+//     const reader = try Thread.spawn(testReader, &context);
+//     const writer = try Thread.spawn(testWriter, &context);
+//
+//     context.should_write = true;
+//
+//     while (context.read_mb < 1_000) {
+//         time.sleep(100 * time.ns_per_ms);
+//     }
+//
+//     context.should_exit = true;
+//     writer.wait();
+//     reader.wait();
+//
+//     print("Exiting successfully\n", .{});
+//     print("----------------------------------------\n", .{});
+//
+//     // buf.writeAssumeCapacity(&[_]f32{
+//     //     0.1,
+//     //     0.2,
+//     //     0.3,
+//     //     0.4,
+//     //     0.5,
+//     // });
+//
+//     // var result: ?f32 = undefined;
+//
+//     // const byte_count = buf.readableLength();
+//     // const bytes = buf.readableSlice(0);
+//     // print("BYTES: {any}\n", .{bytes});
+//
+//     // while (buf.readableLength() > 0) {
+//     //     result = buf.readItem();
+//     //     print("RESULT: {d}\n", .{result});
+//     // }
+//     // result = buf.readItem();
+//     // print("RESULT: {d}\n", .{result});
+//     // result = buf.readItem();
+//     // print("RESULT: {d}\n", .{result});
+//     // result = buf.readItem();
+//     // print("RESULT: {d}\n", .{result});
+//     // result = buf.readItem();
+//     // print("RESULT: {d}\n", .{result});
+//     // result = buf.readItem();
+//     // print("RESULT: {d}\n", .{result});
+//
+// }

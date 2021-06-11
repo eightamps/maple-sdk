@@ -1,5 +1,5 @@
 const aud = @import("aud.zig");
-const phony_client = @import("phony_client.zig");
+// const phony_client = @import("phony_client.zig");
 const std = @import("std");
 
 const ascii = std.ascii;
@@ -7,7 +7,7 @@ const print = std.debug.print;
 const heap = std.heap;
 const time = std.time;
 
-usingnamespace phony_client;
+// usingnamespace phony_client;
 
 pub fn main() !u8 {
     print("--------------------------------------------------\n", .{});
@@ -33,6 +33,7 @@ pub fn main() !u8 {
     for (devices) |dev| {
         print("Dev: {s} {s}\n", .{ dev.name, dev.id });
 
+        // This is the device name that I prefer on my workstation.
         if (ascii.indexOfIgnoreCasePos(dev.name, 0, "MM-1 Analog Stereo") != null) {
             print("Pushed preferred device with name: [{s}] and id: [{s}]\n", .{ dev.name, dev.id });
             try audio_api.pushPreferredNativeId(dev.id, aud.Direction.Render);
@@ -42,18 +43,20 @@ pub fn main() !u8 {
     // Get default render device
     const render = try audio_api.getDefaultRenderDevice();
     print("render.name: {s}\n", .{render.name});
+    print("render.id: {s}\n", .{render.id});
 
     // Get default capture device
     const capture = try audio_api.getDefaultCaptureDevice();
     print("capture.name: {s}\n", .{capture.name});
+    print("capture.id: {s}\n", .{capture.id});
 
     // Connect the device pair
     const to_phone = try audio_api.connect(render, capture);
-    const from_phone = try audio_api.connect(render, capture);
+    // const from_phone = try audio_api.connect(render, capture);
 
-    time.sleep(1 * time.ns_per_ms);
+    time.sleep(1000 * time.ns_per_ms);
     to_phone.stop();
-    from_phone.stop();
+    // from_phone.stop();
 
     print("Main Console exiting now\n", .{});
     return 0;
