@@ -8,7 +8,8 @@ const print = std.debug.print;
 
 fn linkLibs(b: *bld.Builder, artifact: *bld.LibExeObjStep, target: CrossTarget) void {
     artifact.linkLibC();
-    artifact.verbose_link = true;
+    // Activate verbose linker, useful when troubleshooting linked library issues.
+    // artifact.verbose_link = true;
 
     const curr_tag = if (target.os_tag != null) target.os_tag else std.builtin.os.tag;
     const is_windows = curr_tag == os_tag.windows;
@@ -115,7 +116,7 @@ pub fn build(b: *std.build.Builder) void {
     ///////////////////////////////////////////////////////////////////////////
     // Build tests
     ///////////////////////////////////////////////////////////////////////////
-    var tests = b.addTest("src/main_console.zig");
+    var tests = b.addTest("src/main_lib.zig");
     tests.emit_bin = true;
     // tests.exec_cmd = "lldb-12";
     tests.setTarget(target);

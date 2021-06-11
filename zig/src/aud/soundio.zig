@@ -1,7 +1,6 @@
 const std = @import("std");
 const common = @import("common.zig");
 const helpers = @import("../helpers.zig");
-
 const c = @cImport({
     @cInclude("soundio/soundio.h");
 });
@@ -193,4 +192,3 @@ test "Soundio Devices is instantiable" {
 //     try expectEqual(devices.len, 5);
 // }
 
-test "Soundio getDeviceById" {}
