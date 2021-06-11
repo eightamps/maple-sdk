@@ -125,51 +125,91 @@ const TestBufContext = struct {
     should_exit: bool = false,
     should_write: bool = false,
     read_complete: bool = true,
-    read_mb: u128 = 0,
+    read_samples: u128 = 0,
 };
 
+const TimeSamples: usize = 10000;
+
+const SamplePeriodNs: u64 = 1_000_000_000 / 44_800;
+
 fn testWriter(ctx: *TestBufContext) u8 {
+    print("SAMPLE PERIOD: {d}\n", .{SamplePeriodNs});
     var last_value: f32 = 0.0;
     print("WRITER CREATED\n", .{});
+    var sample_count_per_loop: u64 = 1000;
+    var ns_per_loop: u64 = SamplePeriodNs * sample_count_per_loop;
+    // var times: [TimeSamples]i128 = undefined;
+    // var t_index: usize = 0;
     while (!ctx.should_exit) {
+        const start = time.nanoTimestamp();
         var index: usize = 0;
         // print("write {d}\n", .{ctx.buffer.popCountRemaining()});
-        while (index < 10) {
-            last_value += 0.001;
-            if (last_value > 100.0) {
-                last_value = 0.0;
-            }
+        while (index < sample_count_per_loop) {
+            // last_value += 0.001;
+            // if (last_value > 1000.0) {
+            // last_value = 0.0;
+            // }
+
             ctx.buffer.push(last_value);
             index += 1;
         }
 
-        // time.sleep(100);
+        // if (t_index >= TimeSamples) {
+        //     t_index = 0;
+        //     var sum: i128 = 0;
+        //     for (times) |dur| {
+        //         sum += dur;
+        //     }
+        //     var avg = @divFloor(sum, TimeSamples);
+        //     print("WROTE {d} items in: {d}ns (avg)\n", .{ TimeSamples, avg });
+        // }
+
+        var duration = time.nanoTimestamp() - start;
+        if (duration < ns_per_loop) {
+            // print("SLEEPING FOR: {d}\n", .{ns_per_loop - duration});
+
+            // times[t_index] = duration;
+            // t_index += 1;
+            time.sleep(ns_per_loop - @intCast(u64, duration));
+        } else {
+            // TODO(lbayes): What is periodically slowing down our writer?
+            print("YOOOOOOOOOOOOOOOO {d}\n", .{duration});
+        }
     }
     print("writer exiting now\n", .{});
     return 0;
 }
 
 fn testReader(ctx: *TestBufContext) u8 {
-    var read_bytes: usize = 0;
-    var loop_count: usize = 0;
+    var read_samples: usize = 0;
+    var sample_seconds: u128 = 0;
+    var last_sample_seconds: u128 = 0;
+    var start: i128 = 0;
+    var duration: i128 = 0;
     print("READER CREATED\n", .{});
     while (!ctx.should_exit) {
-        read_bytes += ctx.buffer.popCountRemaining() * @sizeOf(f32);
+        read_samples += ctx.buffer.popCountRemaining();
         // print("read {d}\n", .{ctx.buffer.popCountRemaining()});
-        if (read_bytes > 0) {
-            ctx.read_mb = read_bytes / 1_024_000;
-        }
+        if (read_samples > 0) {
+            ctx.read_samples = read_samples;
+            // print("bytes remaining: {d}\n", .{read_samples});
 
-        while (ctx.buffer.hasNext()) {
-            loop_count += 1;
-            if (loop_count > 1_024_000) {
-                print("read {d} MB\n", .{ctx.read_mb});
-                loop_count = 0;
+            sample_seconds = read_samples / 44800;
+            if (sample_seconds != last_sample_seconds) {
+                duration = time.milliTimestamp() - start;
+                print("read {d} samples\n", .{read_samples});
+                print("read {d} ms\n", .{duration});
+                last_sample_seconds = sample_seconds;
+                start = time.milliTimestamp();
+                read_samples = 0;
             }
 
-            // print("read {d}\n", .{ctx.buffer.popCountRemaining()});
-            // print("read {d}\n", .{ctx.read_mb});
-            _ = ctx.buffer.pop();
+            while (ctx.buffer.hasNext()) {
+                // print("read {d}\n", .{ctx.buffer.popCountRemaining()});
+                // print("read {d}\n", .{ctx.read_samples});
+                _ = ctx.buffer.pop();
+            }
+            time.sleep(10000);
         }
     }
     print("reader exiting now\n", .{});
@@ -191,7 +231,7 @@ test "Devices buffer" {
 
     context.should_write = true;
 
-    while (context.read_mb < 1_000) {
+    while (context.read_samples < 1_000_000_000) {
         time.sleep(100 * time.ns_per_ms);
     }
 
