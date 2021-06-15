@@ -1,3 +1,4 @@
+const Timer = @import("timer.zig").Timer;
 const std = @import("std");
 
 const Allocator = std.mem.Allocator;
@@ -7,6 +8,7 @@ const expect = std.testing.expect;
 const expectEqual = std.testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 const io = std.io;
+const math = std.math;
 const mem = std.mem;
 const print = std.debug.print;
 const talloc = std.testing.allocator;
@@ -18,30 +20,11 @@ pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
     return struct {
         const Self = @This();
         const RBT = RingBuffer(T, capacity);
-        const Writer = io.Writer(*Self, WriteError, writeF32);
 
         allocator: *Allocator,
         buffer: []T = undefined,
         write_index: usize = 0,
         read_index: usize = 0,
-
-        byte_size: usize = @sizeOf(T),
-
-        fn writeF32(self: *Self, bytes: []const u8) WriteError!usize {
-            print("writeFn called with: {d} and {d}\n", .{ bytes.len, bytes[0] });
-            print("byte_size: {d}\n", .{self.byte_size});
-
-            var item_bytes = [4]u8{
-                bytes[0],
-                bytes[1],
-                bytes[2],
-                bytes[3],
-            };
-
-            var foo = mem.bytesAsValue(T, &item_bytes);
-            print("to_bytes: {e}\n", .{foo.*});
-            return 0;
-        }
 
         inline fn incrementIndex(index: usize) usize {
             return (index +% 1) % capacity;
@@ -86,17 +69,10 @@ pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
             self.read_index = incrementIndex(index);
             return result;
         }
-
-        pub fn writer(self: *Self) Writer {
-            return Writer{
-                .context = self,
-            };
-        }
     };
 }
 
 test "RingBuffer push loops around buffer" {
-    print("\n\n", .{});
     const rb = try RingBuffer(u8, 4).init(talloc);
     defer rb.deinit();
 
@@ -145,61 +121,59 @@ const FourtyFourEightByFiveSeconds = AudioSampleRingBuffer(44800, 5);
 
 const TestBufContext = struct {
     buffer: *FourtyFourEightByFiveSeconds,
+    timer: *Timer,
     should_exit: bool = false,
     sample_rate: u32 = 44800,
-    read_sample_count: u128 = 0,
+    read_sample_count: i128 = 0,
+    read_sample_sum: f32 = 0.0,
 };
 
-const TimeSamples: usize = 10000;
-const SamplePeriodNs: u64 = 1_000_000_000 / 44_800;
+// const SamplePeriodNs: u64 = 1_000_000_000 / 44_800; // 22,321
+// const SampleCountPerLoop: u64 = @divFloor(MinSleepNs, SamplePeriodNs) + SamplePeriodNs;
+const NsPerSec = 1_000_000_000;
+const MinSleepNs = 60_000; // Observed ~57,000 ns on my workstation
+const NsCostPerSample = 1000;
+const MaxSampleCountPerSleep = MinSleepNs / NsCostPerSample;
+
+const TestValues = struct {
+    samples_per_sleep: i128 = 0,
+};
+
+fn getSamplesPerSleep(sample_rate: i128) i128 {
+    const period_ns = @divFloor(NsPerSec, sample_rate); // 22,321ns period for 44,800Hz
+    return @divFloor(MinSleepNs, period_ns) + 1;
+}
 
 fn testThreadWriter(ctx: *TestBufContext) u8 {
+    var samples_per_sleep = getSamplesPerSleep(ctx.sample_rate);
+    // print("SAMPLES_PER_SLEEP: {d}\n", .{samples_per_sleep});
+
     var last_value: f32 = 0.0;
-    var sample_count_per_loop: u64 = 1000;
-    var ns_per_loop: u64 = SamplePeriodNs * sample_count_per_loop;
     while (!ctx.should_exit) {
-        const start = time.nanoTimestamp();
         var index: usize = 0;
-        while (index < sample_count_per_loop) {
+        while (index < samples_per_sleep) {
+            // print("buffer.push: {e}\n", .{last_value});
             ctx.buffer.push(last_value);
+            last_value += 0.0001;
             index += 1;
         }
 
-        var duration = time.nanoTimestamp() - start;
-        if (duration < ns_per_loop) {
-            time.sleep(ns_per_loop - @intCast(u64, duration));
-        } else {
-            // TODO(lbayes): What is periodically slowing down our writer?
-            print("WARNING: Fake Writer SLOWED DOWN FOR {d}ns\n", .{duration});
-        }
+        _ = time.sleep(1); // Actually ~60k ns on workstation
     }
     return 0;
 }
 
 fn testThreadReader(ctx: *TestBufContext) u8 {
-    var read_sample_count: usize = 0;
-    var sample_seconds: u128 = 0;
-    var last_sample_seconds: u128 = 0;
-    var start: i128 = 0;
-    var duration: i128 = 0;
+    var samples: usize = 0;
+    var sample: f32 = 0.0;
     while (!ctx.should_exit) {
-        read_sample_count += ctx.buffer.getDistance();
-        if (read_sample_count > 0) {
-            ctx.read_sample_count = read_sample_count;
-
-            sample_seconds = read_sample_count / 44800;
-            if (sample_seconds != last_sample_seconds) {
-                duration = time.milliTimestamp() - start;
-                last_sample_seconds = sample_seconds;
-                start = time.milliTimestamp();
-            }
-
-            while (ctx.buffer.hasNext()) {
-                _ = ctx.buffer.pop();
-            }
-            time.sleep(1000); // ns
+        while (ctx.buffer.hasNext()) {
+            ctx.read_sample_sum += ctx.buffer.pop();
+            ctx.read_sample_count += 1;
         }
+        _ = time.sleep(1); // Actually ~60k ns on workstation
     }
+
     return 0;
 }
 
@@ -207,26 +181,141 @@ test "RingBuffer works for audio devices" {
     var buf = try FourtyFourEightByFiveSeconds.init(talloc);
     defer buf.deinit();
 
-    var context = TestBufContext{ .buffer = buf };
+    var timer = try Timer.init(talloc);
+    defer timer.deinit();
+    timer.warnings = false;
+
+    var context = TestBufContext{
+        .buffer = buf,
+        .timer = timer,
+    };
+
     const reader = try Thread.spawn(testThreadReader, &context);
     const writer = try Thread.spawn(testThreadWriter, &context);
 
-    while (context.read_sample_count < 100) {
-        time.sleep(1 * time.ns_per_ms);
-    }
+    // timer.start();
+    time.sleep(1 * time.ns_per_ms);
+
+    // TODO(lbayes): More investigation needed. When we drive the above sample
+    // for 3000ms, we get ~56000 +/-200 samples per second of time
+    //
+    // const duration_s = @divFloor(timer.stop(), time.ns_per_s);
+    // const samples_per_second = @divFloor(context.read_sample_count, duration_s);
+    // print("\n\n", .{});
+    // print("samples per second: {d}\n", .{samples_per_second});
+    //
+    // print("sample_count: {d}\n", .{context.read_sample_count});
+    // print("sample_sum: {d}\n", .{context.read_sample_sum});
 
     context.should_exit = true;
     writer.wait();
     reader.wait();
 }
 
-test "RingBuffer with io.Writer" {
+fn createSinePoint(time_index: u32, freq_hz: u32, sample_rate: u32) f32 {
+    return @sin(math.pi * @as(f32, 2.0) * @intToFloat(f32, time_index) * @intToFloat(f32, freq_hz) / @intToFloat(f32, sample_rate));
+}
+
+fn perfThreadWriter(context: *TestBufContext) u8 {
+    var sample_count: u32 = 100;
+    var sample_index: u32 = 0;
+
+    const frame_ns: u64 = @divFloor(1_000_000_000, (context.sample_rate * sample_count));
+
+    var sample: f32 = 0.0; // = createSinePoint(0, context.sample_rate, context.sample_rate);
+    var duration_ns: u64 = undefined;
+    var start_sleep_ns: u64 = undefined;
+    var sleep_duration_ns: u64 = undefined;
+    var loop_start: u64 = undefined;
+    var index: u32 = 0;
+    var tone_hz: u32 = 700;
+
+    while (!context.should_exit) {
+        loop_start = @intCast(u64, time.nanoTimestamp());
+
+        // Stuff some samples into the buffer
+        while (sample_index < sample_count) {
+            sample = createSinePoint(index, tone_hz, context.sample_rate);
+            context.buffer.push(sample);
+            sample_index += 1;
+        }
+        sample_index = 0;
+
+        // Sleep so that we only write at sample_rate hz.
+        duration_ns = @intCast(u64, time.nanoTimestamp()) - loop_start;
+        start_sleep_ns = @intCast(u64, time.nanoTimestamp());
+
+        if (frame_ns > duration_ns) {
+            // print("SLEEPER: {d} {d} {d}\n", .{ frame_ns, duration_ns, frame_ns - duration_ns });
+            // time.sleep(100_000); // fraction of a millisecond
+            time.sleep(@intCast(u64, (frame_ns - duration_ns)));
+            sleep_duration_ns = @intCast(u64, time.nanoTimestamp()) - start_sleep_ns;
+            print("Writer sleeping for: {d}\n", .{sleep_duration_ns});
+        }
+        index +%= 1 % (context.sample_rate * 3);
+    }
+
+    print("perf writer exiting!\n", .{});
+    return 0;
+}
+
+fn perfThreadReader(context: *TestBufContext) u8 {
+    var buf = context.buffer;
+    var sample: f32 = 0.0;
+    var sample_count: u32 = 0;
+    var start: i128 = time.nanoTimestamp();
+    var duration: i128 = undefined;
+
+    while (!context.should_exit) {
+        duration = time.nanoTimestamp() - start;
+        if (duration > time.ns_per_s) {
+            print("Second has passed with: {d}ms\n", .{@divFloor(duration, 1_000_000)});
+            duration = 0;
+            start = time.nanoTimestamp();
+        }
+
+        while (buf.hasNext()) {
+            sample = buf.pop();
+            // print("SAMPLE: {e}\n", .{sample});
+            sample_count +%= 1;
+            // if (sample_count % context.sample_rate == 0) {
+            // print("YOOOOOOOOOO {d}\n", .{sample_count});
+            // }
+        }
+        time.sleep(100_000); // fraction of a millisecond
+    }
+
+    print("perf reader exiting!\n", .{});
+    return 0;
+}
+
+test "RingBuffer Perf Test" {
+    print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n", .{});
     var buf = try FourtyFourEightByFiveSeconds.init(talloc);
     defer buf.deinit();
 
-    const value: f32 = 0.5;
-    var bytes = mem.asBytes(&value);
+    var timer = try Timer.init(talloc);
+    defer timer.deinit();
+    timer.warnings = false;
 
-    var writer = buf.writer();
-    _ = try writer.write(bytes);
+    var context = TestBufContext{
+        .buffer = buf,
+        .timer = timer,
+    };
+
+    const writer = try Thread.spawn(perfThreadWriter, &context);
+    const reader = try Thread.spawn(perfThreadReader, &context);
+
+    // Increase sleep time to 10 seconds to see writer/reader interaction
+    time.sleep(1 * time.ns_per_ms);
+    context.should_exit = true;
+
+    writer.wait();
+    reader.wait();
+    print("------------------------------\n", .{});
+}
+
+test "RingBuffer -> timer is available" {
+    const t = try Timer.init(talloc);
+    defer t.deinit();
 }
