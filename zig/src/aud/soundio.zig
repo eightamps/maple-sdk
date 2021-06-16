@@ -7,6 +7,7 @@ const c = @cImport({
 
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
+const ConnectContext = common.ConnectContext;
 const Device = common.Device;
 const Direction = common.Direction;
 const expect = std.testing.expect;
@@ -23,6 +24,24 @@ fn failed(status: c_int) bool {
 fn index_failed(status: c_int) bool {
     return status < 0;
 }
+
+// TODO(lbayes): Decide if we want to work with 'raw' devices.
+//
+// According to SoundIO docs found here:
+//
+// http://libsound.io/doc-2.0.0/structSoundIoDevice.html#afb73b9bd13e98a14a187567f508acebe
+//
+// And example here:
+//
+// http://libsound.io/doc-2.0.0/sio_record_8c-example.html
+//
+// Device.is_raw indicates that, "you are directly opening the
+// hardware device and not going through a proxy such as dmix, PulseAudio, or
+// JACK.
+//
+// When you open a raw device, other applications on the computer are not able
+// to simultaneously access the device. Raw devices do not perform automatic
+// resampling and thus tend to have fewer formats available."
 
 const NativeGetDevice = fn ([*c]c.struct_SoundIo, c_int) callconv(.C) [*c]c.struct_SoundIoDevice;
 
@@ -167,6 +186,15 @@ pub const Devices = struct {
     pub fn getRenderDevices(self: *Devices, buffer: []Device) ![]Device {
         const count = c.soundio_output_device_count(self.soundio);
         return self.getNativeDevices(buffer, count, c.soundio_get_output_device);
+    }
+
+    pub fn startCapture(self: *Devices, config: *ConnectContext) void {
+        print("soundio.startCapture\n", .{});
+    }
+
+    // fn read_callback(struct SoundIoInStream *instream, int frame_count_min, int frame_count_max) {
+    fn sio_read_callback(instream: *c.struct_SoundIoInStream, frame_count_min: c_int, frame_count_max: c_int) void {
+        print("SIO READ CB\n", .{});
     }
 };
 

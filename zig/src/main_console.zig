@@ -5,6 +5,7 @@ const std = @import("std");
 const ascii = std.ascii;
 const print = std.debug.print;
 const heap = std.heap;
+const talloc = std.testing.allocator;
 const time = std.time;
 
 // usingnamespace phony_client;
@@ -51,12 +52,11 @@ pub fn main() !u8 {
     print("capture.id: {s}\n", .{capture.id});
 
     // Connect the device pair
-    const to_phone = try audio_api.connect(render, capture);
+    const connection = try audio_api.connect(render, capture);
     // const from_phone = try audio_api.connect(render, capture);
 
     time.sleep(1000 * time.ns_per_ms);
-    to_phone.stop();
-    // from_phone.stop();
+    connection.close();
 
     print("Main Console exiting now\n", .{});
     return 0;

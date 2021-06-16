@@ -1,4 +1,6 @@
 const std = @import("std");
+
+const Thread = std.Thread;
 const testing = std.testing;
 
 const DEFAULT_EXCLUDES: []const u8 = ASI_TELEPHONE ++ "|" ++ WAY2CALL;
@@ -20,6 +22,25 @@ pub const Device = struct {
 
     // sample_rate: u32,
     // channel_count: u8,
+};
+
+pub const ConnectContext = struct {
+    capture_device: Device,
+    render_device: Device,
+    is_active: bool = true,
+    outer_thread: *Thread = undefined,
+    render_thread: *Thread = undefined,
+    capture_thread: *Thread = undefined,
+    bytes_per_frame: u32 = 0,
+    bytes_per_sample: u32 = 0,
+    capture_callback: fn (context: *ConnectContext, frame_count_min: u32, frame_count_max: u32) void = undefined,
+
+    // TODO(lbayes): Figure out how to make Sample Rate runtime variable.
+    // buffer: anytype,
+
+    pub fn close(self: *ConnectContext) void {
+        self.is_active = false;
+    }
 };
 
 // Returns true if the provided device direction is Render
