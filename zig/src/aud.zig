@@ -85,9 +85,10 @@ pub fn Devices(comptime T: type) type {
         }
 
         pub fn deinit(self: *Self) void {
-            if (self.connect_context != undefined) {
-                self.allocator.destroy(self.connect_context);
-            }
+            // TODO(lbayes): Figure out how to conditionally clear this variable.
+            // if (self.connect_context != undefined) {
+            // self.allocator.destroy(self.connect_context);
+            // }
             self.preferred.deinit();
             self.delegate.deinit();
             self.allocator.destroy(self);

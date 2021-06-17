@@ -128,15 +128,15 @@ pub const Devices = struct {
         return self.getDevices(buffer, Direction.Render);
     }
 
-    pub fn getCaptureDeviceAt(self: *Devices, index: u16) *Device {
+    pub fn getCaptureDeviceAt(self: *Devices, index: u16) Device {
         var buffer: [common.MAX_DEVICE_COUNT]Device = undefined;
         var result = try self.getCaptureDevices(&buffer);
-        return &result[index];
+        return result[index];
     }
 
-    pub fn getRenderDeviceAt(self: *Devices, index: u16) *Device {
+    pub fn getRenderDeviceAt(self: *Devices, index: u16) Device {
         var buffer: [common.MAX_DEVICE_COUNT]Device = undefined;
         var result = try self.getRenderDevices(&buffer);
-        return &result[index];
+        return result[index];
     }
 };
