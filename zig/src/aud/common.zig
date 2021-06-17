@@ -18,15 +18,15 @@ pub const Device = struct {
     name: []const u8,
     direction: Direction = Direction.Render,
     is_default: bool = false,
-    rank: u8 = 0,
+    c_index: c_int = 0,
 
     // sample_rate: u32,
     // channel_count: u8,
 };
 
 pub const ConnectContext = struct {
-    capture_device: Device,
-    render_device: Device,
+    capture_device: Device = undefined,
+    render_device: Device = undefined,
     is_active: bool = true,
     outer_thread: *Thread = undefined,
     render_thread: *Thread = undefined,

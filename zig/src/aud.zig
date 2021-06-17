@@ -62,7 +62,7 @@ pub fn Devices(comptime T: type) type {
         allocator: *Allocator,
         delegate: *T,
         preferred: PreferredIds,
-        connect_context: *ConnectContext = undefined,
+        connect_context: ConnectContext,
 
         fn captureCallback(context: *ConnectContext, frame_count_min: u32, frame_count_max: u32) void {
             print("captureCallback with: {d} {d}\n", .{ frame_count_min, frame_count_max });
@@ -80,15 +80,14 @@ pub fn Devices(comptime T: type) type {
                 .allocator = a,
                 .delegate = delegate,
                 .preferred = PreferredIds.init(a),
+                .connect_context = ConnectContext{},
             };
             return instance;
         }
 
         pub fn deinit(self: *Self) void {
             // TODO(lbayes): Figure out how to conditionally clear this variable.
-            // if (self.connect_context != undefined) {
             // self.allocator.destroy(self.connect_context);
-            // }
             self.preferred.deinit();
             self.delegate.deinit();
             self.allocator.destroy(self);
@@ -252,20 +251,18 @@ pub fn Devices(comptime T: type) type {
             }
 
             // var buffer = TelephoneBuffer.init(self.allocator);
-            var context = try self.allocator.create(ConnectContext);
+            // var context = try self.allocator.create(ConnectContext);
 
-            context.* = ConnectContext{
-                .capture_device = capture_device,
-                .render_device = render_device,
-                // .buffer = buffer,
-                // .bytes_per_frame: u32 = 0,
-                // .bytes_per_sample: u32 = 0,
-                // .capture_callback: fn (context: *ConnectContext, frame_count_min: u32, frame_count_max: u32) void,
-            };
-            self.connect_context = context;
+            var context = self.connect_context;
+            context.capture_device = capture_device;
+            context.render_device = render_device;
+            // context.buffer = buffer,
+            // context.bytes_per_frame: u32 = 0,
+            // context.bytes_per_sample: u32 = 0,
+            // context.capture_callback: fn (context: *ConnectContext, frame_count_min: u32, frame_count_max: u32) void,
             context.outer_thread = try Thread.spawn(connectDevices, self);
 
-            return context;
+            return &context;
         }
 
         pub fn wait(self: *Self) void {
@@ -280,7 +277,7 @@ pub fn Devices(comptime T: type) type {
 
         // Must be unbound for threads to work with it.
         fn connectDevices(self: *Self) u8 {
-            self.delegate.startCapture(self.connect_context);
+            self.delegate.startCapture(&self.connect_context);
 
             while (self.connect_context.is_active) {
                 time.sleep(OuterThreadSleepMs);

@@ -101,17 +101,17 @@ pub const Devices = struct {
     }
 
     fn getNativeDevices(self: *Devices, buffer: []Device, count: c_int, get_by_index: NativeGetDevice) ![]Device {
-        var index: usize = 0;
+        var index: c_int = 0;
 
         while (index < count) : (index += 1) {
             const sio_device = get_by_index(self.soundio, @intCast(c_int, index));
-            const device = try self.sioDeviceToAudDevice(sio_device);
+            const device = try self.sioDeviceToAudDevice(sio_device, @as(c_int, index));
             buffer[index] = device;
         }
         return buffer[0..index];
     }
 
-    fn sioDeviceToAudDevice(self: *Devices, sio_device: *c.SoundIoDevice) !Device {
+    fn sioDeviceToAudDevice(self: *Devices, sio_device: *c.SoundIoDevice, c_index: c_int) !Device {
         const id = mem.sliceTo(sio_device.id, 0);
         const native_name = mem.sliceTo(sio_device.name, 0);
 
@@ -120,6 +120,7 @@ pub const Devices = struct {
         device.* = Device{
             .id = id,
             .name = native_name,
+            .c_index = c_index,
         };
 
         // Default Device.direction is Render, update if we have a Capture device.
@@ -148,7 +149,7 @@ pub const Devices = struct {
 
     pub fn getCaptureDeviceAt(self: *Devices, index: c_int) !Device {
         const sio_device = try c.soundio_get_input_device(self.soundio, index) orelse error.Fail;
-        return self.sioDeviceToAudDevice(sio_device);
+        return self.sioDeviceToAudDevice(sio_device, index);
     }
 
     pub fn getDefaultCaptureDevice(self: *Devices) !Device {
@@ -162,7 +163,7 @@ pub const Devices = struct {
 
     pub fn getRenderDeviceAt(self: *Devices, index: c_int) !Device {
         const sio_device = try c.soundio_get_output_device(self.soundio, index) orelse error.Fail;
-        return self.sioDeviceToAudDevice(sio_device);
+        return self.sioDeviceToAudDevice(sio_device, index);
     }
 
     pub fn getDefaultRenderDevice(self: *Devices) !Device {
@@ -189,7 +190,13 @@ pub const Devices = struct {
     }
 
     pub fn startCapture(self: *Devices, config: *ConnectContext) void {
-        print("soundio.startCapture\n", .{});
+
+        // var sio_device = @ptrCast(*c.struct_SoundIoDevice, @intToPtr(*c.struct_SoundIoDevice, c_pointer));
+        // var sio_device = @intToPtr(*c.struct_SoundIoDevice, c_pointer);
+
+        const sio_device = c.soundio_get_input_device(self.soundio, config.c_index);
+        // var in_stream: *c.SoundIoInStream = c.soundio_instream_create(sio_device);
+
     }
 
     // fn read_callback(struct SoundIoInStream *instream, int frame_count_min, int frame_count_max) {
