@@ -90,7 +90,7 @@ pub const Devices = struct {
         return "fake";
     }
 
-    pub fn getDefaultDevice(self: *Devices, direction: Direction) !Device {
+    pub fn getDefaultDevice(self: *Devices, direction: Direction) !*Device {
         var buffer: [common.MAX_DEVICE_COUNT]Device = undefined;
         var dir_filter = if (direction == Direction.Capture) isCaptureDevice else isRenderDevice;
         var filters = [_]DeviceFilter{
@@ -100,17 +100,17 @@ pub const Devices = struct {
 
         var result = helpers.filterItems(Device, self.devices, &buffer, &filters);
         if (result.len > 0) {
-            return result[0];
+            return &result[0];
         }
 
         return error.Fail;
     }
 
-    pub fn getDefaultCaptureDevice(self: *Devices) !Device {
+    pub fn getDefaultCaptureDevice(self: *Devices) !*Device {
         return self.getDefaultDevice(Direction.Capture);
     }
 
-    pub fn getDefaultRenderDevice(self: *Devices) !Device {
+    pub fn getDefaultRenderDevice(self: *Devices) !*Device {
         return self.getDefaultDevice(Direction.Render);
     }
 
@@ -128,15 +128,15 @@ pub const Devices = struct {
         return self.getDevices(buffer, Direction.Render);
     }
 
-    pub fn getCaptureDeviceAt(self: *Devices, index: u16) *Device {
+    pub fn getCaptureDeviceAt(self: *Devices, index: u16) Device {
         var buffer: [common.MAX_DEVICE_COUNT]Device = undefined;
         var result = try self.getCaptureDevices(&buffer);
-        return &result[index];
+        return result[index];
     }
 
-    pub fn getRenderDeviceAt(self: *Devices, index: u16) *Device {
+    pub fn getRenderDeviceAt(self: *Devices, index: u16) Device {
         var buffer: [common.MAX_DEVICE_COUNT]Device = undefined;
         var result = try self.getRenderDevices(&buffer);
-        return &result[index];
+        return result[index];
     }
 };

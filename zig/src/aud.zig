@@ -1,3 +1,4 @@
+const RingBuffer = @import("ring_buffer.zig").RingBuffer;
 const common = @import("aud/common.zig");
 const fake = @import("aud/fake.zig");
 const helpers = @import("helpers.zig");
@@ -13,9 +14,9 @@ const native = @import(switch (std.Target.current.os.tag) {
 
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
-const AudioSampleRingBuffer = ring_buffer.AudioSampleRingBuffer;
-const StreamConfig = common.StreamConfig;
+const AudError = common.AudError;
 const ConnectContext = common.ConnectContext;
+const StreamConfig = common.StreamConfig;
 const Thread = std.Thread;
 const ascii = std.ascii;
 const expect = std.testing.expect;
@@ -41,7 +42,7 @@ const PreferredIds = ArrayList([]const u8);
 const OuterThreadSleepMs = 10 * time.ns_per_ms;
 // Create a RingBuffer type that will hold a 16kHz sample rate for 5 seconds
 // (before dropping samples).
-const TelephoneBuffer = AudioSampleRingBuffer(TelephoneSampleRate, TelephoneSampleDurationSecs);
+// const TelephoneBuffer = AudioSampleRingBuffer(TelephoneSampleRate, TelephoneSampleDurationSecs);
 
 // Test constants
 const FakeDevices = Devices(fake.Devices);
@@ -49,11 +50,6 @@ const fake_devices_path = "src/fakes/devices.json";
 const fake_devices_w2c_defaults = "src/fakes/devices_w2c_defaults.json";
 const fake_devices_asi_defaults = "src/fakes/devices_asi_defaults.json";
 const fake_devices_only_bad = "src/fakes/devices_only_bad.json";
-
-pub const AudError = error{
-    ArgumentError,
-    DeviceNotFound,
-};
 
 pub fn Devices(comptime T: type) type {
     return struct {
@@ -85,9 +81,6 @@ pub fn Devices(comptime T: type) type {
         }
 
         pub fn deinit(self: *Self) void {
-            if (self.connect_context != undefined) {
-                self.allocator.destroy(self.connect_context);
-            }
             self.preferred.deinit();
             self.delegate.deinit();
             self.allocator.destroy(self);
@@ -102,7 +95,7 @@ pub fn Devices(comptime T: type) type {
         // device requests to guarantee we never attempt to send or receive
         // host-side user audio through these known-bad devices, which
         // Microsoft insists on forcing into the default position(s).
-        fn isValidDefaultCaptureDevice(d: Device) bool {
+        fn isValidDefaultCaptureDevice(d: *Device) bool {
             if (ascii.indexOfIgnoreCasePos(d.name, 0, common.WAY2CALL) != null) return false;
             if (ascii.indexOfIgnoreCasePos(d.name, 0, common.ASI_TELEPHONE) != null) return false;
             return true;
@@ -111,7 +104,7 @@ pub fn Devices(comptime T: type) type {
         // Return true if ths provided device can be used as a render device.
         //
         // In other words, this device does not present any of our blocked device names.
-        fn isValidDefaultRenderDevice(d: Device) bool {
+        fn isValidDefaultRenderDevice(d: *Device) bool {
             if (ascii.indexOfIgnoreCasePos(d.name, 0, common.WAY2CALL) != null) return false;
             if (ascii.indexOfIgnoreCasePos(d.name, 0, common.ASI_TELEPHONE) != null) return false;
             if (ascii.indexOfIgnoreCasePos(d.name, 0, common.ASI_MICROPHONE) != null) return false;
@@ -130,7 +123,7 @@ pub fn Devices(comptime T: type) type {
         // the device name is expected to be blocked, use the first preferred
         // device (if found), or the first device in the list if no preferred
         // devices are found.
-        pub fn getDefaultDevice(self: *Self, direction: Direction) !Device {
+        pub fn getDefaultDevice(self: *Self, direction: Direction) !*Device {
             // Ask the native implementation for it's default device
             const device = try self.delegate.getDefaultDevice(direction);
             const directionFilter = self.getDeviceFilterFor(direction);
@@ -139,6 +132,7 @@ pub fn Devices(comptime T: type) type {
                 return device;
             }
 
+            // TODO(lbayes): Ensure we filter RENDER devices to exclude "ASI Microphone"
             // The native default device was not a valid device, get the next candidate.
             var buf_a: [MAX_DEVICE_COUNT]Device = undefined;
             var all_devices = try self.getDevices(&buf_a, direction);
@@ -155,7 +149,7 @@ pub fn Devices(comptime T: type) type {
             }
 
             for (self.preferred.items) |pref| {
-                for (valid_devices) |dev| {
+                for (valid_devices) |*dev| {
                     if (mem.eql(u8, pref, dev.id)) {
                         return dev;
                     }
@@ -167,13 +161,13 @@ pub fn Devices(comptime T: type) type {
 
         // Get the default capture device (i.e., Microphone) that is not presented with a
         // blocked name.
-        pub fn getDefaultCaptureDevice(self: *Self) !Device {
+        pub fn getDefaultCaptureDevice(self: *Self) !*Device {
             return self.getDefaultDevice(Direction.Capture);
         }
 
         // Get the default render device (i.e., Speakers) that is not presented with a
         // blocked name.
-        pub fn getDefaultRenderDevice(self: *Self) !Device {
+        pub fn getDefaultRenderDevice(self: *Self) !*Device {
             return self.getDefaultDevice(Direction.Render);
         }
 
@@ -226,10 +220,10 @@ pub fn Devices(comptime T: type) type {
 
         // Get the first device where it's name and direction match the
         // provided values.
-        pub fn getDeviceWithName(self: *Self, name: []const u8, direction: Direction) !Device {
+        pub fn getDeviceWithName(self: *Self, name: []const u8, direction: Direction) !*Device {
             var buffer: [MAX_DEVICE_COUNT]Device = undefined;
             const devices = try self.getDevices(&buffer, direction);
-            for (devices) |device| {
+            for (devices) |*device| {
                 if (ascii.indexOfIgnoreCasePos(device.name, 0, name) != null) {
                     return device;
                 }
@@ -239,7 +233,7 @@ pub fn Devices(comptime T: type) type {
 
         // Connect the streams for the provided pair of devices and return
         // a ThreadContext object for external control.
-        pub fn connect(self: *Self, render_device: Device, capture_device: Device) !*ConnectContext {
+        pub fn connect(self: *Self, render_device: *Device, capture_device: *Device) !*ConnectContext {
             if (render_device.direction != Direction.Render) {
                 print("connect expected a render device but received a capture instead\n", .{});
                 return AudError.ArgumentError;
@@ -252,18 +246,21 @@ pub fn Devices(comptime T: type) type {
 
             // var buffer = TelephoneBuffer.init(self.allocator);
             var context = try self.allocator.create(ConnectContext);
+            defer self.allocator.destroy(context);
 
-            context.* = ConnectContext{
-                .capture_device = capture_device,
+            context.* = .{
                 .render_device = render_device,
-                // .buffer = buffer,
-                // .bytes_per_frame: u32 = 0,
-                // .bytes_per_sample: u32 = 0,
-                // .capture_callback: fn (context: *ConnectContext, frame_count_min: u32, frame_count_max: u32) void,
+                .capture_device = capture_device,
+                .is_active = true,
             };
-            self.connect_context = context;
-            context.outer_thread = try Thread.spawn(connectDevices, self);
 
+            // context.buffer = buffer,
+            // context.bytes_per_frame: u32 = 0,
+            // context.bytes_per_sample: u32 = 0,
+            // context.capture_callback: fn (context: *ConnectContext, frame_count_min: u32, frame_count_max: u32) void,
+            // context.outer_thread = try Thread.spawn(connectDevices, context);
+
+            try self.delegate.startCapture(context);
             return context;
         }
 
@@ -273,20 +270,18 @@ pub fn Devices(comptime T: type) type {
             }
         }
 
-        pub fn disconnect(self: *Self) void {
-            self.connected_thread.stop();
-        }
-
         // Must be unbound for threads to work with it.
-        fn connectDevices(self: *Self) u8 {
-            self.delegate.startCapture(self.connect_context);
+        // fn connectDevices(context: *ConnectContext) u8 {
+        //     // self.delegate.startCapture(self.connect_context);
 
-            while (self.connect_context.is_active) {
-                time.sleep(OuterThreadSleepMs);
-            }
+        //     while (context.is_active) {
+        //         time.sleep(OuterThreadSleepMs);
+        //     }
 
-            return 0;
-        }
+        //     // self.allocator.destroy(self.connect_context);
+
+        //     return 0;
+        // }
     };
 }
 
@@ -453,7 +448,7 @@ test "Devices getDeviceWithName" {
 }
 
 test "Aud can access RingBuffer" {
-    const rb = try TelephoneBuffer.init(talloc);
+    const rb = try RingBuffer(u8).init(talloc, 10);
     defer rb.deinit();
 }
 

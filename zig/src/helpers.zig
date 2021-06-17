@@ -1,16 +1,18 @@
 const std = @import("std");
 
 const expectEqual = std.testing.expectEqual;
+const expectEqualStrings = std.testing.expectEqualStrings;
+const print = std.debug.print;
 
-pub fn filterItems(comptime T: type, input: []T, output: []T, filters: []fn (d: T) bool) []T {
+pub fn filterItems(comptime T: type, input: []T, output: []T, filters: []fn (d: *T) bool) []T {
     var input_index: u32 = 0;
     var output_index: u32 = 0;
 
     outer: while (input_index < input.len) : (input_index += 1) {
-        const device = input[input_index];
+        var device = input[input_index];
         // If any of the provided filters return true, skip this entry.
         for (filters) |filter| {
-            if (!filter(device)) {
+            if (!filter(&device)) {
                 continue :outer;
             }
         }
@@ -21,19 +23,19 @@ pub fn filterItems(comptime T: type, input: []T, output: []T, filters: []fn (d: 
     return output[0..output_index];
 }
 
-pub fn firstItemMatching(comptime T: type, input: []T, filters: []fn (d: T) bool) ?T {
+pub fn firstItemMatching(comptime T: type, input: []T, filters: []fn (d: *T) bool) ?*T {
     var input_index: u32 = 0;
 
     outer: while (input_index < input.len) : (input_index += 1) {
         var device = input[input_index];
         for (filters) |filter| {
-            if (!filter(device)) {
+            if (!filter(&device)) {
                 continue :outer;
             }
         }
 
         // If each of the provided filters return true, return this entry.
-        return device;
+        return &device;
     }
 
     return null;
@@ -88,19 +90,19 @@ var fake_devices = [_]FakeDevice{
     },
 };
 
-fn isRenderDevice(d: FakeDevice) bool {
+fn isRenderDevice(d: *FakeDevice) bool {
     return d.direction == FakeDirection.Render;
 }
 
-fn isCaptureDevice(d: FakeDevice) bool {
+fn isCaptureDevice(d: *FakeDevice) bool {
     return d.direction == FakeDirection.Capture;
 }
 
-fn isDefaultDevice(d: FakeDevice) bool {
+fn isDefaultDevice(d: *FakeDevice) bool {
     return d.is_default;
 }
 
-fn isFalse(d: FakeDevice) bool {
+fn isFalse(d: *FakeDevice) bool {
     return false;
 }
 
@@ -157,9 +159,7 @@ test "filterItems gets a different subset" {
 
 test "firstItemMatching gets the first match" {
     const result = try firstItemMatching(FakeDevice, &fake_devices, &defaultCaptureFilter) orelse error.Fail;
-
     try expectEqual(result.id, 5);
-    try expectEqual(result.name, "uvwx");
 }
 
 test "firstitemMatching gets null result" {

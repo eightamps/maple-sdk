@@ -27,36 +27,40 @@ pub fn main() !u8 {
     var audio_api = try aud.NativeDevices.init(&gpa.allocator);
     defer audio_api.deinit();
 
-    var buf: [aud.MAX_DEVICE_COUNT]aud.Device = undefined;
-    const devices = try audio_api.getRenderDevices(&buf);
+    // var buf: [aud.MAX_DEVICE_COUNT]aud.Device = undefined;
 
-    // Could provide UI to let users make a ranked list of preferred devices
-    for (devices) |dev| {
-        print("Dev: {s} {s}\n", .{ dev.name, dev.id });
+    // const devices = try audio_api.getRenderDevices(buf);
 
-        // This is the device name that I prefer on my workstation.
-        if (ascii.indexOfIgnoreCasePos(dev.name, 0, "MM-1 Analog Stereo") != null) {
-            print("Pushed preferred device with name: [{s}] and id: [{s}]\n", .{ dev.name, dev.id });
-            try audio_api.pushPreferredNativeId(dev.id, aud.Direction.Render);
-        }
-    }
+    // // Could provide UI to let users make a ranked list of preferred devices
+    // for (devices) |dev| {
+    //     print("Dev: {s} {s}\n", .{ dev.name, dev.id });
 
-    // Get default render device
-    const render = try audio_api.getDefaultRenderDevice();
-    print("render.name: {s}\n", .{render.name});
-    print("render.id: {s}\n", .{render.id});
+    //     // This is the device name that I prefer on my workstation.
+    //     if (ascii.indexOfIgnoreCasePos(dev.name, 0, "MM-1 Analog Stereo") != null) {
+    //         print("Pushed preferred device with name: [{s}] and id: [{s}]\n", .{ dev.name, dev.id });
+    //         try audio_api.pushPreferredNativeId(dev.id, aud.Direction.Render);
+    //     }
+    // }
 
     // Get default capture device
     const capture = try audio_api.getDefaultCaptureDevice();
     print("capture.name: {s}\n", .{capture.name});
     print("capture.id: {s}\n", .{capture.id});
 
+    // Get default render device
+    const render = try audio_api.getDefaultRenderDevice();
+    print("render.name: {s}\n", .{render.name});
+    print("render.id: {s}\n", .{render.id});
+
     // Connect the device pair
     const connection = try audio_api.connect(render, capture);
-    // const from_phone = try audio_api.connect(render, capture);
 
-    time.sleep(1000 * time.ns_per_ms);
-    connection.close();
+    while (connection.is_active) {
+        time.sleep(100 * time.ns_per_ms);
+    }
+
+    // time.sleep(1000 * time.ns_per_ms);
+    // connection.close();
 
     print("Main Console exiting now\n", .{});
     return 0;

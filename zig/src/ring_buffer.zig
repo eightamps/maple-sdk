@@ -16,26 +16,24 @@ const time = std.time;
 
 const WriteError = error{};
 
-pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
+pub fn RingBuffer(comptime T: type) type {
     return struct {
         const Self = @This();
-        const RBT = RingBuffer(T, capacity);
+        const RBT = RingBuffer(T);
 
         allocator: *Allocator,
+        capacity: usize,
         buffer: []T = undefined,
         write_index: usize = 0,
         read_index: usize = 0,
 
-        inline fn incrementIndex(index: usize) usize {
-            return (index +% 1) % capacity;
-        }
-
-        pub fn init(a: *Allocator) !*Self {
+        pub fn init(a: *Allocator, capacity: usize) !*Self {
             var instance = try a.create(RBT);
             var buffer = try a.alloc(T, capacity);
             instance.* = RBT{
                 .allocator = a,
                 .buffer = buffer,
+                .capacity = capacity,
             };
             return instance;
         }
@@ -45,11 +43,15 @@ pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
             self.allocator.destroy(self);
         }
 
+        inline fn incrementIndex(self: *Self, index: usize) usize {
+            return (index +% 1) % self.capacity;
+        }
+
         pub fn push(self: *Self, item: T) void {
             const index = self.write_index;
-            const next_index = incrementIndex(index);
+            const next_index = self.incrementIndex(index);
             if (next_index == self.read_index) {
-                self.read_index = incrementIndex(next_index);
+                self.read_index = self.incrementIndex(next_index);
             }
             self.buffer[index] = item;
             self.write_index = next_index;
@@ -60,20 +62,20 @@ pub fn RingBuffer(comptime T: type, comptime capacity: usize) type {
         }
 
         pub fn getDistance(self: *Self) usize {
-            return (self.write_index -% self.read_index) % capacity;
+            return (self.write_index -% self.read_index) % self.capacity;
         }
 
         pub fn pop(self: *Self) T {
             var index = self.read_index;
             var result = self.buffer[index];
-            self.read_index = incrementIndex(index);
+            self.read_index = self.incrementIndex(index);
             return result;
         }
     };
 }
 
 test "RingBuffer push loops around buffer" {
-    const rb = try RingBuffer(u8, 4).init(talloc);
+    const rb = try RingBuffer(u8).init(talloc, 4);
     defer rb.deinit();
 
     try expectEqual(rb.getDistance(), 0);
@@ -109,18 +111,11 @@ test "RingBuffer push loops around buffer" {
     try expectEqual(rb.getDistance(), 0);
 }
 
-// A type of RingBuffer configured for f32 audio samples at the provided sample
-// rate and seconds to buffer.
-pub fn AudioSampleRingBuffer(comptime sample_rate: u32, comptime seconds_to_buffer: usize) type {
-    return RingBuffer(f32, sample_rate * seconds_to_buffer);
-}
-
-// A type of RingBuffer used by tests with a buffer duration of of 44800
-// samples x 5 seconds.
-const FourtyFourEightByFiveSeconds = AudioSampleRingBuffer(44800, 5);
+const AudioSampleBuffer = RingBuffer(f32);
+const AudioSampleCapacity = 44800 * 5;
 
 const TestBufContext = struct {
-    buffer: *FourtyFourEightByFiveSeconds,
+    buffer: *AudioSampleBuffer,
     timer: *Timer,
     should_exit: bool = false,
     sample_rate: u32 = 44800,
@@ -178,7 +173,7 @@ fn testThreadReader(ctx: *TestBufContext) u8 {
 }
 
 test "RingBuffer works for audio devices" {
-    var buf = try FourtyFourEightByFiveSeconds.init(talloc);
+    var buf = try AudioSampleBuffer.init(talloc, AudioSampleCapacity);
     defer buf.deinit();
 
     var timer = try Timer.init(talloc);
@@ -291,7 +286,7 @@ fn perfThreadReader(context: *TestBufContext) u8 {
 
 test "RingBuffer Perf Test" {
     print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n", .{});
-    var buf = try FourtyFourEightByFiveSeconds.init(talloc);
+    var buf = try AudioSampleBuffer.init(talloc, AudioSampleCapacity);
     defer buf.deinit();
 
     var timer = try Timer.init(talloc);
