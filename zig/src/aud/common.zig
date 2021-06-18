@@ -51,7 +51,7 @@ pub const ConnectContext = packed struct {
     outer_thread: *Thread = undefined,
     render_thread: *Thread = undefined,
     capture_thread: *Thread = undefined,
-    buffer: *RingBuffer(u8) = undefined,
+    platform_buffer: usize = 0,
 
     pub fn close(self: *ConnectContext) void {
         self.is_active = false;

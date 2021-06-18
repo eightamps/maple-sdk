@@ -19,18 +19,17 @@ const WriteError = error{};
 pub fn RingBuffer(comptime T: type) type {
     return struct {
         const Self = @This();
-        const RBT = RingBuffer(T);
 
         allocator: *Allocator,
-        capacity: usize,
+        capacity: usize = 0,
         buffer: []T = undefined,
         write_index: usize = 0,
         read_index: usize = 0,
 
         pub fn init(a: *Allocator, capacity: usize) !*Self {
-            var instance = try a.create(RBT);
+            var instance = try a.create(Self);
             var buffer = try a.alloc(T, capacity);
-            instance.* = RBT{
+            instance.* = Self{
                 .allocator = a,
                 .buffer = buffer,
                 .capacity = capacity,

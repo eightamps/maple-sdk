@@ -45,7 +45,6 @@ pub const PrioritizedFormats = [_]c_int{
 
 pub const DefaultLatencyMs: c_int = 0;
 pub const DefaultBufferMs: c_int = 4000;
-pub const DefaultRingBuffer = RingBuffer(u8);
 
 fn failed(status: c_int) bool {
     return status != 0;
@@ -350,24 +349,10 @@ pub const Devices = struct {
 
         ////////////////////////////////////////////////////////////////
         // Create RingBuffer
-        // const capacity: c_int = in_stream.bytes_per_frame * buffer_latency * sample_rate * 2;
-        // const c_capacity: c_int = in_stream.bytes_per_frame * buffer_latency * sample_rate * 2;
-        // const capacity: usize = @intCast(usize, c_capacity);
-
-        // TODO(lbayes): Fix below. Got an LLVM IR error when attempting to intCast this at runtime.
-        const capacity: usize = 716800000;
-        print("Soundio ring_buffer capacity bytes: {}\n", .{capacity});
-        // var buffer = try DefaultRingBuffer.init(self.allocator, capacity);
-        // config.buffer = buffer;
-
-        // var ring_buffer = c.soundio_ring_buffer_create(self.soundio, capacity);
+        const capacity: c_int = in_stream.bytes_per_frame * buffer_latency * sample_rate * 2;
+        var ring_buffer = c.soundio_ring_buffer_create(self.soundio, capacity);
         // Store the ring_buffer pointer on the context
-        // config.platform_buffer = @ptrToInt(ring_buffer);
-
-        // var render_buffer = c.soundio_ring_buffer_write_ptr(ring_buffer);
-        // TODO(lbayes): Figure if we need to advance the write ptr at start
-        // TODO(lbayes): Make the ring_buffer accessible to callbacks
-        print("soundio ring_buffer created\n", .{});
+        config.platform_buffer = @ptrToInt(ring_buffer);
 
         ////////////////////////////////////////////////////////////////
         // Cross the streams!
