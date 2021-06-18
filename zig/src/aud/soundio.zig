@@ -45,6 +45,7 @@ pub const PrioritizedFormats = [_]c_int{
 
 pub const DefaultLatencyMs: c_int = 0;
 pub const DefaultBufferMs: c_int = 4000;
+pub const DefaultRingBuffer = RingBuffer(u8);
 
 fn failed(status: c_int) bool {
     return status != 0;
@@ -356,8 +357,8 @@ pub const Devices = struct {
         // TODO(lbayes): Fix below. Got an LLVM IR error when attempting to intCast this at runtime.
         const capacity: usize = 716800000;
         print("Soundio ring_buffer capacity bytes: {}\n", .{capacity});
-        var buffer = try RingBuffer(u8).init(self.allocator, capacity);
-        config.buffer = buffer;
+        // var buffer = try DefaultRingBuffer.init(self.allocator, capacity);
+        // config.buffer = buffer;
 
         // var ring_buffer = c.soundio_ring_buffer_create(self.soundio, capacity);
         // Store the ring_buffer pointer on the context
