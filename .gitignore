@@ -3,6 +3,8 @@
 Properties
 __pycache__
 bin
+Makefile
+*.make
 cmake-build-*
 obj
 zig-*
