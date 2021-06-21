@@ -7,9 +7,9 @@
 
 #include "dtmf.h"
 #include "shared.h"
-#include <stdlib.h>
-#include <stdbool.h>
 #include <pthread.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 #define STITCH_ASI_TELEPHONE "ASI Telephone"
 #define STITCH_ASI_MICROPHONE "ASI Microphone"
@@ -47,4 +47,4 @@ DLL_LINK int stitch_stop(stitch_context_t *c);
 DLL_LINK int stitch_join(stitch_context_t *c);
 DLL_LINK void stitch_free(stitch_context_t *c);
 
-#endif //MAPLE_STITCH_H
+#endif // MAPLE_STITCH_H

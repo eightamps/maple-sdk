@@ -7,7 +7,7 @@ workspace "maple-sdk"
 project "example-gtk"
   kind "ConsoleApp"
   language "C"
-  buildoptions { "-std=C11" }
+  buildoptions { "-std=c11" }
   targetdir "dist/%{cfg.buildcfg}"
 
   -- local gtkcflags = "`pkg-config --cflags gtk+-3.0`"
@@ -21,9 +21,13 @@ project "example-gtk"
     gtkcflags
   }
 
+  -- linkoptions { "-static" }
+
   links {
     "pthread",
     "m",
+    "usb-1.0",
+    "soundio",
     gtklibs
   }
 
@@ -31,10 +35,13 @@ project "example-gtk"
     "src/*.h",
     "src/*.c",
     "src/gtk/*.h",
-    "src/gtk/*.c"
+    "src/gtk/*.c",
+    "src/nix/stitch.c"
   }
 
   removefiles {
+    "src/hid_client.c",
+    "src/hid_client.h",
     "src/main_console.c",
     "src/main_dll.c",
     "src/main_mingw.c",

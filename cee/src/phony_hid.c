@@ -7,6 +7,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef TEST_MODE
+#include "../test/fakes/libusb_fake.h"
+#else
+#include <libusb-1.0/libusb.h>
+#endif
 
 #define MAPLE_PHONE_INTERFACE             2
 #define PHONY_ENDPOINT_IN                 0x81

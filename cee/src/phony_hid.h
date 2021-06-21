@@ -6,10 +6,10 @@
 #define MAPLE_PHONY_HID_H
 
 #include <stdbool.h>
-#ifndef TEST_MODE
-#include <libusb-1.0/libusb.h>
+#ifdef TEST_MODE
+#include "../test/fakes/libusb_fake.h"
 #else
-#include "fakes/libusb_fake.h"
+#include <libusb-1.0/libusb.h>
 #endif
 
 typedef struct {

@@ -2,11 +2,11 @@
 // Created by lukebayes on 4/25/21.
 //
 
-#include "log.h"
-#include "stitch.h"
+#include "../log.h"
+#include "../stitch.h"
 #include <errno.h>
-#include <soundio/soundio.h>
 #include <pthread.h>
+#include <soundio/soundio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
