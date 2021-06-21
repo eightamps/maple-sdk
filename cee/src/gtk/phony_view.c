@@ -2,9 +2,9 @@
 // Created by lukebayes on 4/21/21.
 //
 
+#include "../log.h"
+#include "../phony.h"
 #include "phony_view.h"
-#include "phony.h"
-#include "log.h"
 #include <stdlib.h>
 
 #define DEFAULT_8A_PHONE_NUMBER "7273392258"

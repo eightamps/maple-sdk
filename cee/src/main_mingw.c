@@ -1,6 +1,6 @@
 #include "log.h"
+#include "stitch.h"
 #include <stdio.h>
-#include <stitch.h>
 
 int main(void) {
   log_info("Main started");

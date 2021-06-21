@@ -2,9 +2,9 @@
 // Created by lukebayes on 4/15/21.
 //
 
+#include "../log.h"
+#include "../phony.h"
 #include "application.h"
-#include "log.h"
-#include "phony.h"
 #include "phony_view.h"
 #include <gtk/gtk.h>
 #include <stddef.h>

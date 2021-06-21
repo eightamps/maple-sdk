@@ -5,7 +5,7 @@
 #ifndef MAPLE_APPLICATION_H
 #define MAPLE_APPLICATION_H
 
-#include "phony.h"
+#include "../phony.h"
 #include "phony_view.h"
 
 #define APP_TITLE_LEN 256

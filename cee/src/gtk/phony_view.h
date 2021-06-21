@@ -6,7 +6,7 @@
 #define MAPLE_PHONY_VIEW_H
 
 #include <gtk/gtk.h>
-#include "phony.h"
+#include "../phony.h"
 
 typedef struct {
   phony_context_t *phony;
