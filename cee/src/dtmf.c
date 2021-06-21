@@ -5,9 +5,11 @@
 #include "dtmf.h"
 #include "log.h"
 #include <math.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+
+// #define sinf(x) (float)sin((double)(x))
 
 static const float TWO_PI = M_PI * 2.0f;
 
