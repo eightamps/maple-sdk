@@ -18,7 +18,7 @@
 #define PHONY_ENDPOINT_OUT                0x01
 
 
-const static int INFINITE_TIMEOUT = 0; /* timeout in ms, or zero for infinite */
+static const int INFINITE_TIMEOUT = 0; /* timeout in ms, or zero for infinite */
 
 int phony_hid_status_from_libusb(int status) {
   if (status < LIBUSB_SUCCESS && status > LIBUSB_ERROR_OTHER) {
@@ -282,6 +282,7 @@ static int find_device(phony_hid_context_t *c, int vid, int pid) {
   return PHONY_HID_SUCCESS;
 }
 
+/*
 static int phony_hid_get_config_descriptors(phony_hid_context_t *c) {
   int status;
   libusb_context *lusb_ctx = c->lusb_context;
@@ -297,7 +298,6 @@ static int phony_hid_get_config_descriptors(phony_hid_context_t *c) {
   log_info("bDescriptorType: %u", config->bDescriptorType);
   log_info("wTotalLength: %u", config->wTotalLength);
 
-  /*
   for (int i = 0; i < config->bNumInterfaces; i++) {
     struct libusb_interface *interface = config->interface[i];
     const struct libusb_interface_descriptor *desc = interface.altsetting;
@@ -336,10 +336,10 @@ static int phony_hid_get_config_descriptors(phony_hid_context_t *c) {
       }
     }
   }
-  */
 
   return status;
 }
+*/
 
 int phony_hid_open(phony_hid_context_t *c) {
   if (c->is_open) {

@@ -194,9 +194,11 @@ static void *begin_polling(void *varg) {
   return NULL;
 }
 
+/*
 static int phony_join(phony_context_t *c) {
   return pthread_join(c->thread_id, NULL);
 }
+*/
 
 int phony_open_device(phony_context_t *c, int vid, int pid) {
   phony_hid_context_t *hc = c->hid_context;
