@@ -2,7 +2,7 @@
 // Created by lukebayes on 4/25/21.
 //
 
-#include "log.h"
+#include "../src/log.h"
 #include "stdio.h"
 #include "string.h"
 #include "test_helper.h"

@@ -2,10 +2,10 @@
 // Created by lukebayes on 4/19/21.
 //
 
-#include "dtmf.h"
+#include "../src/dtmf.h"
 #include "dtmf_test.h"
+#include "minunit.h"
 #include "test_helper.h"
-#include <minunit.h>
 #include <stdio.h>
 #include <string.h>
 

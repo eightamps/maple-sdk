@@ -1,11 +1,11 @@
 #include "dtmf_test.h"
-// #include "hid_client_test.h"
 #include "kissfft_test.h"
 #include "minunit.h"
 #include "phony_hid_test.h"
 #include "phony_test.h"
 #include "phony_view_test.h"
 #include "stitch_test.h"
+// #include "hid_client_test.h"
 
 char *allTests(void) {
 
@@ -44,14 +44,14 @@ char *allTests(void) {
   muRunTest(test_phony_state);
 
   // Stitch tests
-  muRunTest(test_stitch_new);
-  muRunTest(test_stitch_init_null);
-  muRunTest(test_stitch_init);
+  // muRunTest(test_stitch_new);
+  // muRunTest(test_stitch_init_null);
+  // muRunTest(test_stitch_init);
 
   // FFT tests
-  muRunTest(test_fft_empty);
-  muRunTest(test_fft_ones);
-  muRunTest(test_fft_sine);
+  // muRunTest(test_fft_empty);
+  // muRunTest(test_fft_ones);
+  // muRunTest(test_fft_sine);
 
   // PhoneView tests
   // TODO(lbayes): Running the following test throws errors in console, need

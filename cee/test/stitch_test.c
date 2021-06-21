@@ -4,7 +4,7 @@
 
 #include "stitch_test.h"
 #include "minunit.h"
-#include "stitch.h"
+#include "../src/stitch.h"
 
 char *test_stitch_new(void) {
   stitch_context_t *c = stitch_new();

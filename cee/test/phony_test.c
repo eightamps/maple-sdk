@@ -1,5 +1,5 @@
+#include "../src/phony.h"
 #include "minunit.h"
-#include "phony.h"
 #include <stdio.h>
 #include <string.h>
 

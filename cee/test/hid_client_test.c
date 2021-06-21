@@ -2,7 +2,7 @@
 // Created by lukebayes on 4/30/21.
 //
 
-#include "hid_client.h"
+#include "../src/hid_client.h"
 #include "hid_client_test.h"
 #include "minunit.h"
 #include "errno.h"

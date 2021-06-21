@@ -2,9 +2,9 @@
 // Created by lukebayes on 4/23/21.
 //
 
-#include "phony_hid.h"
-#include "phony_hid_test.h"
+#include "../src/phony_hid.h"
 #include "minunit.h"
+#include "phony_hid_test.h"
 #include "test_helper.h"
 #include <string.h>
 

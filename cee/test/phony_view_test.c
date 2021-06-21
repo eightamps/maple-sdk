@@ -2,9 +2,9 @@
 // Created by lukebayes on 4/21/21.
 //
 
-#include "phony_view_test.h"
-#include "gtk/phony_view.h"
+#include "../src/gtk/phony_view.h"
 #include "minunit.h"
+#include "phony_view_test.h"
 
 char *test_phone_view_new(void) {
   /*
