@@ -1,6 +1,6 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
-#include "log.h"
-#include "shared.h"
+#include "../log.h"
+#include "../shared.h"
 // #include "stitch.h"
 #include <mmdeviceapi.h>
 

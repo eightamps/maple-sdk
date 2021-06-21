@@ -1,10 +1,11 @@
+*.gch
+*.make
 *csproj.user
 .gdb_history
+Makefile
 Properties
 __pycache__
 bin
-Makefile
-*.make
 cmake-build-*
 obj
 zig-*

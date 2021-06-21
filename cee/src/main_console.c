@@ -9,6 +9,7 @@
 static phony_context_t *phony_context;
 static stitch_context_t *stitch_context;
 
+#ifndef WIN32
 void sig_term_handler(int a, siginfo_t *t, void *b) {
   if (phony_context != NULL) {
     phony_free(phony_context);
@@ -26,6 +27,11 @@ void catch_sigterm(void) {
   _sigact.sa_flags = SA_SIGINFO;
   sigaction(SIGTERM, &_sigact, NULL);
 }
+#else
+void catch_sigterm(void) {
+  // noop
+}
+#endif
 
 int phony_example(void) {
   log_info("phony_example starting");

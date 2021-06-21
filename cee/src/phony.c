@@ -78,7 +78,7 @@ static int stop_audio(phony_context_t *c) {
 
 static int set_state(phony_context_t *c, phony_state state) {
   phony_state last_state = c->state;
-  int status;
+  int status = 0;
   if (last_state != state) {
     c->state = state;
     log_info("phony changed state to: %s", phony_state_to_str(state));
