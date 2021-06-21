@@ -43,8 +43,8 @@ pub const PrioritizedFormats = [_]c_int{
     c.SoundIoFormatFloat32BE,
 };
 
-pub const DefaultLatencyMs: c_int = 0;
-pub const DefaultBufferMs: c_int = 4000;
+pub const DefaultLatencyMs: c_int = 40;
+pub const DefaultBufferMs: c_int = 200;
 
 fn failed(status: c_int) bool {
     return status != 0;
@@ -243,12 +243,12 @@ pub const Devices = struct {
         // Initialize the render and capture devices
         const capture = config.capture_device;
         const sio_capture = @intToPtr(*c.struct_SoundIoDevice, capture.platform_device);
-        defer c.soundio_device_unref(sio_capture);
+        // defer c.soundio_device_unref(sio_capture);
         print("Soundio capture name: {s}\n", .{sio_capture.name});
 
         const render = config.render_device;
         const sio_render = @intToPtr(*c.struct_SoundIoDevice, render.platform_device);
-        defer c.soundio_device_unref(sio_render);
+        // defer c.soundio_device_unref(sio_render);
         print("Soundio render name: {s}\n", .{sio_render.name});
 
         const latency = DefaultLatencyMs;
@@ -259,15 +259,15 @@ pub const Devices = struct {
         // Find the first supported layout between the capture and render devices.
 
         var layout = sio_capture.current_layout;
-
         // c.soundio_device_sort_channel_layouts(sio_capture);
         // c.soundio_device_sort_channel_layouts(sio_render);
-        // var layout = c.soundio_best_matching_channel_layout(sio_render.layouts, sio_render.layout_count, sio_capture.layouts, sio_capture.layout_count);
-        // if (layout == null) {
+        // var sio_layout = c.soundio_best_matching_channel_layout(sio_render.layouts, sio_render.layout_count, sio_capture.layouts, sio_capture.layout_count);
+        // if (sio_layout == null) {
         //     return AudError.StreamLayoutFailure;
         // }
-        // TODO(lbayes): Figure out how to trace an identifier for layout
-        print("Soundio using layout channel_count: {}\n", .{layout.channel_count});
+        // // TODO(lbayes): Figure out how to trace an identifier for sio_layout
+        // var layout = @ptrCast(*c.struct_SoundIoInStream, sio_layout);
+        // print("Soundio using layout channel_count: {}\n", .{layout.channel_count});
 
         ////////////////////////////////////////////////////////////////
         // Configure Sample Rate
@@ -328,7 +328,7 @@ pub const Devices = struct {
         // Configure Out Stream
         var out_stream: *c.struct_SoundIoOutStream = c.soundio_outstream_create(sio_render);
         // TODO(lbayes): Figure out if we've got a null out_stream?
-        // defer c.soundio_outstream_destroy(out_stream);
+        defer c.soundio_outstream_destroy(out_stream);
 
         out_stream.software_latency = latency;
         out_stream.format = format;
@@ -349,7 +349,8 @@ pub const Devices = struct {
 
         ////////////////////////////////////////////////////////////////
         // Create RingBuffer
-        const capacity: c_int = in_stream.bytes_per_frame * buffer_latency * sample_rate * 2;
+        // const capacity: c_int = in_stream.bytes_per_frame * buffer_latency * sample_rate * 2;
+        const capacity: c_int = in_stream.bytes_per_frame * buffer_latency * sample_rate;
         var ring_buffer = c.soundio_ring_buffer_create(self.soundio, capacity);
         // Store the ring_buffer pointer on the context
         config.platform_buffer = @ptrToInt(ring_buffer);
@@ -360,11 +361,11 @@ pub const Devices = struct {
         print(">>>>>>>>>>>>>> Soundio render name: {s}\n", .{sio_render.name});
 
         // TODO(lbayes): THE FOLLOWING LINE SEGFAULTS!
-        // err = c.soundio_outstream_start(out_stream);
-        // if (err != 0) {
-        //     return AudError.StreamStartFailure;
-        // }
-        // print("Soundio started outstream\n", .{});
+        err = c.soundio_outstream_start(out_stream);
+        if (err != 0) {
+            return AudError.StreamStartFailure;
+        }
+        print("Soundio started outstream\n", .{});
 
         err = c.soundio_instream_start(in_stream);
         if (err != 0) {
@@ -372,7 +373,6 @@ pub const Devices = struct {
         }
 
         print("Waiting for stream to close\n", .{});
-
         while (config.is_active) {
             c.soundio_wait_events(self.soundio);
             time.sleep(40 * time.ns_per_ms);
@@ -398,18 +398,17 @@ pub const Devices = struct {
     fn sioCaptureCallback(c_instream: [*c]c.struct_SoundIoInStream, frame_count_min: c_int, frame_count_max: c_int) callconv(.C) void {
         const instream: *c.struct_SoundIoInStream = @as(*c.struct_SoundIoInStream, c_instream);
         const context: *ConnectContext = @ptrCast(*ConnectContext, instream.userdata);
-        // const ring_buffer = @intToPtr(*c.struct_SoundIoRingBuffer, context.platform_buffer);
+        const ring_buffer = @intToPtr(*c.struct_SoundIoRingBuffer, context.platform_buffer);
 
         print("soundio capture: {} {} {}\n", .{ context.is_active, frame_count_min, frame_count_max });
         print("soundio bytes_per_frame: {}\n", .{instream.bytes_per_frame});
 
-        // var frame: c_int = 0;
-        // while (frame < frame_count_max) {
-        //     print(
-        //     frame += 1;
-        // }
-        // _ = std.c.printf("HELLO WORLD\n");
-        // print("SIO READ CB\n", .{});
+        var frame: c_int = 0;
+        while (frame < frame_count_max) {
+            frame += 1;
+        }
+        _ = std.c.printf("soundio inside capture callback WORLD\n");
+        print("SIO READ CB\n", .{});
     }
 
     fn sioCaptureErrorCallback(instream: [*c]c.struct_SoundIoInStream, err: c_int) callconv(.C) void {
