@@ -31,15 +31,15 @@ workspace "maple-sdk"
   files {
     -- "src/hid_client.h", -- This isn't quite ready yet
     -- "src/hid_client.c",
-    -- "src/dtmf.c",
-    -- "src/dtmf.h",
-    -- "src/log.h",
-    -- "src/phony.c",
-    -- "src/phony.h",
-    -- "src/phony_hid.c",
-    -- "src/phony_hid.h",
-    -- "src/shared.h",
-    -- "src/stitch.h",
+    "src/dtmf.c",
+    "src/dtmf.h",
+    "src/log.h",
+    "src/phony.c",
+    "src/phony.h",
+    "src/phony_hid.c",
+    "src/phony_hid.h",
+    "src/shared.h",
+    "src/stitch.h",
   }
 
   filter "configurations:Debug"
@@ -60,7 +60,7 @@ workspace "maple-sdk"
     targetdir "dist/%{cfg.buildcfg}"
 
     files {
-      "src/main_win32.c",
+      "src/main_console.c",
     }
 
     buildoptions {
@@ -74,37 +74,46 @@ workspace "maple-sdk"
     }
 
     includedirs {
+      "/usr/include/x86_64-linux-musl/",
       "./vendor/libusb/include",
     }
 
     libdirs {
+      "/usr/lib/x86_64-linux-musl/",
       -- "vendor/libusb/VS2019/MS32/static",
       -- "./vendor/libusb/MinGW32/static",
     }
 
     links {
+      "c",
+
       -- "vendor/libusb/MinGW32/static/libusb-1.0.a",
     }
 
   -- ##########################################
   -- Win32 Shared Library
   -- ##########################################
-  -- filter { "platforms:win32" }
-  --   defines { "WIN32" }
+  --filter { "platforms:win32" }
+  --  defines { "WIN32" }
 
-  --   project "MapleSdk"
-  --     kind "SharedLib"
-  --     targetdir "dist/%{cfg.buildcfg}"
+  --  project "MapleSdk"
+  --    kind "SharedLib"
+  --    targetdir "dist/%{cfg.buildcfg}"
 
-  --     buildoptions {
-  --       "-Wall",
-  --       "-Werror",
-  --     }
+  --    buildoptions {
+  --      "-Wall",
+  --      "-Werror",
+  --    }
 
-  --     links {
-  --       "usb-1.0",
-  --       "soundio",
-  --     }
+  --    linkoptions {
+  --      -- "-fPIC",
+  --      -- "-Wl,-z,notext",
+  --    }
+
+  --    links {
+  --      "usb-1.0",
+  --      "soundio",
+  --    }
 
   -- ##########################################
   -- Nix Shared and Static Library
@@ -130,6 +139,28 @@ workspace "maple-sdk"
   --   links {
   --     "usb-1.0",
   --     "soundio",
+  --   }
+
+  -- ##########################################
+  -- Nix Console Example
+  -- ##########################################
+  -- project "example-console"
+  --   kind "ConsoleApp"
+  --   targetdir "dist/%{cfg.buildcfg}"
+
+  --   buildoptions {
+  --     "-Wall",
+  --     "-Werror",
+  --   }
+
+  --   links {
+  --     "usb-1.0",
+  --     "soundio",
+  --   }
+
+  --   files {
+  --     "src/main_console.c",
+  --     "src/nix/stitch.c",
   --   }
 
   -- -- ##########################################
