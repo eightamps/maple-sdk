@@ -7,20 +7,20 @@ workspace "maple-sdk"
   configurations { "Debug", "Release" }
   language "C"
 
-  platforms {
-    "linux64",
-    "linux86",
-    "win32",
-    "win64",
-  }
+  -- platforms {
+    -- "linux64",
+    -- "linux86",
+    -- "win32",
+    -- "win64",
+  -- }
 
-  buildoptions {
+  -- buildoptions {
     -- "-std=gnu17",
-  }
+  -- }
 
-  linkoptions {
+  -- linkoptions {
     -- "-std=gnu17",
-  }
+  -- }
 
   links {
     "pthread",
@@ -34,10 +34,7 @@ workspace "maple-sdk"
     -- "src/dtmf.c",
     -- "src/dtmf.h",
     -- "src/log.h",
-    -- "src/phony.c",
-    -- "src/phony.h",
-    -- "src/phony_hid.c",
-    -- "src/phony_hid.h",
+    -- "src/phony*",
     -- "src/shared.h",
     -- "src/stitch.h",
   }
@@ -61,16 +58,23 @@ workspace "maple-sdk"
 
     files {
       "src/main_win32.c",
+      -- "src/main_console.c",
+      -- "src/win32/stitch.c",
     }
 
     buildoptions {
+      "-std=c11",
       "-target i686-pc-windows-gnu",
       "-v",
     }
 
     linkoptions {
+      "-std=c11",
       "-target i686-pc-windows-gnu",
       "-v",
+      -- "-Bdynamic",
+      -- "-Bstatic",
+      -- "-lvendor/libusb/MinGW32/static/libusb-1.0.a",
     }
 
     includedirs {
@@ -79,10 +83,13 @@ workspace "maple-sdk"
 
     libdirs {
       -- "vendor/libusb/VS2019/MS32/static",
+      -- "vendor/libusb/VS2019/MS32/static",
       -- "./vendor/libusb/MinGW32/static",
     }
 
     links {
+      -- "libusb-1.0.lib",
+      -- "vendor/libsoundio/win32/soundio",
       -- "vendor/libusb/MinGW32/static/libusb-1.0.a",
     }
 

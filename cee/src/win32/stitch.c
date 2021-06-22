@@ -2,7 +2,7 @@
 // Created by lukebayes on 4/25/21.
 //
 #include "../log.h"
-#include "../share.h"
+#include "../shared.h"
 #include "../stitch.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -123,7 +123,7 @@ DLL_LINK int stitch_start(stitch_context_t *c, int in_index, int out_index) {
     EXIT_ON_ERROR(-100, "stitch_start only supports -1 input index right now");
   }
 
-  if (out_index = -1) {
+  if (out_index == -1) {
     status = get_default_device(eRender, eCommunications, &in_device);
     EXIT_ON_ERROR(status, "Failed to get default render device");
   } else {

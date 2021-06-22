@@ -9,7 +9,7 @@
 #ifdef TEST_MODE
 #include "../test/fakes/libusb_fake.h"
 #else
-#include <libusb-1.0/libusb.h>
+#include "libusb-1.0/libusb.h"
 #endif
 
 typedef struct {
