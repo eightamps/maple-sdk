@@ -9,10 +9,10 @@
 #define WIN32_LEAN_AND_MEAN
 #endif // WIN32_LEAN_AND_MEAN
 
-#define INITGUID
 #define CINTERFACE
 #define COBJMACROS
 #define CONST_VTABLE
+#define INITGUID
 
 #include <sdkddkver.h>
 #include <windows.h>

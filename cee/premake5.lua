@@ -31,12 +31,12 @@ workspace "maple-sdk"
   files {
     -- "src/hid_client.h", -- This isn't quite ready yet
     -- "src/hid_client.c",
-    -- "src/dtmf.c",
-    -- "src/dtmf.h",
-    -- "src/log.h",
-    -- "src/phony*",
-    -- "src/shared.h",
-    -- "src/stitch.h",
+    "src/dtmf.c",
+    "src/dtmf.h",
+    "src/log.h",
+    "src/phony*",
+    "src/shared.h",
+    "src/stitch.h",
   }
 
   filter "configurations:Debug"
@@ -59,7 +59,7 @@ workspace "maple-sdk"
     files {
       "src/main_win32.c",
       -- "src/main_console.c",
-      -- "src/win32/stitch.c",
+      "src/win32/stitch.c",
     }
 
     buildoptions {
@@ -72,9 +72,9 @@ workspace "maple-sdk"
       "-std=c11",
       "-target i686-pc-windows-gnu",
       "-v",
-      -- "-Bdynamic",
       -- "-Bstatic",
-      -- "-lvendor/libusb/MinGW32/static/libusb-1.0.a",
+      -- "-Lvendor/libusb/VS2019/static/libusb-1.0.lib",
+      -- "-Lvendor/libusb/MinGW32/static/libusb-1.0.a",
     }
 
     includedirs {
@@ -83,14 +83,16 @@ workspace "maple-sdk"
 
     libdirs {
       -- "vendor/libusb/VS2019/MS32/static",
+      -- "vendor/libusb/VS2019/MS64/static",
+      -- "vendor/libusb/MinGW32/static",
       -- "vendor/libusb/VS2019/MS32/static",
-      -- "./vendor/libusb/MinGW32/static",
     }
 
     links {
-      -- "libusb-1.0.lib",
+      "vendor/libusb/VS2019/MS32/dll/libusb-1.0.dll",
       -- "vendor/libsoundio/win32/soundio",
-      -- "vendor/libusb/MinGW32/static/libusb-1.0.a",
+      -- "usb-1.0.dll",
+      -- "libusb-1.0.lib",
     }
 
   -- ##########################################
