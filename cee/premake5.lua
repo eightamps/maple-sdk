@@ -59,7 +59,20 @@ workspace "maple-sdk"
     local win_target = "-target i686-w64-mingw32"
     -- local libusb = "vendor/libusb/MinGW32/static/libusb-1.0.a"
     -- local libusb_dir = "vendor/libusb/MinGW32/dll"
-    local libusb_dir = "vendor/libusb/MinGW32/dll"
+
+    -- FINDS the libusb.dll, but fails to find symbols within it
+    -- local libusb_dir = "vendor/libusb/MinGW32/dll"
+    -- local libusb_file = "libusb-1.0.dll"
+
+    -- FAILS to find libusb.a
+    -- local libusb_dir = "vendor/libusb/MinGW32/static"
+    -- local libusb_file = "libusb-1.0.a"
+
+    -- FINDS the libusb.dll, but fails to find symbols within it
+    -- local libusb_dir = "vendor/libusb/VS2019/dll"
+    -- local libusb_file = "libusb-1.0.dll"
+
+    local libusb_dir = "vendor/libusb/VS2019/dll"
     local libusb_file = "libusb-1.0.dll"
 
     files {
