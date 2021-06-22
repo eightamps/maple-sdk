@@ -16,6 +16,7 @@ workspace "maple-sdk"
 
   buildoptions {
     -- "-std=gnu17",
+		"-fuse-ld=lld",
   }
 
   linkoptions {
@@ -54,28 +55,56 @@ workspace "maple-sdk"
   -- Win32 Executable example
   -- clang -target i686-pc-windows-gnu src/main_win32.c -otest.exe
   -- ##########################################
+	-- Example make task that also doesn't work
+  -- crap:
+	  -- zig cc \
+		-- -std=c11 \
+		-- -z std=c11 \
+		-- --verbose \
+		-- --target=x86_64-windows-gnu \
+		-- src/dtmf.* \
+		-- src/log.h src/phony* \
+		-- src/shared.h \
+		-- src/stitch.h \
+		-- src/main_win32.c \
+		-- -lvendor/pthread-win32/lib/x86/pthreadVSE2 \
+		-- -lvendor/libusb/VS2019/MS32/static/libusb-1.0\
+		-- -lvendor/libsoundio/lib/libsoundio-win32 \
+		-- -lkernel32 \
+		-- -luser32 \
+		-- -lgdi32 \
+		-- -lole32 \
+		-- -ld3d11 \
+		-- -ldxgi \
+		-- -Ivendor/pthread-win32/include \
+		-- -Isrc/win32 \
+		-- -Ivendor/libusb/include \
+		-- -o dist/Debug/main_win.exe
 
   project "ExampleWin32"
     kind "ConsoleApp"
     targetdir "dist/%{cfg.buildcfg}"
 
     files {
-      "src/main_console.c",
+      -- "src/main_console.c",
+			"src/main_win32.c",
     }
 
     buildoptions {
-      "-target i686-pc-windows-gnu",
+			"-target x86_64-windows-gnu",
+      --"-target i686-pc-windows-gnu",
       "-v",
     }
 
     linkoptions {
-      "-target i686-pc-windows-gnu",
-      "-v",
+			"-lc",
+			"-target x86_64-windows-gnu",
+      --"-target i686-pc-windows-gnu",
     }
 
     includedirs {
       "/usr/include/x86_64-linux-musl/",
-      "./vendor/libusb/include",
+      -- "./vendor/libusb/include",
     }
 
     libdirs {
@@ -85,7 +114,7 @@ workspace "maple-sdk"
     }
 
     links {
-      "c",
+      -- "c",
 
       -- "vendor/libusb/MinGW32/static/libusb-1.0.a",
     }
