@@ -56,6 +56,12 @@ workspace "maple-sdk"
     kind "ConsoleApp"
     targetdir "dist/%{cfg.buildcfg}"
 
+    local win_target = "-target i686-w64-mingw32"
+    -- local libusb = "vendor/libusb/MinGW32/static/libusb-1.0.a"
+    -- local libusb_dir = "vendor/libusb/MinGW32/dll"
+    local libusb_dir = "vendor/libusb/MinGW32/dll"
+    local libusb_file = "libusb-1.0.dll"
+
     files {
       "src/main_win32.c",
       -- "src/main_console.c",
@@ -63,22 +69,30 @@ workspace "maple-sdk"
     }
 
     buildoptions {
-      "-std=c11",
-      "-target i686-pc-windows-gnu",
-      "-v",
+      -- "-std=c11",
+      "-DWIN32_LEAN_ANDMEAN",
+      win_target,
+      -- "-target i686-w64-mingw32",
+      -- "-target x86_64-w64-mingw32",
+      -- "-target i686-pc-windows-gnu",
+      -- "-v",
     }
 
     linkoptions {
-      "-std=c11",
-      "-target i686-pc-windows-gnu",
+      -- "-std=c11",
       "-v",
+      win_target,
+      -- "-L" .. libusb_dir,
+      -- "-l" .. libusb_file,
+      -- "-target i686-w64-mingw32",
+      -- "-target i686-pc-windows-gnu",
       -- "-Bstatic",
-      -- "-Lvendor/libusb/VS2019/static/libusb-1.0.lib",
+      -- "-Lvendor/libusb/MinGW32/static",
       -- "-Lvendor/libusb/MinGW32/static/libusb-1.0.a",
     }
 
     includedirs {
-      "./vendor/libusb/include",
+      "vendor/libusb/include",
     }
 
     libdirs {
@@ -89,10 +103,12 @@ workspace "maple-sdk"
     }
 
     links {
-      "vendor/libusb/VS2019/MS32/dll/libusb-1.0.dll",
+      libusb_dir .. "/" .. libusb_file,
+      -- libusb_file,
+      -- "vendor/libusb/VS2019/MS32/dll/libusb-1.0.dll",
       -- "vendor/libsoundio/win32/soundio",
       -- "usb-1.0.dll",
-      -- "libusb-1.0.lib",
+      -- "libusb-1.0",
     }
 
   -- ##########################################
