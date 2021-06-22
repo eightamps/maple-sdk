@@ -2,7 +2,7 @@
 // Created by lukebayes on 4/25/21.
 //
 #include "../log.h"
-#include "../share.h"
+#include "../shared.h"
 #include "../stitch.h"
 #include <stdlib.h>
 #include <stdio.h>
