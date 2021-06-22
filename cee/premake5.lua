@@ -31,12 +31,12 @@ workspace "maple-sdk"
   files {
     -- "src/hid_client.h", -- This isn't quite ready yet
     -- "src/hid_client.c",
-    "src/dtmf.c",
-    "src/dtmf.h",
-    "src/log.h",
-    "src/phony*",
-    "src/shared.h",
-    "src/stitch.h",
+    -- "src/dtmf.c",
+    -- "src/dtmf.h",
+    -- "src/log.h",
+    -- "src/phony*",
+    -- "src/shared.h",
+    -- "src/stitch.h",
   }
 
   filter "configurations:Debug"
@@ -57,46 +57,60 @@ workspace "maple-sdk"
     targetdir "dist/%{cfg.buildcfg}"
 
     local win_target = "-target i686-w64-mingw32"
+    -- local win_target = "-target i686-pc-win32 -fms-extensions"
+
     -- local libusb = "vendor/libusb/MinGW32/static/libusb-1.0.a"
     -- local libusb_dir = "vendor/libusb/MinGW32/dll"
-
-    -- FINDS the libusb.dll, but fails to find symbols within it
-    -- local libusb_dir = "vendor/libusb/MinGW32/dll"
-    -- local libusb_file = "libusb-1.0.dll"
 
     -- FAILS to find libusb.a
     -- local libusb_dir = "vendor/libusb/MinGW32/static"
     -- local libusb_file = "libusb-1.0.a"
 
     -- FINDS the libusb.dll, but fails to find symbols within it
-    -- local libusb_dir = "vendor/libusb/VS2019/dll"
+    local libusb_header = "-Ivendor/libusb/include"
+    local libusb_dir = "vendor/libusb/MinGW32/static"
+    local libusb_file = "usb-1.0"
+
+    -- FINDS the libusb.dll, but fails to find symbols within it
+    -- local libusb_dir = "vendor/libusb/MinGW32/dll"
     -- local libusb_file = "libusb-1.0.dll"
 
-    local libusb_dir = "vendor/libusb/VS2019/dll"
-    local libusb_file = "libusb-1.0.dll"
+    -- FINDS the libusb.dll, but fails to find symbols winthin it
+    -- local libusb_dir = "vendor/libusb/VS2019/MS64/dll"
+    -- local libusb_file = "libusb-1.0.dll"
 
     files {
-      "src/main_win32.c",
-      -- "src/main_console.c",
+      -- "src/main_win32.c",
+      "src/main_console.c",
       "src/win32/stitch.c",
+      "src/dtmf.c",
+      "src/dtmf.h",
+      "src/log.h",
+      "src/shared.h",
+      "src/stitch.h",
+      "src/phony*",
     }
 
     buildoptions {
       -- "-std=c11",
+      "-v",
       "-DWIN32_LEAN_ANDMEAN",
       win_target,
+      libusb_header,
       -- "-target i686-w64-mingw32",
       -- "-target x86_64-w64-mingw32",
       -- "-target i686-pc-windows-gnu",
-      -- "-v",
     }
 
     linkoptions {
       -- "-std=c11",
+      "-static",
       "-v",
       win_target,
-      -- "-L" .. libusb_dir,
-      -- "-l" .. libusb_file,
+      libusb_header,
+      "-L" .. libusb_dir,
+      "-l" .. libusb_file,
+      -- "-static-libwinpthread",
       -- "-target i686-w64-mingw32",
       -- "-target i686-pc-windows-gnu",
       -- "-Bstatic",
@@ -105,7 +119,7 @@ workspace "maple-sdk"
     }
 
     includedirs {
-      "vendor/libusb/include",
+      -- "vendor/libusb/include",
     }
 
     libdirs {
@@ -116,7 +130,8 @@ workspace "maple-sdk"
     }
 
     links {
-      libusb_dir .. "/" .. libusb_file,
+      "ole32",
+      -- libusb_dir .. "/" .. libusb_file,
       -- libusb_file,
       -- "vendor/libusb/VS2019/MS32/dll/libusb-1.0.dll",
       -- "vendor/libsoundio/win32/soundio",
