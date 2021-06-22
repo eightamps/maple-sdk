@@ -7,16 +7,9 @@ workspace "maple-sdk"
   configurations { "Debug", "Release" }
   language "C"
 
-  platforms {
-    "linux64",
-    "linux86",
-    "win32",
-    "win64",
-  }
-
   buildoptions {
     -- "-std=gnu17",
-		"-fuse-ld=lld",
+		-- "-fuse-ld=lld",
   }
 
   linkoptions {
@@ -24,23 +17,24 @@ workspace "maple-sdk"
   }
 
   links {
-    "pthread",
-    "m",
+    -- "pthread",
+    -- "m",
   }
 
   -- Shared project implementations and headers
   files {
     -- "src/hid_client.h", -- This isn't quite ready yet
     -- "src/hid_client.c",
-    "src/dtmf.c",
-    "src/dtmf.h",
-    "src/log.h",
-    "src/phony.c",
-    "src/phony.h",
-    "src/phony_hid.c",
-    "src/phony_hid.h",
-    "src/shared.h",
-    "src/stitch.h",
+
+    -- "src/dtmf.c",
+    -- "src/dtmf.h",
+    -- "src/log.h",
+    -- "src/phony.c",
+    -- "src/phony.h",
+    -- "src/phony_hid.c",
+    -- "src/phony_hid.h",
+    -- "src/shared.h",
+    -- "src/stitch.h",
   }
 
   filter "configurations:Debug"
@@ -56,20 +50,22 @@ workspace "maple-sdk"
   -- clang -target i686-pc-windows-gnu src/main_win32.c -otest.exe
   -- ##########################################
 	-- Example make task that also doesn't work
-  -- crap:
-	  -- zig cc \
+	-- mkdir -p dist/Debug
+	-- zig cc \
 		-- -std=c11 \
-		-- -z std=c11 \
 		-- --verbose \
 		-- --target=x86_64-windows-gnu \
-		-- src/dtmf.* \
-		-- src/log.h src/phony* \
+		-- src/dtmf.h \
+		-- src/phony*.h \
 		-- src/shared.h \
 		-- src/stitch.h \
+		-- src/log.h \
+		-- src/dtmf.c \
+		-- src/win32/stitch.c \
+		-- src/phony*.c \
 		-- src/main_win32.c \
 		-- -lvendor/pthread-win32/lib/x86/pthreadVSE2 \
-		-- -lvendor/libusb/VS2019/MS32/static/libusb-1.0\
-		-- -lvendor/libsoundio/lib/libsoundio-win32 \
+		-- -lvendor/libusb/VS2019/MS32/static/libusb-1.0 \
 		-- -lkernel32 \
 		-- -luser32 \
 		-- -lgdi32 \
@@ -87,28 +83,31 @@ workspace "maple-sdk"
 
     files {
       -- "src/main_console.c",
+			-- "src/win32/stitch.c",
 			"src/main_win32.c",
     }
 
     buildoptions {
+			"-Wall",
+			"-pedantic",
 			"-target x86_64-windows-gnu",
       --"-target i686-pc-windows-gnu",
       "-v",
     }
 
     linkoptions {
-			"-lc",
-			"-target x86_64-windows-gnu",
+			-- "-lc",
+			-- "-target x86_64-windows-musl",
       --"-target i686-pc-windows-gnu",
     }
 
     includedirs {
-      "/usr/include/x86_64-linux-musl/",
+      -- "/usr/include/x86_64-linux-musl/",
       -- "./vendor/libusb/include",
     }
 
     libdirs {
-      "/usr/lib/x86_64-linux-musl/",
+      -- "/usr/lib/x86_64-linux-musl/",
       -- "vendor/libusb/VS2019/MS32/static",
       -- "./vendor/libusb/MinGW32/static",
     }
