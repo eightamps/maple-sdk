@@ -2104,7 +2104,11 @@ enum libusb_option {
 	LIBUSB_OPTION_WEAK_AUTHORITY = 2
 };
 
+// NOTE(lbayes): Disable libusb_set_option on Win32 because we cannot compile a variadic
+// function with stdcall flags (inferred from LIBUSB_CALL).
+#ifndef WIN32
 int LIBUSB_CALL libusb_set_option(libusb_context *ctx, enum libusb_option option, ...);
+#endif
 
 #if defined(__cplusplus)
 }

@@ -70,7 +70,7 @@ DLL_LINK int stitch_set_dtmf(stitch_context_t *c, dtmf_context_t *d) {
   return EXIT_SUCCESS;
 }
 
-static int get_default_device(DATADIR datadir, ERole role, IMMDevice **device) {
+static int get_default_device(EDataFlow datadir, ERole role, IMMDevice **device) {
   IMMDeviceEnumerator *enumerator = NULL;
 
   HRESULT status = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL,
@@ -132,7 +132,7 @@ DLL_LINK int stitch_start(stitch_context_t *c, int in_index, int out_index) {
 
   goto ExitSuccess;
 ExitWithError:
-  log_err("stitch_start ExitWithError %d", status);
+  log_err("stitch_start ExitWithError %d", (int)status);
 ExitSuccess:
   log_info("stitch_start exiting successfully");
   SAFE_FREE(enumerator);

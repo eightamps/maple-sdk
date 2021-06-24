@@ -22,7 +22,7 @@
 #endif //E_NOTFOUND
 
 #define EXIT_ON_ERROR(hres, message)  \
-              if (FAILED(hres)) { log_err("ERROR[0x%x]: %s", hres, message); \
+              if (FAILED(hres)) { log_err("ERROR[0x%x]: %s", (int)hres, message); \
               goto ExitWithError; }
 #define SAFE_FREE(punk)  \
               if ((punk) != NULL)  \
