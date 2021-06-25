@@ -2,7 +2,7 @@
 // Created by lukebayes on 4/30/21.
 //
 
-#include "libusb_fake.h"
+#include "libusb.h"
 #include <stdlib.h>
 
 static int next_result = LIBUSB_SUCCESS;

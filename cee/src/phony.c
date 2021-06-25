@@ -41,7 +41,7 @@ static int swap_audio(phony_context_t *c) {
   sc = c->from_phone;
   in_index = stitch_get_matching_input_device_index(sc, STITCH_ASI_TELEPHONE);
   if (in_index == -1) {
-    log_err("phony unable to find valid telephone audio input device");
+    log_err("phony unable to find telephone audio input");
     return -ENODEV;
   }
   out_index = stitch_get_default_output_index(sc);
@@ -62,7 +62,7 @@ static int swap_audio(phony_context_t *c) {
 
   out_index = stitch_get_matching_output_device_index(sc, STITCH_ASI_TELEPHONE);
   if (out_index == -1) {
-    log_err("phony unable to find valid telephone audio output device");
+    log_err("phony unable to find telephone audio output");
     return -ENODEV;
   }
   stitch_start(sc, in_index, out_index);

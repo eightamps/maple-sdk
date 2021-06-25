@@ -4,13 +4,20 @@
 #include "phony_hid_test.h"
 #include "phony_test.h"
 #include "phony_view_test.h"
+#include "soundio_fake_test.h"
 #include "stitch_test.h"
 // #include "hid_client_test.h"
 
 char *allTests(void) {
-
   // Begin the test suite
   muSuiteStart();
+
+  // Soundio Fake implementation
+  muRunTest(test_soundio_fake_create);
+  muRunTest(test_soundio_fake_create_failure);
+  muRunTest(test_soundio_fake_connect);
+  muRunTest(test_soundio_fake_connect_backend);
+  muRunTest(test_soundio_fake_destroy);
 
   // HID Client tests
   // muRunTest(test_hid_client_new);
@@ -44,9 +51,11 @@ char *allTests(void) {
   muRunTest(test_phony_state);
 
   // Stitch tests
-  // muRunTest(test_stitch_new);
-  // muRunTest(test_stitch_init_null);
-  // muRunTest(test_stitch_init);
+  muRunTest(test_stitch_new);
+  muRunTest(test_stitch_init_null);
+  muRunTest(test_stitch_init);
+  muRunTest(test_stitch_init_sio_create_failed);
+  muRunTest(test_stitch_init_sio_connect_failed);
 
   // FFT tests
   // muRunTest(test_fft_empty);

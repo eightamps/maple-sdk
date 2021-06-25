@@ -24,9 +24,9 @@ typedef struct {
 }soundio_platform_t;
 
 static int prioritized_sample_rates[] = {
-        48000,
-        44100,
         24000,
+        44100,
+        48000,
 };
 
 enum SoundIoFormat prioritized_formats[] = {

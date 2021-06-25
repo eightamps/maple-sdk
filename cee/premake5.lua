@@ -7,13 +7,13 @@ workspace "maple-sdk"
   configurations { "Debug", "Release" }
   language "C"
 
-  -- buildoptions {
-  --   "-std=gnu17",
-  -- }
+  buildoptions {
+     "-std=gnu17",
+  }
 
-  -- linkoptions {
-  --   "-std=gnu17",
-  -- }
+  linkoptions {
+     "-std=gnu17",
+  }
 
   links {
     "pthread",
@@ -206,17 +206,22 @@ workspace "maple-sdk"
     symbols "On"
     optimize "Off"
 
-    links {
-      "usb-1.0",
-      "soundio",
+    buildoptions {
+      "-v",
+      "-DTEST_MODE=1",
+    }
+
+    linkoptions {
+      "-v",
+      "-Ltest/fakes",
     }
 
     files {
+      "test/fakes/**/*.h",
+      "test/fakes/**/*.c",
       "src/nix/stitch.c",
       "test/*.h",
       "test/*.c",
-      "test/fakes/*.h",
-      "test/fakes/*.c",
       "test/main_test.c",
     }
 

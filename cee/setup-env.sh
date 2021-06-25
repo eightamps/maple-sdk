@@ -37,15 +37,34 @@ PREMAKE=$(which premake5)
 WINE=$(which wine64)
 WC=$(which when-changed.py)
 WIN_TARGET=x86_64-windows-gnu
-FILES=(premake5.lua src/**/*.c src/**/*.h)
+FILES=(premake5.lua src/**/*.c src/**/*.h test/**/*.c test/**/*.h)
 HALF_CORES=$((`grep -c ^processor /proc/cpuinfo` / 2)) 
+VALGRIND=$(which valgrind)
+
+TEST_OUTPUT=./dist/Debug/maple-sdk-test
+
+build-only() {
+  $PREMAKE gmake && make -j$HALF_CORES $1
+}
 
 build-all() {
-  $PREMAKE gmake && make -j$HALF_CORES
+  build-only
 }
 
 build-test() {
-  build-all && ./dist/Debug/maple-sdk-test
+  build-only "maple-sdk-test" && $TEST_OUTPUT
+}
+
+build-test-v() {
+  build-only "maple-sdk-test" && $VALGRIND $TEST_OUTPUT
+}
+
+build-test-w() {
+  when-changed "$PREMAKE gmake && make -j$HALF_CORES \"maple-sdk-test\" && $TEST_OUTPUT"
+}
+
+build-test-vw() {
+  when-changed "$PREMAKE gmake && make -j$HALF_CORES \"maple-sdk-test\" && valgrind $TEST_OUTPUT"
 }
 
 build-run-gtk() {
@@ -58,10 +77,6 @@ build-run-win() {
 
 when-changed() {
   $WC $FILES -c $1
-}
-
-build-test-w() {
-  when-changed "$PREMAKE gmake && make -j$HALF_CORES && ./dist/Debug/maple-sdk-test"
 }
 
 build-run-w() {

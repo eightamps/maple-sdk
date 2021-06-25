@@ -5,11 +5,7 @@
 #ifndef MAPLE_HID_CLIENT_H
 #define MAPLE_HID_CLIENT_H
 
-#ifdef TEST_MODE
-#include "fakes/libusb_fake.h"
-#else
 #include <libusb-1.0/libusb.h>
-#endif
 
 typedef struct {
   int vid;
