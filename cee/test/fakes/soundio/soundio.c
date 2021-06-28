@@ -14,40 +14,32 @@ static SoundIoFakeFunctionNames fake_last_function = FunctionNameNone;
 static struct SoundIoDevice *fake_devices = {0};
 static size_t fake_devices_count = 0;
 
-static struct SoundIoDevice *create_fake_device(char *id, char *name) {
-  struct SoundIoDevice *device = calloc(sizeof(struct SoundIoDevice), 1);
-  if (device == NULL) {
-    return NULL;
+void add_devices(enum SoundIoDeviceAim aim, unsigned int count, ...) {
+  struct SoundIoDevice *devices = calloc(sizeof(struct SoundIoDevice), count);
+  va_list vargs;
+  va_start(vargs, count);
+  for (unsigned int i = 0; i < count; ++i) {
+    char *base_name = va_arg(vargs, char *);
+    char *name = malloc(sizeof(base_name) + 6);
+    strcpy(name, base_name);
+    strcat(name, "-name");
+
+    char *id = malloc(sizeof(base_name) + 3);
+    strcpy(id, base_name);
+    strcat(id, "-id");
+
+    devices[i].id = id;
+    devices[i].name = name;
   }
 
-  device->soundio = context;
-  device->id = id;
-  device->name = name;
-
-  // char *id;
-  // char *name;
-  // enum SoundIoDeviceAim aim;
-  // struct SoundIoChannelLayout *layouts;
-  // int layout_count;
-  // struct SoundIoChannelLayout current_layout;
-  // enum SoundIoFormat *formats;
-  // int format_count;
-  // enum SoundIoFormat current_format;
-  // struct SoundIoSampleRateRange *sample_rates;
-  // int sample_rate_count;
-  // int sample_rate_current;
-  // double software_latency_min;
-  // double software_latency_max;
-  // double software_latency_current;
-  // bool is_raw;
-  // int ref_count;
-  // int probe_error;
-  return device;
-}
-
-SOUNDIO_EXPORT void soundio_fake_set_input_devices(struct SoundIoDevice *devices, int count) {
-  context->fake_input_devices = devices;
-  context->fake_input_device_count = count;
+  if (aim == SoundIoDeviceAimInput) {
+    context->fake_input_device_count = count;
+    context->fake_input_devices = devices;
+  } else {
+    context->fake_output_device_count = count;
+    context->fake_output_devices = devices;
+  }
+  va_end(vargs);
 }
 
 SOUNDIO_EXPORT struct SoundIo *soundio_create(void) {

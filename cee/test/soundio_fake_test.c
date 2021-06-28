@@ -65,23 +65,19 @@ char *test_soundio_fake_destroy(void) {
   return NULL;
 }
 
-char *test_default_fake_devices(void) {
+char *test_default_fake_input_devices(void) {
   struct SoundIo *sio = soundio_create();
 
   // Create a set of fake devices
-  struct SoundIoDevice *devices = calloc(sizeof(struct SoundIoDevice), 3);
-  devices[0].id = "abcd-id";
-  devices[0].name = "abcd-name";
-  devices[1].id = "efgh-id";
-  devices[1].name = "efgh-name";
-  devices[2].id = "ijkl-id";
-  devices[2].name = "ijkl-name";
-  // Send the fake devices to the sio context
-  soundio_fake_set_input_devices(devices, 3);
+  add_input_devices(
+    "abcd",
+    "efgh",
+    "ijkl"
+  );
 
   // Get the current state of the context
   int count = soundio_input_device_count(sio);
-  muAssertIntEq(count, 3, "Expected Inputs");
+  muAssertIntEq(count, 3, "Expected Devices");
 
   struct SoundIoDevice *one = soundio_get_input_device(sio, 0);
   muAssertStrCmp(one->id, "abcd-id", "Expected id");
@@ -99,3 +95,32 @@ char *test_default_fake_devices(void) {
   return NULL;
 }
 
+char *test_default_fake_output_devices(void) {
+  struct SoundIo *sio = soundio_create();
+
+  // Create a set of fake devices
+  add_output_devices(
+    "abcd",
+    "efgh",
+    "ijkl"
+  );
+
+  // Get the current state of the context
+  int count = soundio_output_device_count(sio);
+  muAssertIntEq(count, 3, "Expected Devices");
+
+  struct SoundIoDevice *one = soundio_get_output_device(sio, 0);
+  muAssertStrCmp(one->id, "abcd-id", "Expected id");
+  muAssertStrCmp(one->name, "abcd-name", "Expected name");
+
+  struct SoundIoDevice *two = soundio_get_output_device(sio, 1);
+  muAssertStrCmp(two->id, "efgh-id", "Expected id");
+  muAssertStrCmp(two->name, "efgh-name", "Expected name");
+
+  struct SoundIoDevice *three = soundio_get_output_device(sio, 2);
+  muAssertStrCmp(three->id, "ijkl-id", "Expected id");
+  muAssertStrCmp(three->name, "ijkl-name", "Expected name");
+
+  soundio_destroy(sio);
+  return NULL;
+}
