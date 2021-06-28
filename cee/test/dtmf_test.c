@@ -18,7 +18,7 @@
  */
 static int get_sample_count_for(int sample_rate, int char_count) {
   float duration_ms = (float)((char_count * DTMF_MS_PER_ENTRY) +
-                       ((char_count - 1) * DTMF_MS_PER_SPACE));
+      ((char_count - 1) * DTMF_MS_PER_SPACE));
   return (int)((float)sample_rate * (duration_ms * 0.001f));
 }
 

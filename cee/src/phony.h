@@ -94,7 +94,7 @@ DLL_LINK int phony_hang_up(phony_context_t *phony);
  * @return int Status code
  */
 DLL_LINK int phony_on_state_changed(phony_context_t *c, phony_state_changed callback,
-                            void *userdata);
+    void *userdata);
 
 /**
  * Get the current phony state.

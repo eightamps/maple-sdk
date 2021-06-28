@@ -3,12 +3,8 @@
  * @file           : debug.h
  * @brief          : Debug macros from, "Learn C The Hard Way"
  * @author         : Zed Shaw
- *
- * Copyright (c) 2020 Eight Amps, LLC
- * All rights reserved.
  ******************************************************************************
  */
-
 #ifndef MAPLE_LOG
 #define MAPLE_LOG
 

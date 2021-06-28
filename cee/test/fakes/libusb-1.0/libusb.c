@@ -74,7 +74,7 @@ const char * libusb_error_name(int error_code) {
 }
 
 int libusb_set_auto_detach_kernel_driver(libusb_device_handle *devh,
-                                         int enable) {
+    int enable) {
   return LIBUSB_SUCCESS;
 }
 
@@ -90,8 +90,8 @@ void libusb_close(libusb_device_handle *devh) {
 }
 
 libusb_device_handle * libusb_open_device_with_vid_pid(libusb_context *ctx,
-                                                       uint16_t vid, uint16_t
-                                                       pid) {
+    uint16_t vid, uint16_t
+    pid) {
   return NULL;
 }
 
@@ -108,7 +108,7 @@ uint8_t libusb_get_device_address(libusb_device *dev) {
 }
 
 int libusb_get_device_descriptor(libusb_device *dev,
-                                 libusb_device_descriptor *desc) {
+    libusb_device_descriptor *desc) {
   return LIBUSB_SUCCESS;
 }
 
@@ -117,7 +117,7 @@ int libusb_reset_device(libusb_device_handle *devh) {
 }
 
 int libusb_get_config_descriptor(libusb_device *dev, uint8_t config_index,
-                                 libusb_config_descriptor **config) {
+    libusb_config_descriptor **config) {
   return LIBUSB_SUCCESS;
 }
 

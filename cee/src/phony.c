@@ -14,22 +14,22 @@
 
 const char *phony_state_to_str(int state) {
   switch (state) {
-  case PHONY_NOT_READY:
-    return "Not ready";
-  case PHONY_READY:
-    return "Ready";
-  case PHONY_OFF_HOOK:
-    return "Off hook";
-  case PHONY_RINGING:
-    return "Ringing";
-  case PHONY_LINE_NOT_FOUND:
-    return "Line not found";
-  case PHONY_LINE_IN_USE:
-    return "Line in use";
-  case PHONY_DEVICE_NOT_FOUND:
-    return "Device not found";
-  default:
-    return "Unknown state";
+    case PHONY_NOT_READY:
+      return "Not ready";
+    case PHONY_READY:
+      return "Ready";
+    case PHONY_OFF_HOOK:
+      return "Off hook";
+    case PHONY_RINGING:
+      return "Ringing";
+    case PHONY_LINE_NOT_FOUND:
+      return "Line not found";
+    case PHONY_LINE_IN_USE:
+      return "Line in use";
+    case PHONY_DEVICE_NOT_FOUND:
+      return "Device not found";
+    default:
+      return "Unknown state";
   }
 }
 
@@ -92,7 +92,7 @@ static int set_state(phony_context_t *c, phony_state state) {
         //  reset our looping
       }
     } else if (PHONY_READY == state &&
-    PHONY_LINE_IN_USE == last_state) {
+        PHONY_LINE_IN_USE == last_state) {
       log_info("phony transitioning to ready, from line in use");
       stop_audio(c);
     }
@@ -162,7 +162,7 @@ static void *begin_polling(void *varg) {
         set_state(c, PHONY_CONNECTED);
       } else {
         // log_err("phony unable to open HID client with status: %s",
-            // phony_hid_status_message(status));
+        // phony_hid_status_message(status));
         set_state(c, PHONY_DEVICE_NOT_FOUND);
         usleep(500000);
         continue;
@@ -195,10 +195,10 @@ static void *begin_polling(void *varg) {
 }
 
 /*
-static int phony_join(phony_context_t *c) {
-  return pthread_join(c->thread_id, NULL);
-}
-*/
+   static int phony_join(phony_context_t *c) {
+   return pthread_join(c->thread_id, NULL);
+   }
+   */
 
 int phony_open_device(phony_context_t *c, int vid, int pid) {
   phony_hid_context_t *hc = c->hid_context;
@@ -225,10 +225,10 @@ int phony_take_off_hook(phony_context_t *c) {
   return -EPERM;
 
   // if (c->state == PHONY_OFF_HOOK) {
-    // return EXIT_SUCCESS;
+  // return EXIT_SUCCESS;
   // }
   // log_err("phony_take_off_hook failed with unexpected state %s",
-          // phony_state_to_str(c->state));
+  // phony_state_to_str(c->state));
   // return -EINVAL;
 }
 
@@ -315,10 +315,10 @@ void phony_free(phony_context_t *c) {
 }
 
 int phony_on_state_changed(phony_context_t *c, phony_state_changed callback,
-                            void *userdata) {
+    void *userdata) {
   if (c->state_changed != NULL) {
     log_err("phony_on_state_changed cannot accept a second "
-                    "callback");
+        "callback");
     return -EPERM; // Operation not permitted
   }
   c->state_changed = callback;

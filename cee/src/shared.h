@@ -22,13 +22,13 @@
 #endif //E_NOTFOUND
 
 #define EXIT_ON_ERROR(hres, message)  \
-              if (FAILED(hres)) { log_err("ERROR[0x%x]: %s", (int)hres, message); \
-              goto ExitWithError; }
+  if (FAILED(hres)) { log_err("ERROR[0x%x]: %s", (int)hres, message); \
+    goto ExitWithError; }
 #define SAFE_FREE(punk)  \
-              if ((punk) != NULL)  \
-                { free(punk); (punk) = NULL; }
+  if ((punk) != NULL)  \
+{ free(punk); (punk) = NULL; }
 #endif // _WIN32
- 
+
 
 #ifdef MAPLE_EXPORT_DLL
 #define DLL_LINK __declspec(dllexport)

@@ -20,22 +20,22 @@ typedef struct {
 }dtmf_tone_info_t;
 
 static dtmf_tone_info_t DtmfTones[] = {
-    {'0', 1336, 941}, // underscore-ish?
-    {'1', 1209, 697}, // recording icon?
-    {'2', 1336, 697}, // abcd
-    {'3', 1477, 697}, // def
-    {'4', 1209, 770}, // ghi
-    {'5', 1336, 770}, // jkl
-    {'6', 1477, 770}, // mno
-    {'7', 1209, 852}, // pqrs
-    {'8', 1336, 852}, // tuv
-    {'9', 1477, 852}, // wxyz
-    {'*', 1209, 941}, // plus sign?
-    {'#', 1477, 941}, // up arrow?
-    {'A', 1633, 697},
-    {'B', 1633, 770},
-    {'C', 1633, 852},
-    {'D', 1633, 941},
+  {'0', 1336, 941}, // underscore-ish?
+  {'1', 1209, 697}, // recording icon?
+  {'2', 1336, 697}, // abcd
+  {'3', 1477, 697}, // def
+  {'4', 1209, 770}, // ghi
+  {'5', 1336, 770}, // jkl
+  {'6', 1477, 770}, // mno
+  {'7', 1209, 852}, // pqrs
+  {'8', 1336, 852}, // tuv
+  {'9', 1477, 852}, // wxyz
+  {'*', 1209, 941}, // plus sign?
+  {'#', 1477, 941}, // up arrow?
+  {'A', 1633, 697},
+  {'B', 1633, 770},
+  {'C', 1633, 852},
+  {'D', 1633, 941},
 };
 
 static const int dtmf_tones_count = sizeof(DtmfTones) / sizeof(dtmf_tone_info_t);
@@ -146,9 +146,9 @@ int dtmf_next_sample(dtmf_context_t *c, float *sample) {
   }
 
   int entry_index = c->sample_index / (c->entry_sample_count +
-                                       c->padding_sample_count);
+      c->padding_sample_count);
   int entry_location = c->sample_index % (c->entry_sample_count +
-                                          c->padding_sample_count);
+      c->padding_sample_count);
 
   // We're inside of a padding block
   if (entry_location > c->entry_sample_count) {

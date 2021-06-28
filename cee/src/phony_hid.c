@@ -128,14 +128,14 @@ int phony_hid_in_report_to_struct(phony_hid_in_report_t *in_report, uint8_t valu
 }
 
 static int interrupt_transfer(phony_hid_context_t *c, uint8_t addr,
-                              unsigned char *data, uint8_t len) {
+    unsigned char *data, uint8_t len) {
   int r;
   int transferred = 0;
 
   libusb_device_handle *dev_h = c->device_handle;
 
   r = libusb_interrupt_transfer(dev_h, addr, data, len, &transferred,
-                                INFINITE_TIMEOUT);
+      INFINITE_TIMEOUT);
   if (r == LIBUSB_ERROR_NO_DEVICE ||
       r == LIBUSB_ERROR_IO) {
     phony_hid_close(c);
@@ -148,7 +148,7 @@ static int interrupt_transfer(phony_hid_context_t *c, uint8_t addr,
 
     if (transferred < len) {
       log_err("Interrupt transfer short read transferred %d bytes",
-              transferred);
+          transferred);
       return PHONY_HID_ERROR_PIPE;
     }
 
@@ -226,7 +226,7 @@ static int auto_detach_kernel(phony_hid_context_t *c) {
   int status = libusb_set_auto_detach_kernel_driver(dev_h, 1);
   if (status != LIBUSB_SUCCESS) {
     log_err("libusb_set_auto_detach_kernel_driver = 0 failed with: "
-                    "%d", status);
+        "%d", status);
   }
   log_info("Successfully called libusb_set_auto_detach_kernel_driver");
   return status;
@@ -237,7 +237,7 @@ static int claim_interface(phony_hid_context_t *c, int interface) {
   int status = libusb_claim_interface(dev_h, interface);
   if (status < 0) {
     log_err("libusb_claim_interface error %d %s", status,
-            libusb_error_name(status));
+        libusb_error_name(status));
   }
   c->is_interface_claimed = true;
   log_info("Successfully claimed interface %d", interface);
@@ -250,8 +250,8 @@ static int find_device(phony_hid_context_t *c, int vid, int pid) {
   dev_h = libusb_open_device_with_vid_pid(lusb_ctx, vid, pid);
 
   if (dev_h == NULL) {
-     log_err("failed to find hid device with vid: 0x%02x and pid: 0x%02x",
-            vid, pid);
+    log_err("failed to find hid device with vid: 0x%02x and pid: 0x%02x",
+        vid, pid);
     return PHONY_HID_ERROR_NOT_FOUND;
   }
 
@@ -262,7 +262,7 @@ static int find_device(phony_hid_context_t *c, int vid, int pid) {
   int bus_no = libusb_get_bus_number(d);
   int dev_addr = libusb_get_device_address(d);
   log_info("Found hid device at bus: 0x%02x (%d) and dev addr 0x%02x (%d)",
-         bus_no, bus_no, dev_addr, dev_addr);
+      bus_no, bus_no, dev_addr, dev_addr);
 
   struct libusb_device_descriptor desc = {0};
   int rc = libusb_get_device_descriptor(d, &desc);
@@ -279,63 +279,63 @@ static int find_device(phony_hid_context_t *c, int vid, int pid) {
 }
 
 /*
-static int phony_hid_get_config_descriptors(phony_hid_context_t *c) {
-  int status;
-  libusb_context *lusb_ctx = c->lusb_context;
-  struct libusb_config_descriptor *config;
-  status = libusb_get_config_descriptor(c->device, 0, &config);
-  if (status != LIBUSB_SUCCESS) {
-    log_err("failed to get config descriptor with: %d", status);
-    return status;
-  }
+   static int phony_hid_get_config_descriptors(phony_hid_context_t *c) {
+   int status;
+   libusb_context *lusb_ctx = c->lusb_context;
+   struct libusb_config_descriptor *config;
+   status = libusb_get_config_descriptor(c->device, 0, &config);
+   if (status != LIBUSB_SUCCESS) {
+   log_err("failed to get config descriptor with: %d", status);
+   return status;
+   }
 
-  log_info("Successfully got config descriptor with:");
-  log_info("bNumberInterfaces: %u", config->bNumInterfaces);
-  log_info("bDescriptorType: %u", config->bDescriptorType);
-  log_info("wTotalLength: %u", config->wTotalLength);
+   log_info("Successfully got config descriptor with:");
+   log_info("bNumberInterfaces: %u", config->bNumInterfaces);
+   log_info("bDescriptorType: %u", config->bDescriptorType);
+   log_info("wTotalLength: %u", config->wTotalLength);
 
-  for (int i = 0; i < config->bNumInterfaces; i++) {
-    struct libusb_interface *interface = config->interface[i];
-    const struct libusb_interface_descriptor *desc = interface.altsetting;
-    if (desc->bInterfaceNumber == MAPLE_PHONE_INTERFACE) {
-      log_info("==================================================");
-      log_info("INTERFACE:");
-      log_info("bInterfaceNumber: %u", desc->bInterfaceNumber);
-      log_info("bDescriptorType: %u", desc->bDescriptorType);
-      log_info("bAlternateSetting: %u", desc->bAlternateSetting);
-      log_info("bInterfaceClass: %u", desc->bInterfaceClass);
-      log_info("bInterfaceProtocol: %u", desc->bInterfaceProtocol);
-      log_info("bLength: %u", desc->bLength);
-      log_info("bNumEndpoints: %u", desc->bNumEndpoints);
-      log_info("iInterface: %u", desc->iInterface);
+   for (int i = 0; i < config->bNumInterfaces; i++) {
+   struct libusb_interface *interface = config->interface[i];
+   const struct libusb_interface_descriptor *desc = interface.altsetting;
+   if (desc->bInterfaceNumber == MAPLE_PHONE_INTERFACE) {
+   log_info("==================================================");
+   log_info("INTERFACE:");
+   log_info("bInterfaceNumber: %u", desc->bInterfaceNumber);
+   log_info("bDescriptorType: %u", desc->bDescriptorType);
+   log_info("bAlternateSetting: %u", desc->bAlternateSetting);
+   log_info("bInterfaceClass: %u", desc->bInterfaceClass);
+   log_info("bInterfaceProtocol: %u", desc->bInterfaceProtocol);
+   log_info("bLength: %u", desc->bLength);
+   log_info("bNumEndpoints: %u", desc->bNumEndpoints);
+   log_info("iInterface: %u", desc->iInterface);
 
-      for (int k = 0; k < desc->bNumEndpoints; k++) {
-        const struct libusb_endpoint_descriptor ep_desc = desc->endpoint[k];
-        log_info("---");
-        log_info("ENDPOINT:");
-        uint8_t addr = ep_desc.bEndpointAddress;
-        log_info("ep_desc->bEndpointAddress 0x%02x ", addr);
-        if (addr & LIBUSB_ENDPOINT_IN) {
-          log_info("(EP IN)");
-        } else {
-          log_info("(EP OUT)");
-        }
+   for (int k = 0; k < desc->bNumEndpoints; k++) {
+   const struct libusb_endpoint_descriptor ep_desc = desc->endpoint[k];
+   log_info("---");
+   log_info("ENDPOINT:");
+   uint8_t addr = ep_desc.bEndpointAddress;
+   log_info("ep_desc->bEndpointAddress 0x%02x ", addr);
+   if (addr & LIBUSB_ENDPOINT_IN) {
+   log_info("(EP IN)");
+   } else {
+   log_info("(EP OUT)");
+   }
 
-        log_info("ep_desc->bLength %u", ep_desc.bLength);
-        log_info("ep_desc->bDescriptorType %u", ep_desc.bDescriptorType);
+   log_info("ep_desc->bLength %u", ep_desc.bLength);
+   log_info("ep_desc->bDescriptorType %u", ep_desc.bDescriptorType);
 
-        log_info("ep_desc->bInterval %u", ep_desc.bInterval);
-        log_info("ep_desc->bSynchAddress %u", ep_desc.bSynchAddress);
-        log_info("ep_desc->bmAttributes %u", ep_desc.bmAttributes);
-        log_info("ep_desc->extra_length %d", ep_desc.extra_length);
-        log_info("ep_desc->wMaxPacketSize %u", ep_desc.wMaxPacketSize);
-      }
-    }
-  }
+   log_info("ep_desc->bInterval %u", ep_desc.bInterval);
+   log_info("ep_desc->bSynchAddress %u", ep_desc.bSynchAddress);
+   log_info("ep_desc->bmAttributes %u", ep_desc.bmAttributes);
+   log_info("ep_desc->extra_length %d", ep_desc.extra_length);
+   log_info("ep_desc->wMaxPacketSize %u", ep_desc.wMaxPacketSize);
+   }
+   }
+   }
 
-  return status;
-}
-*/
+   return status;
+   }
+   */
 
 int phony_hid_open(phony_hid_context_t *c) {
   if (c->is_open) {
@@ -357,7 +357,7 @@ int phony_hid_open(phony_hid_context_t *c) {
   status = find_device(c, c->vendor_id, c->product_id);
   if (status != PHONY_HID_SUCCESS) {
     // log_err("Could not open HID device at vid 0x%02x and pid "
-                    // "0x%02x", c->vendor_id, c->product_id);
+    // "0x%02x", c->vendor_id, c->product_id);
     goto out;
   }
   log_info("Successfully found the expected HID device");
@@ -380,7 +380,7 @@ int phony_hid_open(phony_hid_context_t *c) {
     goto out;
   }
 
-  out:
+out:
   return phony_hid_status_from_libusb(status);
 }
 
@@ -412,7 +412,7 @@ int phony_hid_reset_device(phony_hid_context_t *c) {
       int status = libusb_reset_device(c->device_handle);
       if (status != LIBUSB_SUCCESS) {
         log_err("phony_hid reset_device error %d %s", status,
-                libusb_error_name(status));
+            libusb_error_name(status));
       } else {
         log_info("phony_hid successfully reset device");
       }

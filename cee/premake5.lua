@@ -207,19 +207,20 @@ workspace "maple-sdk"
     optimize "Off"
 
     buildoptions {
-      "-v",
+      -- "-v",
       "-DTEST_MODE=1",
+      "-Itest/fakes",
     }
 
     linkoptions {
-      "-v",
-      "-Ltest/fakes",
+      -- "-v",
     }
 
     files {
       "test/fakes/**/*.h",
       "test/fakes/**/*.c",
       "src/nix/stitch.c",
+      "src/nix/stitch_soundio.h",
       "test/*.h",
       "test/*.c",
       "test/main_test.c",

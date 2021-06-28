@@ -89,6 +89,17 @@ build-run-win-w() {
 
 build-clean() {
   echo ">> Removing dist/ Makefile *.make and obj"
-  rm -rf dist Makefile *.make obj
+  rm -rf obj || :
+  rm -rf dist || :
+  rm -rf Makefile || :
+  rm -rf *.make || :
+  rm -rf compile_commands.json || :
+}
+
+build-bear() {
+  build-clean && \
+  $PREMAKE gmake && \
+  bear make maple-sdk-test
+  ls -la compile_commands.json
 }
 

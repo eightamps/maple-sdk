@@ -56,6 +56,9 @@ char *allTests(void) {
   muRunTest(test_stitch_init);
   muRunTest(test_stitch_init_sio_create_failed);
   muRunTest(test_stitch_init_sio_connect_failed);
+  muRunTest(test_stitch_connect);
+  muRunTest(test_stitch_init_custom_backend);
+  muRunTest(test_default_fake_devices);
 
   // FFT tests
   // muRunTest(test_fft_empty);

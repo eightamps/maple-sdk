@@ -1,7 +1,3 @@
-//
-// Created by lukebayes on 4/25/21.
-//
-
 #ifndef MAPLE_STITCH_H
 #define MAPLE_STITCH_H
 

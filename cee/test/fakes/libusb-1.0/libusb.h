@@ -115,8 +115,8 @@ enum libusb_transfer_status {
   /** Device sent more data than requested */
   LIBUSB_TRANSFER_OVERFLOW
 
-  /* NB! Remember to update libusb_error_name()
-     when adding new status codes here. */
+    /* NB! Remember to update libusb_error_name()
+       when adding new status codes here. */
 };
 
 // Fake-only functions
@@ -128,7 +128,7 @@ int libusb_interrupt_transfer(struct libusb_device_handle *devh,
     unsigned int timeout);
 const char * libusb_error_name(int code);
 int libusb_set_auto_detach_kernel_driver(libusb_device_handle *devh,
-                                         int enable);
+    int enable);
 int libusb_release_interface(libusb_device_handle *devh, int interface_number);
 int libusb_claim_interface(libusb_device_handle *devh, int interface_number);
 libusb_device_handle * libusb_open_device_with_vid_pid(libusb_context *ctx,
@@ -137,10 +137,10 @@ libusb_device * libusb_get_device(libusb_device_handle *devh);
 uint8_t libusb_get_bus_number(libusb_device *dev);
 uint8_t libusb_get_device_address(libusb_device *dev);
 int libusb_get_device_descriptor(libusb_device *dev,
-                                 libusb_device_descriptor *desc);
+    libusb_device_descriptor *desc);
 int libusb_reset_device(libusb_device_handle *devh);
 int libusb_get_config_descriptor(libusb_device *dev, uint8_t config_index,
-                                 libusb_config_descriptor **config);
+    libusb_config_descriptor **config);
 
 void libusb_close(libusb_device_handle *devh);
 void libusb_exit(libusb_context *c);

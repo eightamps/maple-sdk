@@ -73,7 +73,7 @@ int phony_example(void) {
 }
 
 int stitch_example(void) {
-  stitch_context_t *c = stitch_new_with_label("example");
+  stitch_context_t *c = stitch_new();
   stitch_context = c;
   if (c == NULL) {
     log_err("Failed creation");

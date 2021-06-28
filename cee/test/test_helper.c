@@ -35,7 +35,7 @@ int floats_match_as_str(float a, float b) {
   int result = strncmp(a_str, b_str, len);
   if (0 != result) {
     fprintf(stderr, "floats_match_as_str failed with a: %s vs b: %s", a_str,
-            b_str);
+        b_str);
   }
 
   return result;

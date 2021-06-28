@@ -12,7 +12,7 @@
 #define NF (N / 2 - 1)
 
 static char *exec_fft(const kiss_fft_cpx in[N],
-                     kiss_fft_cpx out[NF]) {
+    kiss_fft_cpx out[NF]) {
   kiss_fft_cfg cfg = kiss_fft_alloc(N, 0, NULL, NULL);
   muAssert(cfg != NULL, "Expected malloc");
   kiss_fft(cfg, in, out);
@@ -73,8 +73,8 @@ char *test_fft_sine(void) {
 
 /*
  * Get the absolute value for an fft result.
-for (int i = 0; i < NF; i++) {
-  abs = sqrt((out[i].r * out[i].r) + (out[i].i * out[i].i));
-  printf("%d: abs: %d,  %04f\n", i, abs, out[i].r);
-}
+ for (int i = 0; i < NF; i++) {
+ abs = sqrt((out[i].r * out[i].r) + (out[i].i * out[i].i));
+ printf("%d: abs: %d,  %04f\n", i, abs, out[i].r);
+ }
  */
