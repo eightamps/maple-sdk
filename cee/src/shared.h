@@ -43,16 +43,25 @@
 #endif // MAPLE_EXPORT_DLL
 
 
-// Bullshit header requires me to declare the built-in signature.
+// Bullshit time.h header requires me to declare this built-in signature for
+// some ridiculous reason.
+// https://cs50.stackexchange.com/questions/22521/nanosleep-function-implicit-deceleration
 int nanosleep(const struct timespec *req, struct timespec *rem);
 
+// Apparently, I'm the only person who has needed to idle C since 2006?!
+// usleep is deprecated and nanosleep has a horrible signature. Of course,
+// there's also clock_nanosleep, which is even crazier.
+//
+// Looks like I might also need to figure something else out for Win32 timers
+// https://stackoverflow.com/questions/5801813/c-usleep-is-obsolete-workarounds-for-windows-mingw
+//
+// TODO(lbayes): Verify that this shim works.
 #define usleep_shim(usec) {\
   struct timespec a = { .tv_nsec = usec * 1000 };\
   struct timespec b = { .tv_nsec = usec * 1000 };\
+  // Some SO posts indicate we should also place this call into a (barf) while loop. \
+  // while (nanosleep(&a, &b) && errno == EINTR);} \
   nanosleep(&a, &b); }
-
-  // while (nanosleep(&a, &b) && errno == EINTR);}
-
 
 #endif // __shared_h__
 
