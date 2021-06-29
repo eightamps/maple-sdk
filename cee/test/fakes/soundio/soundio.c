@@ -14,17 +14,19 @@ static SoundIoFakeFunctionNames fake_last_function = FunctionNameNone;
 static struct SoundIoDevice *fake_devices = {0};
 static size_t fake_devices_count = 0;
 
-void add_devices(enum SoundIoDeviceAim aim, unsigned int count, ...) {
+void set_fake_devices(struct SoundIo *sio, enum SoundIoDeviceAim aim, unsigned int count, ...) {
   struct SoundIoDevice *devices = calloc(sizeof(struct SoundIoDevice), count);
   va_list vargs;
   va_start(vargs, count);
   for (unsigned int i = 0; i < count; ++i) {
     char *base_name = va_arg(vargs, char *);
-    char *name = malloc(sizeof(base_name) + 6);
+    size_t base_count = strlen(base_name);
+    
+    char *name = calloc(base_count + 7, 1);
     strcpy(name, base_name);
     strcat(name, "-name");
 
-    char *id = malloc(sizeof(base_name) + 3);
+    char *id = calloc(base_count + 4, 1);
     strcpy(id, base_name);
     strcat(id, "-id");
 
@@ -33,11 +35,11 @@ void add_devices(enum SoundIoDeviceAim aim, unsigned int count, ...) {
   }
 
   if (aim == SoundIoDeviceAimInput) {
-    context->fake_input_device_count = count;
-    context->fake_input_devices = devices;
+    sio->fake_input_device_count = count;
+    sio->fake_input_devices = devices;
   } else {
-    context->fake_output_device_count = count;
-    context->fake_output_devices = devices;
+    sio->fake_output_device_count = count;
+    sio->fake_output_devices = devices;
   }
   va_end(vargs);
 }
@@ -46,6 +48,8 @@ SOUNDIO_EXPORT struct SoundIo *soundio_create(void) {
   if (!use_fake_context) {
     struct SoundIo *s = malloc(sizeof(struct SoundIo));
     context = s;
+    context->fake_input_device_count = 0;
+    context->fake_output_device_count = 0;
     return s;
   }
   use_fake_context = false;
@@ -56,6 +60,10 @@ SOUNDIO_EXPORT struct SoundIo *soundio_create(void) {
 void soundio_fake_create_returns(struct SoundIo *sio) {
   use_fake_context = true;
   context = sio;
+  if (sio != NULL) {
+    sio->fake_input_device_count = 0;
+    sio->fake_output_device_count = 0;
+  }
 }
 
 SOUNDIO_EXPORT int soundio_connect(struct SoundIo *soundio) {
@@ -93,8 +101,20 @@ SOUNDIO_EXPORT const char *soundio_strerror(int error) {
   return "fake-error";
 }
 
-SOUNDIO_EXPORT void soundio_destroy(struct SoundIo *soundio) {
-  free(soundio);
+void free_devices(struct SoundIoDevice *devices, int count) {
+  if (count > 0) {
+    for (int i = 0; i < count; i++) {
+      free(devices[i].id);
+      free(devices[i].name);
+    }
+    free(devices);
+  }
+}
+
+SOUNDIO_EXPORT void soundio_destroy(struct SoundIo *sio) {
+  free_devices(sio->fake_input_devices, sio->fake_input_device_count);
+  free_devices(sio->fake_output_devices, sio->fake_output_device_count);
+  free(sio);
 }
 
 //---------------------------------------------------------

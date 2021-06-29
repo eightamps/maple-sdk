@@ -60,16 +60,12 @@ char *test_soundio_fake_connect_backend(void) {
   return NULL;
 }
 
-char *test_soundio_fake_destroy(void) {
-  soundio_destroy(NULL);
-  return NULL;
-}
-
 char *test_default_fake_input_devices(void) {
   struct SoundIo *sio = soundio_create();
 
   // Create a set of fake devices
-  add_input_devices(
+  set_fake_input_devices(
+    sio,
     "abcd",
     "efgh",
     "ijkl"
@@ -99,7 +95,8 @@ char *test_default_fake_output_devices(void) {
   struct SoundIo *sio = soundio_create();
 
   // Create a set of fake devices
-  add_output_devices(
+  set_fake_output_devices(
+    sio,
     "abcd",
     "efgh",
     "ijkl"

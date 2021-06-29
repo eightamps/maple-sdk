@@ -1225,8 +1225,7 @@ SOUNDIO_EXPORT void soundio_fake_connect_returns(int status);
 SOUNDIO_EXPORT void soundio_fake_create_returns(struct SoundIo *sio);
 SOUNDIO_EXPORT SoundIoFakeFunctionNames soundio_fake_get_last_function_name(void);
 
-// Use
-void add_devices(enum SoundIoDeviceAim aim, unsigned int count, ...);
+void set_fake_devices(struct SoundIo *sio, enum SoundIoDeviceAim aim, unsigned int count, ...);
 
 #define PP_ARG_N( \
           _1,  _2,  _3,  _4,  _5,  _6,  _7,  _8,  _9, _10, \
@@ -1252,8 +1251,8 @@ void add_devices(enum SoundIoDeviceAim aim, unsigned int count, ...);
 /* Note dummy first argument _ and ##__VA_ARGS__ instead of __VA_ARGS__ */
 #define PP_NARG(...)     PP_NARG_(_, ##__VA_ARGS__, PP_RSEQ_N())
 
-#define add_input_devices(...) add_devices(SoundIoDeviceAimInput, PP_NARG(__VA_ARGS__), __VA_ARGS__)
-#define add_output_devices(...) add_devices(SoundIoDeviceAimOutput, PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define set_fake_input_devices(sio, ...) set_fake_devices(sio, SoundIoDeviceAimInput, PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define set_fake_output_devices(sio, ...) set_fake_devices(sio, SoundIoDeviceAimOutput, PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
 #endif
 

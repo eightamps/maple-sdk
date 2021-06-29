@@ -8,5 +8,6 @@ char *test_stitch_init_sio_create_failed(void);
 char *test_stitch_init_sio_connect_failed(void);
 char *test_stitch_connect(void);
 char *test_stitch_init_custom_backend(void);
+char *test_get_default_input(void);
 
 #endif // MAPLE_STITCH_TEST_H

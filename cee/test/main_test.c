@@ -17,7 +17,6 @@ char *allTests(void) {
   muRunTest(test_soundio_fake_create_failure);
   muRunTest(test_soundio_fake_connect);
   muRunTest(test_soundio_fake_connect_backend);
-  muRunTest(test_soundio_fake_destroy);
 
   // HID Client tests
   // muRunTest(test_hid_client_new);
@@ -60,6 +59,7 @@ char *allTests(void) {
   muRunTest(test_stitch_init_custom_backend);
   muRunTest(test_default_fake_input_devices);
   muRunTest(test_default_fake_output_devices);
+  muRunTest(test_get_default_input);
 
   // FFT tests
   // muRunTest(test_fft_empty);

@@ -602,6 +602,7 @@ void stitch_free(stitch_context_t *c) {
   }
 }
 
+
 /*
    enum SoundIoBackend stitch_get_backend_from_label(char *label) {
    if (strcmp("none", label) == 0 ||

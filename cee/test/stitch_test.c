@@ -60,6 +60,8 @@ char *test_stitch_connect(void) {
   muAssertIntEq(status, 0, "Expected success");
   int last_function = soundio_fake_get_last_function_name();
   muAssertIntEq(last_function, FunctionNameConnect, "Expected connect (no backend)");
+
+  stitch_free(c);
   return NULL;
 }
 
@@ -73,10 +75,29 @@ char *test_stitch_init_custom_backend(void) {
   muAssertIntEq(status, 0, "Expected success");
   int last_function = soundio_fake_get_last_function_name();
   muAssertIntEq(last_function, FunctionNameConnectBackend, "Expected connect_backend");
+
+  stitch_free(c);
   return NULL;
 }
 
-// char *test_stitch_default_input(void) {
-  // soundio_fake_set_devices(AsiTelephoneMic);
-  // return NULL;
-// }
+char *test_get_default_input(void) {
+  struct SoundIo *sio = soundio_create();
+
+  // Create a set of fake devices
+  set_fake_input_devices(
+    sio,
+    "Aukey Microphone",
+    "Built-in Array Mic"
+  );
+
+  // Get the current state of the context
+  int index = soundio_default_input_device_index(sio);
+  muAssertIntEq(index, 0, "Expected zero");
+
+  struct SoundIoDevice *device = soundio_get_input_device(sio, index);
+  muAssert(device != NULL, "Expected device");
+
+  soundio_destroy(sio);
+  return NULL;
+}
+

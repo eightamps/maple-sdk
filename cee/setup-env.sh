@@ -52,19 +52,11 @@ build-all() {
 }
 
 build-test() {
-  build-only "maple-sdk-test" && $TEST_OUTPUT
-}
-
-build-test-v() {
   build-only "maple-sdk-test" && $VALGRIND $TEST_OUTPUT
 }
 
 build-test-w() {
-  when-changed "$PREMAKE gmake && make -j$HALF_CORES \"maple-sdk-test\" && $TEST_OUTPUT"
-}
-
-build-test-vw() {
-  when-changed "$PREMAKE gmake && make -j$HALF_CORES \"maple-sdk-test\" && valgrind $TEST_OUTPUT"
+  when-changed "$PREMAKE gmake && make -j$HALF_CORES \"maple-sdk-test\" && valgrind -s --leak-check=full $TEST_OUTPUT"
 }
 
 build-run-gtk() {
