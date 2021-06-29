@@ -1,5 +1,6 @@
 #include "../log.h"
 #include "../stitch.h"
+#include "../shared.h"
 #include "stitch_soundio.h"
 #include <errno.h>
 #include <pthread.h>
@@ -472,7 +473,8 @@ static void *stitch_start_thread(void *vargp) {
     // soundio_wait_events(soundio);
     // NOTE(lbayes): DO NOT cast input to an unsigned int, it will lose the
     // millisecond precision that sleep does accept (despite other claims).
-    usleep(40000); // 40 ms
+    unsigned long msec = 48;
+    usleep_shim(msec * 1000); // 40 ms
   }
 
   log_info("stitch thread finishing");

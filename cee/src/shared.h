@@ -2,6 +2,7 @@
 #define __shared_h__
 
 #include "log.h"
+#include "time.h"
 
 #ifdef _WIN32
 
@@ -41,4 +42,17 @@
 #define DLL_IMPORT
 #endif // MAPLE_EXPORT_DLL
 
+
+// Bullshit header requires me to declare the built-in signature.
+int nanosleep(const struct timespec *req, struct timespec *rem);
+
+#define usleep_shim(usec) {\
+  struct timespec a = { .tv_nsec = usec * 1000 };\
+  struct timespec b = { .tv_nsec = usec * 1000 };\
+  nanosleep(&a, &b); }
+
+  // while (nanosleep(&a, &b) && errno == EINTR);}
+
+
 #endif // __shared_h__
+

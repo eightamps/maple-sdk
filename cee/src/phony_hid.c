@@ -345,7 +345,7 @@ int phony_hid_open(phony_hid_context_t *c) {
   int status;
 
   if (c->lusb_context == NULL) {
-    libusb_context *lusb_ctx = NULL;
+    libusb_context *lusb_ctx;
     status = libusb_init(&lusb_ctx);
     if (status != PHONY_HID_SUCCESS) {
       log_err("Failed to initialise libusb");
@@ -356,8 +356,8 @@ int phony_hid_open(phony_hid_context_t *c) {
 
   status = find_device(c, c->vendor_id, c->product_id);
   if (status != PHONY_HID_SUCCESS) {
-    // log_err("Could not open HID device at vid 0x%02x and pid "
-    // "0x%02x", c->vendor_id, c->product_id);
+    log_err("Could not open HID device at vid 0x%02x and pid "
+      "0x%02x", c->vendor_id, c->product_id);
     goto out;
   }
   log_info("Successfully found the expected HID device");
@@ -379,6 +379,7 @@ int phony_hid_open(phony_hid_context_t *c) {
     log_err("phony unable to set hostavail: %d", status);
     goto out;
   }
+  log_info("Succesfully set hostavail on HID device\n");
 
 out:
   return phony_hid_status_from_libusb(status);

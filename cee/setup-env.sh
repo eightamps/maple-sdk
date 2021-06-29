@@ -49,6 +49,7 @@ build-only() {
 
 build-all() {
   build-only
+  ls -la dist/Debug
 }
 
 build-test() {

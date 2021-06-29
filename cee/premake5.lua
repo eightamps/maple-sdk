@@ -8,11 +8,11 @@ workspace "maple-sdk"
   language "C"
 
   buildoptions {
-     "-std=gnu17",
+     "-std=c11",
   }
 
   linkoptions {
-     "-std=gnu17",
+     "-std=c11",
   }
 
   links {
@@ -86,7 +86,7 @@ workspace "maple-sdk"
   -- ##########################################
   -- Win32 Shared Library
   -- ##########################################
-  -- project "MapleSdk"
+  -- project "MapleSdkWin32"
   --   kind "SharedLib"
   --   targetdir "dist/%{cfg.buildcfg}"
 

@@ -7,9 +7,11 @@
 #include "phony.h"
 #include "phony_hid.h"
 #include "stitch.h"
+#include "shared.h"
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 const char *phony_state_to_str(int state) {
@@ -164,7 +166,8 @@ static void *begin_polling(void *varg) {
         // log_err("phony unable to open HID client with status: %s",
         // phony_hid_status_message(status));
         set_state(c, PHONY_DEVICE_NOT_FOUND);
-        usleep(500000);
+        unsigned long msec = 50;
+        usleep_shim(msec * 1000);
         continue;
       }
     }
