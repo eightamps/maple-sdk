@@ -59,9 +59,10 @@ int nanosleep(const struct timespec *req, struct timespec *rem);
 #define usleep_shim(usec) {\
   struct timespec a = { .tv_nsec = usec * 1000 };\
   struct timespec b = { .tv_nsec = usec * 1000 };\
-  // Some SO posts indicate we should also place this call into a (barf) while loop. \
-  // while (nanosleep(&a, &b) && errno == EINTR);} \
-  nanosleep(&a, &b); }
+  nanosleep(&a, &b); } \
+
+// Some SO posts indicate we should also place this call into a (barf) while loop.
+// while (nanosleep(&a, &b) && errno == EINTR); }
 
 #endif // __shared_h__
 
