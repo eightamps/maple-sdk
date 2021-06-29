@@ -81,7 +81,12 @@ char *test_stitch_init_custom_backend(void) {
 }
 
 char *test_get_default_input(void) {
-  struct SoundIo *sio = soundio_create();
+  stitch_context_t *c = stitch_new();
+  stitch_init(c);
+
+  // Get the SoundIo object off the platform pointer.
+  soundio_platform_t *p = c->platform;
+  struct SoundIo *sio = p->soundio;
 
   // Create a set of fake devices
   set_fake_input_devices(
@@ -91,13 +96,104 @@ char *test_get_default_input(void) {
   );
 
   // Get the current state of the context
-  int index = soundio_default_input_device_index(sio);
-  muAssertIntEq(index, 0, "Expected zero");
+  int sio_index = soundio_default_input_device_index(sio);
+  muAssertIntEq(sio_index, 0, "Expected zero");
 
-  struct SoundIoDevice *device = soundio_get_input_device(sio, index);
-  muAssert(device != NULL, "Expected device");
+  int stitch_index = stitch_get_default_input_index(c);
+  muAssertIntEq(stitch_index, 0, "Expected zero");
 
-  soundio_destroy(sio);
+  stitch_free(c);
   return NULL;
 }
+
+char *test_get_default_valid_input(void) {
+  stitch_context_t *c = stitch_new();
+  stitch_init(c);
+
+  // Get the SoundIo object off the platform pointer.
+  soundio_platform_t *p = c->platform;
+  struct SoundIo *sio = p->soundio;
+
+  // Create a set of fake devices
+  set_fake_input_devices(
+    sio,
+    STITCH_ASI_TELEPHONE,
+    STITCH_WAY_2_CALL,
+    STITCH_WAY_2_CALL_LOWER,
+    "Aukey Microphone",
+    "Built-in Array Mic"
+  );
+
+  // Get the current state of the context
+  int sio_index = soundio_default_input_device_index(sio);
+  muAssertIntEq(sio_index, 0, "Expected zero");
+
+  int stitch_index = stitch_get_default_input_index(c);
+  struct SoundIoDevice *device = soundio_get_input_device(sio, stitch_index);
+  muAssertStrCmp(device->name, "Aukey Microphone", "Expected Aukey");
+
+  stitch_free(c);
+  return NULL;
+}
+
+char *test_get_default_input_allows_asi_mic(void) {
+  stitch_context_t *c = stitch_new();
+  stitch_init(c);
+
+  // Get the SoundIo object off the platform pointer.
+  soundio_platform_t *p = c->platform;
+  struct SoundIo *sio = p->soundio;
+
+  // Create a set of fake devices
+  set_fake_input_devices(
+    sio,
+    STITCH_ASI_TELEPHONE,
+    STITCH_WAY_2_CALL,
+    STITCH_ASI_MICROPHONE,
+    "Aukey Microphone",
+    "Built-in Array Mic"
+  );
+
+  // Get the current state of the context
+  int sio_index = soundio_default_input_device_index(sio);
+  muAssertIntEq(sio_index, 0, "Expected zero");
+
+  int stitch_index = stitch_get_default_input_index(c);
+  struct SoundIoDevice *device = soundio_get_input_device(sio, stitch_index);
+  muAssertStrCmp(device->name, "ASI Microphone", "Expected ASI Mic");
+
+  stitch_free(c);
+  return NULL;
+}
+
+char *test_get_default_output_filters_asi_mic(void) {
+  stitch_context_t *c = stitch_new();
+  stitch_init(c);
+
+  // Get the SoundIo object off the platform pointer.
+  soundio_platform_t *p = c->platform;
+  struct SoundIo *sio = p->soundio;
+
+  // Create a set of fake devices
+  set_fake_output_devices(
+    sio,
+    STITCH_ASI_TELEPHONE,
+    STITCH_WAY_2_CALL,
+    STITCH_ASI_MICROPHONE,
+    "Aukey Microphone",
+    "Built-in Array Mic"
+  );
+
+  // Get the current state of the context
+  int sio_index = soundio_default_output_device_index(sio);
+  muAssertIntEq(sio_index, 0, "Expected zero");
+
+  int stitch_index = stitch_get_default_output_index(c);
+  struct SoundIoDevice *device = soundio_get_output_device(sio, stitch_index);
+  muAssertStrCmp(device->name, "Aukey Microphone", "Expected Aukey");
+
+  stitch_free(c);
+  return NULL;
+}
+
 

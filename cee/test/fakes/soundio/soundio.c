@@ -22,9 +22,8 @@ void set_fake_devices(struct SoundIo *sio, enum SoundIoDeviceAim aim, unsigned i
     char *base_name = va_arg(vargs, char *);
     size_t base_count = strlen(base_name);
     
-    char *name = calloc(base_count + 7, 1);
+    char *name = calloc(base_count + 1, 1);
     strcpy(name, base_name);
-    strcat(name, "-name");
 
     char *id = calloc(base_count + 4, 1);
     strcpy(id, base_name);

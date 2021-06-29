@@ -60,6 +60,9 @@ char *allTests(void) {
   muRunTest(test_default_fake_input_devices);
   muRunTest(test_default_fake_output_devices);
   muRunTest(test_get_default_input);
+  muRunTest(test_get_default_valid_input);
+  muRunTest(test_get_default_input_allows_asi_mic);
+  muRunTest(test_get_default_output_filters_asi_mic);
 
   // FFT tests
   // muRunTest(test_fft_empty);

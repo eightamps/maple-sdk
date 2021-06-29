@@ -27,7 +27,7 @@
  * printing the received values if the comparison fails.
  */
 #define muAssertStrCmp(a, b, message) if (strcmp(a, b) != 0) {\
-  log_err_minunit("%s strmp(\"%s\", \"%s\") == 0", message, a, b); return message; }
+  log_err_minunit("%s strcmp(\"%s\", \"%s\") == 0", message, a, b); return message; }
 
 #define muAssertIntEq(a, b, message) if (a != b) {\
   log_err_minunit("%s (%d != %d)", message, a, b); return message; }

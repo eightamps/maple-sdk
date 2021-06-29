@@ -77,15 +77,15 @@ char *test_default_fake_input_devices(void) {
 
   struct SoundIoDevice *one = soundio_get_input_device(sio, 0);
   muAssertStrCmp(one->id, "abcd-id", "Expected id");
-  muAssertStrCmp(one->name, "abcd-name", "Expected name");
+  muAssertStrCmp(one->name, "abcd", "Expected name");
 
   struct SoundIoDevice *two = soundio_get_input_device(sio, 1);
   muAssertStrCmp(two->id, "efgh-id", "Expected id");
-  muAssertStrCmp(two->name, "efgh-name", "Expected name");
+  muAssertStrCmp(two->name, "efgh", "Expected name");
 
   struct SoundIoDevice *three = soundio_get_input_device(sio, 2);
   muAssertStrCmp(three->id, "ijkl-id", "Expected id");
-  muAssertStrCmp(three->name, "ijkl-name", "Expected name");
+  muAssertStrCmp(three->name, "ijkl", "Expected name");
 
   soundio_destroy(sio);
   return NULL;
@@ -108,15 +108,15 @@ char *test_default_fake_output_devices(void) {
 
   struct SoundIoDevice *one = soundio_get_output_device(sio, 0);
   muAssertStrCmp(one->id, "abcd-id", "Expected id");
-  muAssertStrCmp(one->name, "abcd-name", "Expected name");
+  muAssertStrCmp(one->name, "abcd", "Expected name");
 
   struct SoundIoDevice *two = soundio_get_output_device(sio, 1);
   muAssertStrCmp(two->id, "efgh-id", "Expected id");
-  muAssertStrCmp(two->name, "efgh-name", "Expected name");
+  muAssertStrCmp(two->name, "efgh", "Expected name");
 
   struct SoundIoDevice *three = soundio_get_output_device(sio, 2);
   muAssertStrCmp(three->id, "ijkl-id", "Expected id");
-  muAssertStrCmp(three->name, "ijkl-name", "Expected name");
+  muAssertStrCmp(three->name, "ijkl", "Expected name");
 
   soundio_destroy(sio);
   return NULL;

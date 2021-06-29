@@ -14,6 +14,9 @@
 #define STITCH_DEFAULT_LATENCY_MS (float)0.07f
 #define STITCH_OUT_DELAY_SECONDS 2
 
+typedef struct SoundIoDevice *(GetDeviceFunc)(struct SoundIo *s, int index);
+typedef bool (DeviceFilter)(struct SoundIoDevice *d);
+
 static int stitch_prioritized_sample_rates[] = {
   24000,
   44100,
@@ -46,6 +49,12 @@ static int min_int(int a, int b) {
   return (a < b) ? a : b;
 }
 
+/**
+ * Create a new stitch context object.
+ *
+ * This object must be provided to the stitch_init method before it is fully
+ * usable.
+ */
 stitch_context_t *stitch_new(void) {
   stitch_context_t *c = calloc(sizeof(stitch_context_t), 1);
   if (c == NULL) {
@@ -66,6 +75,12 @@ stitch_context_t *stitch_new(void) {
   return c;
 }
 
+/**
+ * Create a new stitch context object with the provided label.
+ *
+ * This will make troubleshooting easier as log statements will generally
+ * include the provided label.
+ */
 stitch_context_t *stitch_new_with_label(char *label) {
   stitch_context_t *c = stitch_new();
   c->label = label;
@@ -473,7 +488,15 @@ int stitch_join(stitch_context_t *c) {
   return c->thread_exit_status;
 }
 
-static int is_valid_host_device(struct SoundIoDevice *d) {
+static bool is_valid_input_device(struct SoundIoDevice *d) {
+  return (strstr(d->name, STITCH_ASI_TELEPHONE) == NULL) &&
+    (strstr(d->name, STITCH_SPDIF) == NULL) &&
+    (strstr(d->name, STITCH_WAY_2_CALL) == NULL) &&
+    (strstr(d->name, STITCH_WAY_2_CALL_LOWER) == NULL) &&
+    (strstr(d->name, STITCH_PULSE_AUDIO) == NULL);
+}
+
+static bool is_valid_output_device(struct SoundIoDevice *d) {
   return (strstr(d->name, STITCH_ASI_TELEPHONE) == NULL) &&
     (strstr(d->name, STITCH_ASI_MICROPHONE) == NULL) &&
     (strstr(d->name, STITCH_SPDIF) == NULL) &&
@@ -482,9 +505,8 @@ static int is_valid_host_device(struct SoundIoDevice *d) {
     (strstr(d->name, STITCH_PULSE_AUDIO) == NULL);
 }
 
-typedef struct SoundIoDevice *(GetDeviceFunc)(struct SoundIo *s, int index);
-
 static int get_default_device_index_filtered(stitch_context_t *c,
+    DeviceFilter *is_valid,
     GetDeviceFunc *get_device,
     int device_count,
     int default_index) {
@@ -493,28 +515,24 @@ static int get_default_device_index_filtered(stitch_context_t *c,
   // TODO(lbayes): Figure out how to get the default_communication device on
   //  Windows.
   d = get_device(p->soundio, default_index);
-  if (is_valid_host_device(d)) {
+  if (is_valid(d)) {
     soundio_device_unref(d);
     return default_index;
   }
 
   int result = -1;
-  int index = device_count - 1;
-  while (index >= 0) {
-    if (index == default_index) {
-      index--;
+  for (int i = 0; i < device_count; i++) {
+    if (i == default_index) {
       continue;
     }
-    d = get_device(p->soundio, index);
-    if (is_valid_host_device(d)) {
-      result = index;
+    d = get_device(p->soundio, i);
+    if (is_valid(d)) {
+      result = i;
       soundio_device_unref(d);
       break;
     }
     soundio_device_unref(d);
-    index--;
   }
-
   return result;
 }
 
@@ -549,14 +567,22 @@ int stitch_get_default_input_index(stitch_context_t *c) {
   soundio_platform_t *p = c->platform;
   int count = soundio_input_device_count(p->soundio);
   int index = soundio_default_input_device_index(p->soundio);
-  return get_default_device_index_filtered(c, &soundio_get_input_device, count, index);
+  return get_default_device_index_filtered(c,
+      &is_valid_input_device,
+      &soundio_get_input_device,
+      count,
+      index);
 }
 
 int stitch_get_default_output_index(stitch_context_t *c) {
   soundio_platform_t *p = c->platform;
   int count = soundio_output_device_count(p->soundio);
   int index = soundio_default_output_device_index(p->soundio);
-  return get_default_device_index_filtered(c, &soundio_get_output_device, count, index);
+  return get_default_device_index_filtered(c,
+      &is_valid_output_device,
+      &soundio_get_output_device,
+      count,
+      index);
 }
 
 int stitch_get_matching_input_device_index(stitch_context_t *c, char *name) {
@@ -602,27 +628,3 @@ void stitch_free(stitch_context_t *c) {
   }
 }
 
-
-/*
-   enum SoundIoBackend stitch_get_backend_from_label(char *label) {
-   if (strcmp("none", label) == 0 ||
-   strcmp("", label) == 0) {
-   return SoundIoBackendNone;
-   } else if (strcmp("dummy", label) == 0) {
-   return SoundIoBackendDummy;
-   } else if (strcmp("alsa", label) == 0) {
-   return SoundIoBackendAlsa;
-   } else if (strcmp("pulseaudio", label) == 0) {
-   return SoundIoBackendPulseAudio;
-   } else if (strcmp("jack", label) == 0) {
-   return SoundIoBackendJack;
-   } else if (strcmp("coreaudio", label) == 0) {
-   return SoundIoBackendCoreAudio;
-   } else if (strcmp("wasapi", label) == 0) {
-   return SoundIoBackendWasapi;
-   }
-
-   log_err("Invalid backend: %s", label);
-   return -EINVAL;
-   }
-   */
