@@ -42,6 +42,8 @@
 #define DLL_IMPORT
 #endif // MAPLE_EXPORT_DLL
 
+#define EIGHT_AMPS_VID 0x335e
+#define EIGHT_AMPS_MAPLE_V3_PID 0x8a01
 
 // Bullshit time.h header requires me to declare this built-in signature for
 // some ridiculous reason.

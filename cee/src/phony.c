@@ -4,6 +4,7 @@
 
 #include "dtmf.h"
 #include "log.h"
+#include "hid_status.h"
 #include "phony.h"
 #include "phony_hid.h"
 #include "stitch.h"
@@ -80,7 +81,7 @@ static int stop_audio(phony_context_t *c) {
 
 static int set_state(phony_context_t *c, phony_state state) {
   phony_state last_state = c->state;
-  int status = 0;
+  int status = EXIT_SUCCESS;
   if (last_state != state) {
     c->state = state;
     log_info("phony changed state to: %s", phony_state_to_str(state));
@@ -152,6 +153,7 @@ phony_context_t *phony_new(void) {
 static void *begin_polling(void *varg) {
   phony_context_t *c = varg;
   phony_hid_context_t *hc = c->hid_context;
+  unsigned long error_timeout = 50 * 1000;
   int status;
 
   log_info("Phony begin polling with state: %s", phony_state_to_str(c->state));
@@ -160,14 +162,13 @@ static void *begin_polling(void *varg) {
         c->state == PHONY_DEVICE_NOT_FOUND) {
       // Attempt to open the HID connection
       status = phony_hid_open(hc);
-      if (status == PHONY_HID_SUCCESS) {
+      if (status == HID_SUCCESS) {
         set_state(c, PHONY_CONNECTED);
       } else {
         // log_err("phony unable to open HID client with status: %s",
-        // phony_hid_status_message(status));
+        // hid_status_message(status));
         set_state(c, PHONY_DEVICE_NOT_FOUND);
-        unsigned long msec = 50;
-        usleep_shim(msec * 1000);
+        usleep_shim(error_timeout);
         continue;
       }
     }
@@ -175,8 +176,9 @@ static void *begin_polling(void *varg) {
     log_info("----------------------------");
     log_info("phony waiting for HID report");
     status = phony_hid_get_report(hc);
-    if (status != PHONY_HID_SUCCESS) {
+    if (status != HID_SUCCESS) {
       set_state(c, PHONY_DEVICE_NOT_FOUND);
+      usleep_shim(error_timeout);
       continue;
     }
 
@@ -212,7 +214,7 @@ int phony_open_device(phony_context_t *c, int vid, int pid) {
 
 int phony_open_maple(phony_context_t *c) {
   log_info("phony_open_maple called");
-  return phony_open_device(c, PHONY_EIGHT_AMPS_VID, PHONY_MAPLE_V3_PID);
+  return phony_open_device(c, EIGHT_AMPS_VID, EIGHT_AMPS_MAPLE_V3_PID);
 }
 
 int phony_take_off_hook(phony_context_t *c) {

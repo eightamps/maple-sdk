@@ -2,6 +2,8 @@
 // Created by lukebayes on 4/23/21.
 //
 
+#include "hid_status.h"
+#include "hid_client.h"
 #include "phony_hid.h"
 #include "log.h"
 #include <stdbool.h>
@@ -15,65 +17,6 @@
 
 
 static const int INFINITE_TIMEOUT = 0; /* timeout in ms, or zero for infinite */
-
-int phony_hid_status_from_libusb(int status) {
-  if (status < LIBUSB_SUCCESS && status > LIBUSB_ERROR_OTHER) {
-    // We have a libusb status
-    return status - 256;
-  } else if (status > LIBUSB_SUCCESS && status <= LIBUSB_TRANSFER_OVERFLOW) {
-    // We have a libusb transfer status
-    return status - 129;
-  }
-
-  return status;
-}
-
-const char *phony_hid_status_message(int status) {
-  switch (status) {
-    case PHONY_HID_SUCCESS:
-      return "PHONY_HID_SUCCESS";
-    case PHONY_HID_ERROR_IO:
-      return "PHONY_HID_ERROR_IO";
-    case PHONY_HID_ERROR_INVALID_PARAM:
-      return "PHONY_HID_ERROR_INVALID_PARAM";
-    case PHONY_HID_ERROR_ACCESS:
-      return "PHONY_HID_ERROR_ACCESS";
-    case PHONY_HID_ERROR_NO_DEVICE:
-      return "PHONY_HID_ERROR_NO_DEVICE";
-    case PHONY_HID_ERROR_NOT_FOUND:
-      return "PHONY_HID_ERROR_NOT_FOUND";
-    case PHONY_HID_ERROR_BUSY:
-      return "PHONY_HID_ERROR_BUSY";
-    case PHONY_HID_ERROR_TIMEOUT:
-      return "PHONY_HID_ERROR_TIMEOUT";
-    case PHONY_HID_ERROR_OVERFLOW:
-      return "PHONY_HID_ERROR_OVERFLOW";
-    case PHONY_HID_ERROR_PIPE:
-      return "PHONY_HID_ERROR_PIPE";
-    case PHONY_HID_ERROR_INTERRUPTED:
-      return "PHONY_HID_ERROR_INTERRUPTED";
-    case PHONY_HID_ERROR_NO_MEM:
-      return "PHONY_HID_ERROR_NO_MEM";
-    case PHONY_HID_ERROR_NOT_SUPPORTED:
-      return "PHONY_HID_ERROR_NOT_SUPPORTED";
-    case PHONY_HID_ERROR_OTHER:
-      return "PHONY_HID_ERROR_OTHER";
-    case PHONY_HID_TRANSFER_ERROR:
-      return "PHONY_HID_TRANSFER_ERROR";
-    case PHONY_HID_TRANSFER_TIMED_OUT:
-      return "PHONY_HID_TRANSFER_TIMED_OUT";
-    case PHONY_HID_TRANSFER_CANCELLED:
-      return "PHONY_HID_TRANSFER_CANCELLED";
-    case PHONY_HID_TRANSFER_STALL:
-      return "PHONY_HID_TRANSFER_STALL";
-    case PHONY_HID_TRANSFER_NO_DEVICE:
-      return "PHONY_HID_TRANSFER_NO_DEVICE";
-    case PHONY_HID_TRANSFER_OVERFLOW:
-      return "PHONY_HID_TRANSFER_OVERFLOW";
-    default:
-      return "PHONY_HID_UNKNOWN_ERROR";
-  }
-}
 
 static uint8_t struct_to_out_report(phony_hid_out_report_t *r) {
   log_info("struct_to_out_report with:");
@@ -124,7 +67,7 @@ int phony_hid_in_report_to_struct(phony_hid_in_report_t *in_report, uint8_t valu
   log_info("line_in_use: 0x%02x", in_report->line_in_use);
   log_info("polarity: 0x%02x", in_report->polarity);
 
-  return PHONY_HID_SUCCESS;
+  return HID_SUCCESS;
 }
 
 static int interrupt_transfer(phony_hid_context_t *c, uint8_t addr,
@@ -149,7 +92,7 @@ static int interrupt_transfer(phony_hid_context_t *c, uint8_t addr,
     if (transferred < len) {
       log_err("Interrupt transfer short read transferred %d bytes",
           transferred);
-      return PHONY_HID_ERROR_PIPE;
+      return HID_ERROR_PIPE;
     }
 
     for (int i = 0; i < len; i++) {
@@ -182,7 +125,7 @@ int phony_hid_get_report(phony_hid_context_t *c) {
 
   status = interrupt_transfer(c, addr, data, len);
   log_info("phony_hid_get_report finished with status: %d", status);
-  if (status == PHONY_HID_SUCCESS) {
+  if (status == HID_SUCCESS) {
     phony_hid_in_report_to_struct(c->in_report, data[1]);
   }
 
@@ -206,19 +149,19 @@ phony_hid_context_t *phony_hid_new(void) {
 int phony_hid_set_vendor_id(phony_hid_context_t *c, int vid) {
   if (c == NULL) {
     log_err("phony_hid_set_vendor_id requires a valid context");
-    return PHONY_HID_ERROR_INVALID_PARAM;
+    return HID_ERROR_INVALID_PARAM;
   }
   c->vendor_id = vid;
-  return PHONY_HID_SUCCESS;
+  return HID_SUCCESS;
 }
 
 int phony_hid_set_product_id(phony_hid_context_t *c, int pid) {
   if (c == NULL) {
     log_err("phony_hid_set_product_id requires a valid context");
-    return PHONY_HID_ERROR_INVALID_PARAM;
+    return HID_ERROR_INVALID_PARAM;
   }
   c->product_id = pid;
-  return PHONY_HID_SUCCESS;
+  return HID_SUCCESS;
 }
 
 static int auto_detach_kernel(phony_hid_context_t *c) {
@@ -252,7 +195,7 @@ static int find_device(phony_hid_context_t *c, int vid, int pid) {
   if (dev_h == NULL) {
     log_err("failed to find hid device with vid: 0x%02x and pid: 0x%02x",
         vid, pid);
-    return PHONY_HID_ERROR_NOT_FOUND;
+    return HID_ERROR_NOT_FOUND;
   }
 
   c->device_handle = dev_h;
@@ -275,7 +218,7 @@ static int find_device(phony_hid_context_t *c, int vid, int pid) {
     c->device_descriptor = &desc;
   }
 
-  return PHONY_HID_SUCCESS;
+  return HID_SUCCESS;
 }
 
 /*
@@ -339,7 +282,7 @@ static int find_device(phony_hid_context_t *c, int vid, int pid) {
 
 int phony_hid_open(phony_hid_context_t *c) {
   if (c->is_open) {
-    return PHONY_HID_SUCCESS;
+    return HID_SUCCESS;
   }
 
   int status;
@@ -347,7 +290,7 @@ int phony_hid_open(phony_hid_context_t *c) {
   if (c->lusb_context == NULL) {
     libusb_context *lusb_ctx;
     status = libusb_init(&lusb_ctx);
-    if (status != PHONY_HID_SUCCESS) {
+    if (status != HID_SUCCESS) {
       log_err("Failed to initialise libusb");
       goto out;
     }
@@ -355,7 +298,7 @@ int phony_hid_open(phony_hid_context_t *c) {
   }
 
   status = find_device(c, c->vendor_id, c->product_id);
-  if (status != PHONY_HID_SUCCESS) {
+  if (status != HID_SUCCESS) {
     log_err("Could not open HID device at vid 0x%02x and pid "
       "0x%02x", c->vendor_id, c->product_id);
     goto out;
@@ -363,26 +306,26 @@ int phony_hid_open(phony_hid_context_t *c) {
   log_info("Successfully found the expected HID device");
 
   status = auto_detach_kernel(c); // enable auto-detach
-  if (status != PHONY_HID_SUCCESS) {
+  if (status != HID_SUCCESS) {
     goto out;
   }
 
-  status = claim_interface(c, 2);
-  if (status != PHONY_HID_SUCCESS) {
+  status = claim_interface(c, MAPLE_PHONE_INTERFACE);
+  if (status != HID_SUCCESS) {
     goto out;
   }
 
   c->is_open = true;
 
   status = phony_hid_set_hostavail(c, true);
-  if (status != PHONY_HID_SUCCESS) {
+  if (status != HID_SUCCESS) {
     log_err("phony unable to set hostavail: %d", status);
     goto out;
   }
   log_info("Succesfully set hostavail on HID device\n");
 
 out:
-  return phony_hid_status_from_libusb(status);
+  return hid_status_from_libusb(status);
 }
 
 int phony_hid_close(phony_hid_context_t *c) {
@@ -402,7 +345,7 @@ int phony_hid_close(phony_hid_context_t *c) {
     }
   }
   log_info("Exiting now");
-  return PHONY_HID_SUCCESS;
+  return HID_SUCCESS;
 }
 
 int phony_hid_reset_device(phony_hid_context_t *c) {
@@ -422,7 +365,7 @@ int phony_hid_reset_device(phony_hid_context_t *c) {
     }
   }
 
-  return PHONY_HID_SUCCESS;
+  return HID_SUCCESS;
 }
 
 int phony_hid_set_hostavail(phony_hid_context_t *c, bool is_hostavail) {

@@ -24,6 +24,11 @@ workspace "maple-sdk"
   files {
     -- "src/hid_client.h", -- This isn't quite ready yet
     "src/hid_client.c",
+    "src/hid_client.h",
+    "src/hid_status.c",
+    "src/hid_status.h",
+    "src/infrareddy_hid.c",
+    "src/infrareddy_hid.h",
     "src/dtmf.c",
     "src/dtmf.h",
     "src/log.h",
@@ -194,7 +199,9 @@ workspace "maple-sdk"
       "src/gtk/*.c",
       "src/gtk/*.h",
       "src/main_gtk.c",
-      "src/nix/stitch.c",
+      "src/nix/*.c",
+      "src/infrareddy*",
+      "src/phony*",
     }
 
   -- ##########################################

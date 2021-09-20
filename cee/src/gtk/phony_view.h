@@ -9,7 +9,7 @@
 #include "../phony.h"
 
 typedef struct {
-  phony_context_t *phony;
+  phony_context_t *context;
   GtkWidget *widget;
   GtkEntry *phone_number_view;
   GtkTextView *message_view;
