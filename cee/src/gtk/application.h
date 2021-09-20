@@ -6,7 +6,9 @@
 #define MAPLE_APPLICATION_H
 
 #include "../phony.h"
+#include "../infrareddy.h"
 #include "phony_view.h"
+#include "infrareddy_view.h"
 
 #define APP_TITLE_LEN 256
 
@@ -15,6 +17,9 @@ typedef struct {
   void *native_app;
   phony_context_t *phony_context;
   phony_view_context_t *phony_view_context;
+
+  infrareddy_context_t *infrareddy_context;
+  infrareddy_view_context_t *infrareddy_view_context;
 }application_context_t;
 
 application_context_t *application_new(void);

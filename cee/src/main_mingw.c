@@ -5,7 +5,7 @@
 int main(void) {
   log_info("Main started");
   stitch_context_t *c = stitch_new();
-  log_info("stitch_new returned context: %x", c);
+  // log_info("stitch_new returned context: %x", c);
   stitch_init(c);
 
   /*

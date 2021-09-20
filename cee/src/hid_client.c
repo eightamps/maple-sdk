@@ -77,3 +77,4 @@ void hid_client_free(hid_client_context_t *c) {
     free(c);
   }
 }
+

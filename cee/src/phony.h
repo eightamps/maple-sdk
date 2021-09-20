@@ -10,9 +10,6 @@
 #include "dtmf.h"
 #include "shared.h"
 
-#define PHONY_EIGHT_AMPS_VID 0x335e
-#define PHONY_MAPLE_V3_PID 0x8a01
-
 typedef enum phony_state {
   // Firmware provided states:
   PHONY_NOT_READY = 0,
@@ -71,25 +68,25 @@ DLL_LINK int phony_open_maple(phony_context_t *c);
  * @param numbers to dial
  * @return int Status code
  */
-DLL_LINK int phony_dial(phony_context_t *phony, const char *numbers);
+DLL_LINK int phony_dial(phony_context_t *c, const char *numbers);
 
 /**
  * Take the line off hook.
  * @param phony
  * @return
  */
-DLL_LINK int phony_take_off_hook(phony_context_t *phony);
+DLL_LINK int phony_take_off_hook(phony_context_t *c);
 
 /**
  * Close down the open line.
  * @param PhonyContext*
  * @return int Status code
  */
-DLL_LINK int phony_hang_up(phony_context_t *phony);
+DLL_LINK int phony_hang_up(phony_context_t *c);
 
 /**
  * Set a callback that will be called whenever the phony_context_t state changes.
- * @param *PhonyContext
+ * @param *phony_context_t
  * @param *phony_state_changed
  * @return int Status code
  */
@@ -98,14 +95,14 @@ DLL_LINK int phony_on_state_changed(phony_context_t *c, phony_state_changed call
 
 /**
  * Get the current phony state.
- * @param *PhonyContext
+ * @param *phony_context_t
  * @return phony_state
  */
 DLL_LINK phony_state phony_get_state(phony_context_t *c);
 
 /**
  * Close down and free the provided telephone connection.
- * @param PhonyContext*
+ * @param *phony_context_t
  * @return void
  */
 DLL_LINK void phony_free(phony_context_t *c);
