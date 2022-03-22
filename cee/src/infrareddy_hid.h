@@ -68,29 +68,7 @@ int infrareddy_hid_get_report(infrareddy_hid_context_t *c);
 
 void infrareddy_hid_free(infrareddy_hid_context_t *c);
 
-int infrareddy_hid_reset_device(phony_hid_context_t *c);
-/*
-int phony_hid_in_report_to_struct(phony_hid_in_report_t *in_report, uint8_t value);
-
-int phony_hid_set_vendor_id(phony_hid_context_t *c, int vid);
-
-int phony_hid_set_product_id(phony_hid_context_t *c, int pid);
-
-int phony_hid_open(phony_hid_context_t *c);
-
-int phony_hid_get_report(phony_hid_context_t *c);
-
-int phony_hid_set_off_hook(phony_hid_context_t *c, bool is_offhook);
-
-int phony_hid_set_hostavail(phony_hid_context_t *c, bool is_hostavail);
-
-
-int phony_hid_close(phony_hid_context_t *c);
-
-int phony_hid_get_configuration_descriptors(phony_hid_context_t *c);
-
-void phony_hid_free(phony_hid_context_t *c);
-*/
+int infrareddy_hid_reset_device(infrareddy_hid_context_t *c);
 
 
 #endif // MAPLE_INFRAREDDY_HID_H

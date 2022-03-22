@@ -13,6 +13,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#define DEFAULT_VENDOR_ID 0x335e
+#define DEFAULT_PRODUCT_ID 0x8a01
+
 const char *infrareddy_state_to_str(int state) {
   switch (state) {
     case INFRAREDDY_NOT_READY:
@@ -104,11 +107,14 @@ static void *begin_polling(void *varg) {
         c->state == INFRAREDDY_DEVICE_NOT_FOUND) {
       // Attempt to open the HID connection
       status = infrareddy_hid_open(hc);
+      log_info("Infrareddy Connecting");
       if (status == HID_SUCCESS) {
+        log_info("Infrareddy Connected");
         set_state(c, INFRAREDDY_CONNECTED);
       } else {
         // log_err("infrareddy unable to open HID client with status: %s",
         // hid_status_message(status));
+        log_err("Infrareddy Device not found");
         set_state(c, INFRAREDDY_DEVICE_NOT_FOUND);
         usleep_shim(error_timeout);
         continue;
@@ -119,6 +125,7 @@ static void *begin_polling(void *varg) {
     log_info("infrareddy waiting for HID report");
     status = infrareddy_hid_get_report(hc);
     if (status != HID_SUCCESS) {
+      log_err("Infrareddy Device not found");
       set_state(c, INFRAREDDY_DEVICE_NOT_FOUND);
       usleep_shim(error_timeout);
       continue;

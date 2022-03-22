@@ -13,9 +13,6 @@ typedef struct {
   GtkWidget *widget;
   GtkEntry *codes_view;
   GtkTextView *message_view;
-  // GtkEntry *phone_number_view;
-  // GtkButton *dial_btn;
-  // GtkButton *hang_up_btn;
 }infrareddy_view_context_t;
 
 infrareddy_view_context_t *infrareddy_view_new(infrareddy_context_t *model);

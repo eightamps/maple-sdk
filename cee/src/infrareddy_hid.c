@@ -5,6 +5,7 @@
 #include "infrareddy_hid.h"
 #include "hid_status.h"
 #include "log.h"
+#include "shared.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -81,7 +82,7 @@ infrareddy_hid_context_t *infrareddy_hid_new(void) {
     return NULL;
   }
 
-  // Configure default vid and pid
+  // NOTE(lbayes): vid and pid set after creating new context.
   c->vendor_id = 0x0;
   c->product_id = 0x0;
   c->encode_request = calloc(sizeof(infrareddy_encode_request_t), 1);
@@ -109,7 +110,9 @@ int infrareddy_hid_set_product_id(infrareddy_hid_context_t *c, int pid) {
 }
 
 int infrareddy_hid_open(infrareddy_hid_context_t *c) {
+  log_info("infrareddy_hid_open called");
   if (c->is_open) {
+    log_info("infraredy_hid_open returning already open");
     return HID_SUCCESS;
   }
 
@@ -178,8 +181,8 @@ static int interrupt_transfer(infrareddy_hid_context_t *c, uint8_t addr,
 
   r = libusb_interrupt_transfer(dev_h, addr, data, len, &transferred,
       INFINITE_TIMEOUT);
-  if (r == LIBUSB_ERROR_NO_DEVICE ||
-      r == LIBUSB_ERROR_IO) {
+  if (r == LIBUSB_ERROR_NO_DEVICE || r == LIBUSB_ERROR_IO) {
+    log_err("LIBUSB error no device");
     infrareddy_hid_close(c);
     return r;
   } else if (r != LIBUSB_SUCCESS) {
