@@ -16,6 +16,7 @@
 #define MAPLE_INFRAREDDY_ENDPOINT_OUT     0x04
 
 static const int INFINITE_TIMEOUT = 0; /* timeout in ms, or zero for infinite */
+static struct libusb_device_descriptor desc = {0};
 
 static int find_device(infrareddy_hid_context_t *c, int vid, int pid) {
   libusb_context *lusb_ctx = c->lusb_context;
@@ -37,7 +38,6 @@ static int find_device(infrareddy_hid_context_t *c, int vid, int pid) {
   log_info("Found hid device at bus: 0x%02x (%d) and dev addr 0x%02x (%d)",
       bus_no, bus_no, dev_addr, dev_addr);
 
-  struct libusb_device_descriptor desc = {0};
   int rc = libusb_get_device_descriptor(d, &desc);
 
   if (rc == LIBUSB_SUCCESS) {

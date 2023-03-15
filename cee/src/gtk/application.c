@@ -74,7 +74,7 @@ application_context_t *application_new(void) {
   }
 
   GtkApplication *native_app = gtk_application_new("com.eightamps.term",
-                                   G_APPLICATION_FLAGS_NONE);
+                                   G_APPLICATION_DEFAULT_FLAGS);
   g_signal_connect(native_app, "activate",
                    G_CALLBACK(activate_callback), app);
   app->native_app = native_app;

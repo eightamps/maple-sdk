@@ -17,6 +17,7 @@
 
 
 static const int INFINITE_TIMEOUT = 0; /* timeout in ms, or zero for infinite */
+static struct libusb_device_descriptor desc = {0};
 
 static uint8_t struct_to_out_report(phony_hid_out_report_t *r) {
   log_info("struct_to_out_report with:");
@@ -207,7 +208,6 @@ static int find_device(phony_hid_context_t *c, int vid, int pid) {
   log_info("Found hid device at bus: 0x%02x (%d) and dev addr 0x%02x (%d)",
       bus_no, bus_no, dev_addr, dev_addr);
 
-  struct libusb_device_descriptor desc = {0};
   int rc = libusb_get_device_descriptor(d, &desc);
 
   if (rc == LIBUSB_SUCCESS) {
