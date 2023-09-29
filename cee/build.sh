@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 build_type="$1"
 cmake_build_type="release"

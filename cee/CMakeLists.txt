@@ -6,6 +6,8 @@ set(CMAKE_C_STANDARD 11)
 include_directories(src)
 include_directories(test)
 include_directories(vendor/kissfft)
+include_directories(vendor/libsoundio/include)
+include_directories(vendor/libusb/include)
 
 set(AppSources
         src/dtmf.c
@@ -48,8 +50,8 @@ set(TestSources
         )
 
 set(VendorLibs
-        ${PROJECT_SOURCE_DIR}/vendor/kissfft/libkissfft-float.so
-        )
+  ${PROJECT_SOURCE_DIR}/vendor/kissfft/libkissfft-float.so
+  )
 
 # file(COPY "${PROJECT_SOURCE_DIR}/src/sdl/ttf"
         # DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}src/sdl)
@@ -168,15 +170,19 @@ if (FALSE) # MINGW
 else() # Linux/Ubuntu
 
     set(AppSources ${AppSources}
-            src/nix/stitch.c
-            )
+      src/nix/stitch.c
+      )
+
+    set(VendorLibs
+      ${VendorLibs}
+      ${PROJECT_SOURCE_DIR}/vendor/libsoundio/linux/libsoundio-2.0.0.so
+      )
 
     link_libraries(
-        usb-1.0
-        soundio
-        m
-        pthread
-        )
+      usb-1.0
+      m
+      pthread
+      )
 
     #find_package(SDL2_ttf REQUIRED)
 
