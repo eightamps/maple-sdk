@@ -195,6 +195,11 @@ workspace "maple-sdk"
       "soundio",
     }
 
+    includedirs {
+      "vendor/libsoundio/include",
+      "vendor/libusb/include",
+    }
+
     files {
       "src/gtk/*.c",
       "src/gtk/*.h",
