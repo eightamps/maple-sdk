@@ -11,10 +11,6 @@
 #include <string.h>
 #include <libusb-1.0/libusb.h>
 
-#define MAPLE_INFRAREDDY_INTERFACE        4
-#define MAPLE_INFRAREDDY_ENDPOINT_IN     0x84
-#define MAPLE_INFRAREDDY_ENDPOINT_OUT     0x04
-
 static const int INFINITE_TIMEOUT = 0; /* timeout in ms, or zero for infinite */
 static struct libusb_device_descriptor desc = {0};
 
@@ -136,12 +132,14 @@ int infrareddy_hid_open(infrareddy_hid_context_t *c) {
   }
   log_info("Successfully found the expected HID device");
 
+  log_info("infrareddy requesting kernel detach from device");
   status = auto_detach_kernel(c); // enable auto-detach
   if (status != HID_SUCCESS) {
     goto out;
   }
 
-  status = claim_interface(c, MAPLE_INFRAREDDY_INTERFACE);
+  log_info("infrareddy attempting to claim interface");
+  status = claim_interface(c, INFRAREDDY_INTERFACE);
   if (status != HID_SUCCESS) {
     goto out;
   }
@@ -157,7 +155,7 @@ int infrareddy_hid_close(infrareddy_hid_context_t *c) {
     libusb_device_handle *dev_h = c->device_handle;
     if (dev_h != NULL) {
       if (c->is_interface_claimed) {
-        int status = libusb_release_interface(dev_h, MAPLE_INFRAREDDY_INTERFACE);
+        int status = libusb_release_interface(dev_h, INFRAREDDY_INTERFACE);
         if (status != 0) {
           log_err("libusb_release_interface error %d", status);
         }
@@ -168,7 +166,7 @@ int infrareddy_hid_close(infrareddy_hid_context_t *c) {
       c->is_open = false;
     }
   }
-  log_info("Exiting now");
+  log_info("infrareddy_hid exiting now");
   return HID_SUCCESS;
 }
 
@@ -179,10 +177,16 @@ static int interrupt_transfer(infrareddy_hid_context_t *c, uint8_t addr,
 
   libusb_device_handle *dev_h = c->device_handle;
 
+  log_info("infrareddy interrupt transfer at addr: 0x%x and %d byes", addr, len);
   r = libusb_interrupt_transfer(dev_h, addr, data, len, &transferred,
       INFINITE_TIMEOUT);
-  if (r == LIBUSB_ERROR_NO_DEVICE || r == LIBUSB_ERROR_IO) {
+  log_info("libusb interrupt xfer with status: %d\n", r);
+  if (r == LIBUSB_ERROR_NO_DEVICE) {
     log_err("LIBUSB error no device");
+    infrareddy_hid_close(c);
+    return r;
+  } else if (r == LIBUSB_ERROR_IO) {
+    log_err("LIBUSB IO ERROR");
     infrareddy_hid_close(c);
     return r;
   } else if (r != LIBUSB_SUCCESS) {
@@ -242,8 +246,8 @@ int infrareddy_hid_in_report_to_struct(infrareddy_hid_in_report_t *in_report, ui
 
 int infrareddy_hid_get_report(infrareddy_hid_context_t *c) {
   int status;
-  uint8_t addr = MAPLE_INFRAREDDY_ENDPOINT_IN;
-  uint8_t len = 1 + 1; // 3 bytes + 1 address byte?
+  uint8_t addr = INFRAREDDY_ENDPOINT_IN;
+  uint8_t len = 8 + 1; // 3 bytes + 1 address byte?
   unsigned char data[len];
   memset(data, 0x0, len);
 
@@ -257,7 +261,7 @@ int infrareddy_hid_get_report(infrareddy_hid_context_t *c) {
 }
 
 int infrareddy_hid_encode(infrareddy_hid_context_t *c, uint16_t data_len, unsigned char *data) {
-  uint8_t addr = MAPLE_INFRAREDDY_ENDPOINT_OUT;
+  uint8_t addr = INFRAREDDY_ENDPOINT_OUT;
 
   infrareddy_encode_request_t *encode_req = c->encode_request;
   encode_req->len = data_len;

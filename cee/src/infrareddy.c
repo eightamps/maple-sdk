@@ -99,15 +99,16 @@ static void *begin_polling(void *varg) {
   infrareddy_context_t *c = varg;
   infrareddy_hid_context_t *hc = c->hid_context;
   int status = EXIT_SUCCESS;
-  unsigned long error_timeout = 50 * 1000;
+  unsigned long error_timeout = 5;
 
   log_info("infrareddy begin polling with state: %s", infrareddy_state_to_str(c->state));
   while(c->state != INFRAREDDY_EXITING) {
+    log_info("----------------------------");
     if (c->state == INFRAREDDY_NOT_READY ||
         c->state == INFRAREDDY_DEVICE_NOT_FOUND) {
+      log_info("Infrareddy Connecting");
       // Attempt to open the HID connection
       status = infrareddy_hid_open(hc);
-      log_info("Infrareddy Connecting");
       if (status == HID_SUCCESS) {
         log_info("Infrareddy Connected");
         set_state(c, INFRAREDDY_CONNECTED);
@@ -116,18 +117,17 @@ static void *begin_polling(void *varg) {
         // hid_status_message(status));
         log_err("Infrareddy Device not found");
         set_state(c, INFRAREDDY_DEVICE_NOT_FOUND);
-        usleep_shim(error_timeout);
+        sleep(error_timeout);
         continue;
       }
     }
 
-    log_info("----------------------------");
-    log_info("infrareddy waiting for HID report");
+    log_info("infrareddy requesting HID report");
     status = infrareddy_hid_get_report(hc);
     if (status != HID_SUCCESS) {
       log_err("Infrareddy Device not found");
       set_state(c, INFRAREDDY_DEVICE_NOT_FOUND);
-      usleep_shim(error_timeout);
+      sleep(error_timeout);
       continue;
     }
 
@@ -146,6 +146,7 @@ static void *begin_polling(void *varg) {
       set_state(c, INFRAREDDY_NOT_READY);
     }
     */
+    log_info("infrareddy poll loopping");
   }
 
   return NULL;
@@ -166,7 +167,7 @@ int infrareddy_open_device(infrareddy_context_t *c, int vid, int pid) {
 
 int infrareddy_open_maple(infrareddy_context_t *c) {
   log_info("infrareddy_open_maple called");
-  return infrareddy_open_device(c, EIGHT_AMPS_VID, EIGHT_AMPS_MAPLE_V3_PID);
+  return infrareddy_open_device(c, EIGHT_AMPS_VID, EIGHT_AMPS_PID);
 }
 
 int infrareddy_encode(infrareddy_context_t *c, uint16_t len, unsigned char *data) {

@@ -56,6 +56,13 @@ application_context_t *application_new(void) {
   }
   app->phony_context = phony;
 
+#ifdef PHONY_ACTIVE
+  status = phony_open_maple(phony);
+  if (status != EXIT_SUCCESS) {
+    log_err("phony_open_maple failed");
+  }
+#endif
+
   infrareddy_context_t *infrareddy = infrareddy_new();
   if (infrareddy == NULL) {
     log_err("Unable to instantiate infrareddy service");
@@ -63,10 +70,6 @@ application_context_t *application_new(void) {
   }
   app->infrareddy_context = infrareddy;
 
-  status = phony_open_maple(phony);
-  if (status != EXIT_SUCCESS) {
-    log_err("phony_open_maple failed");
-  }
 
   status = infrareddy_open_maple(infrareddy);
   if (status != EXIT_SUCCESS) {
@@ -74,7 +77,7 @@ application_context_t *application_new(void) {
   }
 
   GtkApplication *native_app = gtk_application_new("com.eightamps.term",
-                                   G_APPLICATION_DEFAULT_FLAGS);
+                                   G_APPLICATION_FLAGS_NONE);
   g_signal_connect(native_app, "activate",
                    G_CALLBACK(activate_callback), app);
   app->native_app = native_app;
@@ -88,6 +91,7 @@ int application_run(application_context_t *app, int argc, char *argv[]) {
 
 void application_free(application_context_t *c) {
   if (c != NULL) {
+
     phony_view_free(c->phony_view_context);
     phony_free(c->phony_context);
 

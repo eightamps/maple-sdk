@@ -214,7 +214,7 @@ int phony_open_device(phony_context_t *c, int vid, int pid) {
 
 int phony_open_maple(phony_context_t *c) {
   log_info("phony_open_maple called");
-  return phony_open_device(c, EIGHT_AMPS_VID, EIGHT_AMPS_MAPLE_V3_PID);
+  return phony_open_device(c, EIGHT_AMPS_VID, EIGHT_AMPS_PID);
 }
 
 int phony_take_off_hook(phony_context_t *c) {

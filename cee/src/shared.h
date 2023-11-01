@@ -43,7 +43,28 @@
 #endif // MAPLE_EXPORT_DLL
 
 #define EIGHT_AMPS_VID 0x335e
-#define EIGHT_AMPS_MAPLE_V3_PID 0x8a01
+
+// undef for ASPEN, define for MAPLE
+#undef IS_MAPLE
+
+#ifdef IS_MAPLE
+
+#define EIGHT_AMPS_PID 0x8a01
+#define INFRAREDDY_INTERFACE 4
+#define INFRAREDDY_ENDPOINT_IN 0x84
+#define INFRAREDDY_ENDPOINT_OUT 0x04
+#define PHONY_ACTIVE 1
+
+#else
+
+#define EIGHT_AMPS_PID 0x8a10
+#define INFRAREDDY_INTERFACE 1
+#define INFRAREDDY_ENDPOINT_IN 0x81
+#define INFRAREDDY_ENDPOINT_OUT 0x01
+#undef PHONY_ACTIVE
+
+#endif
+
 
 // Bullshit time.h header requires me to declare this built-in signature for
 // some ridiculous reason.
