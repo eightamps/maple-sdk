@@ -99,7 +99,7 @@ static void *begin_polling(void *varg) {
   infrareddy_context_t *c = varg;
   infrareddy_hid_context_t *hc = c->hid_context;
   int status = EXIT_SUCCESS;
-  unsigned long error_timeout = 5;
+  // unsigned long error_timeout = 5;
 
   log_info("infrareddy begin polling with state: %s", infrareddy_state_to_str(c->state));
   while(c->state != INFRAREDDY_EXITING) {
@@ -117,7 +117,7 @@ static void *begin_polling(void *varg) {
         // hid_status_message(status));
         log_err("Infrareddy Device not found");
         set_state(c, INFRAREDDY_DEVICE_NOT_FOUND);
-        sleep(error_timeout);
+        // sleep(error_timeout);
         continue;
       }
     }
@@ -127,7 +127,7 @@ static void *begin_polling(void *varg) {
     if (status != HID_SUCCESS) {
       log_err("Infrareddy Device not found");
       set_state(c, INFRAREDDY_DEVICE_NOT_FOUND);
-      sleep(error_timeout);
+      // sleep(error_timeout);
       continue;
     }
 

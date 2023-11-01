@@ -47,6 +47,8 @@ static void btn_clicked(GtkWidget *widget, gpointer data) {
       log_err("ERROR: failed to encode: %d", status);
     }
   } else if (strncmp(label, "Encode 2", max_len) == 0) {
+    int len = strlen(ENCODE_TWO);
+    status = infrareddy_encode(c, len, (unsigned char *)ENCODE_TWO);
     log_info(">>>>>>>>> ENCODE 2");
   } else if (strncmp(label, "Decode", max_len) == 0) {
     log_info(">>>>>>>>> DECODE");

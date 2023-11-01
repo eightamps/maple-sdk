@@ -180,7 +180,7 @@ static int interrupt_transfer(infrareddy_hid_context_t *c, uint8_t addr,
   log_info("infrareddy interrupt transfer at addr: 0x%x and %d byes", addr, len);
   r = libusb_interrupt_transfer(dev_h, addr, data, len, &transferred,
       INFINITE_TIMEOUT);
-  log_info("libusb interrupt xfer with status: %d\n", r);
+  log_info("libusb interrupt xfer with status: %d and xfer bytes: %d\n", r, transferred);
   if (r == LIBUSB_ERROR_NO_DEVICE) {
     log_err("LIBUSB error no device");
     infrareddy_hid_close(c);

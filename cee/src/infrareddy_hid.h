@@ -9,11 +9,20 @@
 #include <stdbool.h>
 #include <libusb-1.0/libusb.h>
 
+typedef uint16_t infrareddy_tag_t;
+
+// Try to keep total report size at (multiple of 64) - 1
+// Also, the 2+2... is size of the rest of the data in packet DATA CMD.
+#define IR_ENVELOPE_SIZE        (4096 - 1)
+#define IR_ENCODE_DATA_SIZE     (IR_ENVELOPE_SIZE - (1 + 2 + 4 + 2))
+#define IR_DECODE_DATA_SIZE     (IR_ENVELOPE_SIZE - (1 + 2 + 4 + 4 + 2))
+
 typedef struct {
-  uint16_t id;
-  uint32_t type;
-  uint16_t len;
-  uint8_t *data;
+    uint8_t id;
+    infrareddy_tag_t tag;
+    int32_t type;
+    uint16_t len;
+    uint8_t *data;
 }infrareddy_encode_request_t;
 
 typedef struct {
