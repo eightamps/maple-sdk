@@ -233,8 +233,14 @@ namespace Maple
         public static Phone First()
         {
             Phone r = null;
-            var device = DeviceList.Local.GetHidDevices().First(d => Phone.TryOpen(d, out r));
-            return r;
+            var devices = DeviceList.Local.GetHidDevices();
+            if (devices.Count() > 0)
+            {
+                var device = devices.First(d => Phone.TryOpen(d, out r));
+                return r;
+            }
+
+            return null;
         }
 
         public void Dispose()
