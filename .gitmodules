@@ -3,10 +3,10 @@
 	url = https://github.com/eightamps/HidSharp.git
 [submodule "cee/vendor/pthread-win32"]
 	path = cee/vendor/pthread-win32
-	url = git@github.com:GerHobbelt/pthread-win32.git
+	url = https://github.com/GerHobbelt/pthread-win32.git
 [submodule "zig/vendor/win32"]
 	path = zig/vendor/win32
-	url = git@github.com:marlersoft/zigwin32.git
+	url = https://github.com/marlersoft/zigwin32.git
 [submodule "zig/vendor/libsoundio"]
 	path = zig/vendor/libsoundio
-	url = git@github.com:joextodd/libsoundio-binaries.git
+	url = https://github.com/joextodd/libsoundio-binaries.git
